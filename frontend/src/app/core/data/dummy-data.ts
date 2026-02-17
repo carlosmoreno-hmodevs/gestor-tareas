@@ -112,7 +112,9 @@ export const TASKS: Task[] = [
   createTask('TASK-028', 'Revisar KPIs del trimestre', 'Pedro Sánchez', 'user-4', 'Completada', 'Baja', addDays(now, -7)),
   createTask('TASK-029', 'Sin asignar - Urgente', 'Sin asignar', '', 'Pendiente', 'Alta', addHours(now, 4)),
   createTask('TASK-030', 'Actualizar certificaciones equipo', 'Laura Rodríguez', 'user-5', 'Liberada', 'Media', addDays(now, -2)),
-  createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Pedro Sánchez', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { rejectionComment: 'Faltan evidencias de la última auditoría.' })
+  createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Pedro Sánchez', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { rejectionComment: 'Faltan evidencias de la última auditoría.' }),
+  createTask('TASK-032', 'Revisión de reportes (solo lectura)', 'Eva Torres', 'user-6', 'Pendiente', 'Baja', addDays(now, 5)),
+  createTask('TASK-033', 'Auditoría general del sistema', 'Super Admin', 'user-owner', 'En Progreso', 'Alta', addDays(now, 3))
 ];
 
 export const ALERT_RULES: AlertRule[] = [

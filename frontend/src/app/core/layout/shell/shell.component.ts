@@ -51,29 +51,14 @@ export class ShellComponent {
 
   currentUser = signal<User>({ id: 'guest', name: 'Usuario', email: '', role: '', team: '' });
 
-  private allNavItems: NavItem[] = [
+  navItems = computed<NavItem[]>(() => [
     { path: '/tablero', label: 'Tablero', icon: 'dashboard' },
     { path: '/tareas', label: 'Tareas', icon: 'task_alt' },
     { path: '/proyectos', label: 'Proyectos', icon: 'work' },
     { path: '/documentos', label: 'Documentos', icon: 'folder' },
     { path: '/admin', label: 'Administración', icon: 'settings' },
     { path: '/ia', label: 'Asistente IA', icon: 'auto_awesome' }
-  ];
-
-  navItems = computed<NavItem[]>(() => {
-    const items = this.allNavItems;
-    const user = this.currentUserService.getCurrentUser();
-    const adminUser = this.adminService.getUserById(user.id);
-    const role = adminUser
-      ? this.adminService.getRoleById(adminUser.roleId)
-      : this.adminService.roles().find((r: { name: string }) => r.name.toLowerCase() === user.role?.toLowerCase());
-    const canAccessAdmin =
-      role?.permissions?.includes('admin.view') ||
-      role?.permissions?.includes('admin.manageUsers') ||
-      ['Admin', 'Owner', 'Superadmin'].some((r) => user.role?.toLowerCase() === r.toLowerCase());
-    if (!canAccessAdmin) return items.filter((i: NavItem) => i.path !== '/admin');
-    return items;
-  });
+  ]);
 
   constructor() {
     const users = this.dataService.getUsers();

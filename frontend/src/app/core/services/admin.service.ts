@@ -66,7 +66,8 @@ export class AdminService {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const snap = JSON.parse(raw) as AdminSnapshot;
-        this._users.set((snap.users ?? []).map((u) => hydrateDates(u) as AdminUser));
+        const users = (snap.users ?? []).map((u) => hydrateDates(u) as AdminUser);
+        this._users.set(users);
         this._roles.set(snap.roles ?? INITIAL_ROLES);
         this._categories.set(snap.categories ?? INITIAL_CATEGORIES);
         this._priorities.set(snap.priorities ?? INITIAL_PRIORITIES);

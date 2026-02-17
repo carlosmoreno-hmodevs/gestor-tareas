@@ -91,7 +91,17 @@ export const INITIAL_ROLES: Role[] = [
 ];
 
 // --- Users (admin-managed) ---
+// Al menos un usuario por rol: Owner, Admin, Supervisor, Member, Viewer
 export const INITIAL_ADMIN_USERS: AdminUser[] = [
+  {
+    id: 'user-owner',
+    name: 'Super Admin',
+    email: 'owner@empresa.com',
+    roleId: 'role-owner',
+    teamId: 'team-1',
+    isActive: true,
+    createdAt: new Date(now.getTime() - 400 * 86400000)
+  },
   {
     id: 'user-1',
     name: 'María García',
@@ -136,6 +146,15 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     teamId: 'team-1',
     isActive: true,
     createdAt: new Date(now.getTime() - 100 * 86400000)
+  },
+  {
+    id: 'user-6',
+    name: 'Eva Torres',
+    email: 'eva@empresa.com',
+    roleId: 'role-viewer',
+    teamId: 'team-3',
+    isActive: true,
+    createdAt: new Date(now.getTime() - 80 * 86400000)
   }
 ];
 

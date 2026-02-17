@@ -167,44 +167,11 @@
         message="Ajusta los filtros o crea una nueva tarea"
       />
     } @else if (viewMode() === 'board') {
-      <div class="kanban-board animate-stagger">
-        @for (col of kanbanColumns; track col.status) {
-          <div class="kanban-column" [attr.data-status]="col.status">
-            <div class="kanban-column-header">
-              <span class="kanban-column-title">{{ col.label }}</span>
-              <span class="kanban-column-count">{{ (tasksByStatus().get(col.status) ?? []).length }}</span>
-            </div>
-            <div class="kanban-column-cards">
-              @for (task of (tasksByStatus().get(col.status) ?? []); track task.id) {
-                <a class="kanban-card-link" [routerLink]="['/tareas', task.id]">
-                  <div
-                    class="kanban-card"
-                    [class.vencida]="getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida'"
-                    [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
-                    [class.prio-alta]="task.priority === 'Alta'"
-                    [class.prio-media]="task.priority === 'Media'"
-                    [class.prio-baja]="task.priority === 'Baja'"
-                  >
-                    <h4 class="kanban-card-title">{{ task.title }}</h4>
-                    <p class="kanban-card-meta">{{ task.folio }} • {{ task.assignee || 'Sin asignar' }}</p>
-                    <div class="kanban-card-footer">
-                      <span class="kanban-card-priority">{{ task.priority }}</span>
-                      <span class="kanban-card-due">
-                        {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
-                      </span>
-                      <app-avatar
-                        [name]="task.assignee || 'Sin asignar'"
-                        [avatarUrl]="getUserById(task.assigneeId)?.avatarUrl ?? getUserByName(task.assignee)?.avatarUrl"
-                        [size]="24"
-                      />
-                    </div>
-                  </div>
-                </a>
-              }
-            </div>
-          </div>
-        }
-      </div>
+      <app-kanban-board
+        [tasks]="filteredTasks()"
+        [draggable]="true"
+        class="animate-stagger"
+      />
     } @else {
       <div class="task-cards-list animate-stagger">
         @for (task of filteredTasks(); track task.id) {

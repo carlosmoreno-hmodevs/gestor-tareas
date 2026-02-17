@@ -21,6 +21,7 @@ import { StatusChipComponent } from '../../../shared/components/status-chip/stat
 import { PriorityPillComponent } from '../../../shared/components/priority-pill/priority-pill.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
+import { KanbanBoardComponent } from '../../../shared/components/kanban-board/kanban-board.component';
 import type { TaskStatus, Priority } from '../../../shared/models';
 
 @Component({
@@ -39,7 +40,8 @@ import type { TaskStatus, Priority } from '../../../shared/models';
     MatTableModule,
     MatButtonToggleModule,
     EmptyStateComponent,
-    AvatarComponent
+    AvatarComponent,
+    KanbanBoardComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrl: './task-list.component.scss'
@@ -85,32 +87,43 @@ export class TaskListComponent {
     return this.workflow.getEffectiveStatus(task);
   }
 
-  activeCount = this.taskService.activeCount;
-  dueSoonCount = this.taskService.dueSoonCount;
-  overdueCount = this.taskService.overdueCount;
+  activeCount = computed(() =>
+    this.taskService.tasks().filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length
+  );
+  dueSoonCount = computed(() =>
+    this.taskService.tasks().filter(
+      (t) =>
+        t.riskIndicator === 'por-vencer' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
+    ).length
+  );
+  overdueCount = computed(() =>
+    this.taskService.tasks().filter(
+      (t) => this.workflow.getEffectiveStatus(t) === 'Vencida' || t.riskIndicator === 'vencida'
+    ).length
+  );
 
   hoyCount = computed(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return this.taskService
-      .tasks()
-      .filter((t) => {
+    return this.taskService.tasks().filter((t) => {
         const d = new Date(t.dueDate);
         d.setHours(0, 0, 0, 0);
         return d.getTime() === today.getTime() && !['Completada', 'Liberada', 'Cancelada'].includes(t.status);
       }).length;
   });
 
-  vencidasCount = computed(() => this.taskService.overdueCount());
+  vencidasCount = computed(() => this.overdueCount());
   altaCount = computed(() =>
-    this.taskService
-      .tasks()
-      .filter((t) => t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length
+    this.taskService.tasks().filter(
+      (t) => t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
+    ).length
   );
   sinAsignarCount = computed(() =>
-    this.taskService
-      .tasks()
-      .filter((t) => (!t.assignee || t.assignee === 'Sin asignar') && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length
+    this.taskService.tasks().filter(
+      (t) =>
+        (!t.assignee || t.assignee === 'Sin asignar') &&
+        !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
+    ).length
   );
 
     allFilter = (): void => {

@@ -166,7 +166,55 @@ mat-nav-list a.active {
 
 .user-avatar-wrap {
   margin-left: $spacing-sm;
-  cursor: pointer;
+}
+
+.user-switch-menu {
+  min-width: 260px;
+  padding: 0 !important;
+}
+
+.user-menu-header {
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  .user-menu-title {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: var(--color-text, #212121);
+  }
+
+  .user-menu-subtitle {
+    display: block;
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #757575);
+    margin-top: 2px;
+  }
+}
+
+[data-theme='dark'] .user-menu-header {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.user-switch-menu button[mat-menu-item] {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-lg;
+
+  .user-menu-name {
+    flex: 1;
+    font-weight: $font-weight-medium;
+  }
+
+  .user-menu-role {
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  &.selected {
+    background: rgba(25, 118, 210, 0.1);
+  }
 }
 
 app-offline-banner {

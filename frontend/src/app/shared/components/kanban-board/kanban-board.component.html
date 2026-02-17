@@ -1,0 +1,55 @@
+<div class="kanban-board">
+  @for (col of columns; track col.status) {
+    <div
+      class="kanban-column"
+      [attr.data-status]="col.status"
+      cdkDropList
+      [id]="'drop-' + col.status.replace(/\s+/g, '-')"
+      [cdkDropListData]="(tasksByStatus().get(col.status) ?? [])"
+      [cdkDropListConnectedTo]="columnIds"
+      [cdkDropListSortingDisabled]="true"
+      (cdkDropListDropped)="onDrop($event)"
+    >
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">{{ col.label }}</span>
+        <span class="kanban-column-count">{{ (tasksByStatus().get(col.status) ?? []).length }}</span>
+      </div>
+      <div class="kanban-column-cards">
+        @for (task of (tasksByStatus().get(col.status) ?? []); track task.id) {
+          <div
+            class="kanban-card-wrapper"
+            cdkDrag
+            [cdkDragData]="task"
+            [cdkDragDisabled]="!canDrop()"
+          >
+            <div
+              class="kanban-card"
+              cdkDragHandle
+              [class.vencida]="getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida'"
+              [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
+              [class.prio-alta]="task.priority === 'Alta'"
+              [class.prio-media]="task.priority === 'Media'"
+              [class.prio-baja]="task.priority === 'Baja'"
+            >
+              <a class="kanban-card-link" [routerLink]="['/tareas', task.id]" (click)="$event.stopPropagation()">
+                <h4 class="kanban-card-title">{{ task.title }}</h4>
+                <p class="kanban-card-meta">{{ task.folio }} • {{ task.assignee || 'Sin asignar' }}</p>
+              </a>
+              <div class="kanban-card-footer">
+                <span class="kanban-card-priority">{{ task.priority }}</span>
+                <span class="kanban-card-due">
+                  {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
+                </span>
+                <app-avatar
+                  [name]="task.assignee || 'Sin asignar'"
+                  [avatarUrl]="getUserById(task.assigneeId)?.avatarUrl ?? getUserByName(task.assignee)?.avatarUrl"
+                  [size]="24"
+                />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

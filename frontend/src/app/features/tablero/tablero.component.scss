@@ -13,6 +13,26 @@
   min-width: 160px;
 }
 
+.tablero-kanban-section {
+  margin-top: $spacing-lg;
+
+  .section-title {
+    margin: 0 0 $spacing-xs;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+  }
+
+  .section-subtitle {
+    margin: 0 0 $spacing-md;
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.kpi-row-compact .kpi-card a {
+  display: none;
+}
+
 .kpi-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
