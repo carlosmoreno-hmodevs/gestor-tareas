@@ -1,0 +1,164 @@
+<section class="detail-column">
+  <div class="section-header">
+    <h3 class="section-title">DETALLE</h3>
+    @if (!isEditing()) {
+      <button
+        mat-stroked-button
+        color="primary"
+        [disabled]="!isOnline()"
+        [matTooltip]="!isOnline() ? 'Requires connection' : ''"
+        (click)="startEdit()"
+      >
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+    }
+  </div>
+
+  @if (!isEditing()) {
+    <!-- Vista informativa -->
+    <div class="detail-view">
+      <div class="detail-field">
+        <span class="field-label">Descripción</span>
+        <p class="field-value">{{ task()?.description || '—' }}</p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Responsable principal</span>
+        <p class="field-value">{{ getAssigneeName(task()?.assigneeId ?? '') }}</p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Prioridad</span>
+        <p class="field-value">{{ task()?.priority ?? '—' }}</p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Categoría / tipo</span>
+        <p class="field-value">{{ getCategoryName(task()?.categoryId) }}</p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Fecha límite</span>
+        <p class="field-value">{{ task()?.dueDate ? (task()!.dueDate | dateFormat: 'short') : '—' }}</p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Etiquetas</span>
+        <p class="field-value">
+          @if ((task()?.tags ?? []).length) {
+            @for (tag of task()?.tags ?? []; track tag) {
+              <span class="tag-chip">{{ tag }}</span>
+            }
+          } @else {
+            —
+          }
+        </p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Proyecto</span>
+        <p class="field-value">{{ getProjectName(task()?.projectId) }}</p>
+      </div>
+      <div class="detail-field">
+        <span class="field-label">Subresponsables</span>
+        <p class="field-value">{{ getSubAssigneeNames(task()?.subAssigneeIds) }}</p>
+      </div>
+    </div>
+  } @else {
+    <!-- Formulario editable -->
+    <form [formGroup]="form" class="detail-form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Descripción</mat-label>
+        <textarea matInput formControlName="description" rows="4" placeholder="Descripción de la tarea"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Responsable principal</mat-label>
+        <mat-select formControlName="assigneeId">
+          <mat-option value="">
+            <span class="assignee-option">Sin asignar</span>
+          </mat-option>
+          @for (u of users; track u.id) {
+            <mat-option [value]="u.id">{{ u.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Prioridad *</mat-label>
+        <mat-select formControlName="priority">
+          @for (p of priorities; track p.id) {
+            <mat-option [value]="p.value">{{ p.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Categoría / tipo</mat-label>
+        <mat-select formControlName="categoryId">
+          <mat-option value="">—</mat-option>
+          @for (c of categories; track c.id) {
+            <mat-option [value]="c.id">{{ c.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Fecha límite *</mat-label>
+        <input matInput [matDatepicker]="picker" formControlName="dueDate" />
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
+        <mat-hint>Debe ser hoy o posterior</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Etiquetas</mat-label>
+        <mat-chip-grid #chipGrid>
+          @for (tag of form.get('tags')?.value ?? []; track tag) {
+            <mat-chip-row (removed)="removeTag(tag)">
+              {{ tag }}
+              <button matChipRemove>
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+          }
+          <input
+            placeholder="Añadir etiqueta..."
+            [matChipInputFor]="chipGrid"
+            [matChipInputSeparatorKeyCodes]="[13, 188]"
+            (matChipInputTokenEnd)="addTag($event)"
+          />
+        </mat-chip-grid>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Proyecto</mat-label>
+        <mat-select formControlName="projectId">
+          <mat-option value="">—</mat-option>
+          @for (pr of projects; track pr.id) {
+            <mat-option [value]="pr.id">{{ pr.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Subresponsables</mat-label>
+        <mat-select formControlName="subAssigneeIds" multiple>
+          @for (u of users; track u.id) {
+            <mat-option [value]="u.id">{{ u.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="!canSave()"
+          [matTooltip]="!isOnline() ? 'Requires connection' : ''"
+          (click)="onSave()"
+        >
+          Guardar cambios
+        </button>
+        <button mat-stroked-button (click)="onCancel()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  }
+</section>

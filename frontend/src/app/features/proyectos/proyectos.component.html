@@ -1,0 +1,53 @@
+<div class="projects-header">
+  <app-page-header
+    title="Proyectos"
+    subtitle="Vista general de proyectos"
+    icon="work"
+  />
+  <a
+    mat-flat-button
+    color="primary"
+    routerLink="/proyectos/nueva"
+    [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+  >
+    <mat-icon>add</mat-icon>
+    Nuevo proyecto
+  </a>
+</div>
+
+<div class="row g-3">
+  @for (p of projects; track p.id) {
+    <div class="col-12 col-md-6">
+      <mat-card [routerLink]="['/proyectos', p.id]" class="project-card">
+        <mat-card-header>
+          <div class="project-owner">
+            @if (p.image?.previewUrl) {
+              <img [src]="p.image!.previewUrl" alt="" class="project-thumb" />
+            } @else {
+              <app-avatar [name]="p.owner" [avatarUrl]="getUserByName(p.owner)?.avatarUrl" [size]="40" />
+            }
+            <div>
+              <mat-card-title>{{ p.name }}</mat-card-title>
+              <mat-card-subtitle>{{ p.owner }} · {{ p.status }}</mat-card-subtitle>
+            </div>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="description">{{ p.description }}</p>
+          <div class="kpis">
+            <span class="kpi"><strong>{{ getKpis(p.id).completedTasks }}</strong> completadas</span>
+            <span class="kpi"><strong>{{ getKpis(p.id).totalTasks }}</strong> total</span>
+            <span class="kpi danger"><strong>{{ getKpis(p.id).tasksOverdue }}</strong> vencidas</span>
+          </div>
+          <div class="meta">
+            <span><mat-icon>folder</mat-icon> {{ p.filesMeta.length + (p.filesCount ?? 0) }} archivos</span>
+            <span><mat-icon>history</mat-icon> {{ p.activity.length + (p.activityCount ?? 0) }} actividades</span>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button [routerLink]="['/proyectos', p.id]">Ver detalle</a>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  }
+</div>

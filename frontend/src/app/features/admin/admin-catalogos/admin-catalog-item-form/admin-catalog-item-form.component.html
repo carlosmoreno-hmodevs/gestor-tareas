@@ -1,0 +1,126 @@
+<nav class="breadcrumb">
+  <a routerLink="/admin">Administración</a>
+  <mat-icon>chevron_right</mat-icon>
+  <a routerLink="/admin/catalogos">Catálogos</a>
+  <mat-icon>chevron_right</mat-icon>
+  <span>{{ labels().plural }}</span>
+  <mat-icon>chevron_right</mat-icon>
+  <span>{{ isEditMode ? 'Editar ' + labels().singular.toLowerCase() : labels().newPrefix + ' ' + labels().singular.toLowerCase() }}</span>
+</nav>
+
+<app-page-header
+  [title]="(isEditMode ? 'Editar ' : labels().newPrefix + ' ') + labels().singular"
+  [subtitle]="isEditMode ? 'Modifica los datos del elemento' : 'Completa el formulario para crear un nuevo elemento'"
+  [icon]="labels().icon"
+/>
+
+<form [formGroup]="form" class="catalog-form animate-fade-in" (ngSubmit)="save()">
+  <div class="form-layout">
+    <div class="form-main">
+      <mat-card class="form-section">
+        <mat-card-header>
+          <mat-card-title>Información básica</mat-card-title>
+          <mat-card-subtitle>{{ isPriority ? 'Nombre, orden y SLA' : (isTeam ? 'Nombre y área' : 'Nombre y color') }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="field-row">
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nombre</mat-label>
+                <input matInput formControlName="name" [placeholder]="'Ej: ' + (isPriority ? 'Urgente' : isTeam ? 'Logística' : 'Calidad')" />
+                @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
+                  <mat-error>El nombre es obligatorio</mat-error>
+                }
+                @if (form.get('name')?.hasError('minlength') && form.get('name')?.touched) {
+                  <mat-error>Mínimo 2 caracteres</mat-error>
+                }
+              </mat-form-field>
+            </div>
+            @if (!isTeam) {
+              <div class="field-group color-field">
+                <div class="color-input-wrap">
+                  <mat-form-field appearance="outline" class="color-text-input">
+                    <mat-label>Color</mat-label>
+                    <input matInput formControlName="color" placeholder="#1976d2" />
+                  </mat-form-field>
+                  <input type="color" [value]="form.get('color')?.value || '#1976d2'" (input)="form.get('color')?.setValue($any($event.target).value)" class="color-picker" title="Seleccionar color" />
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (isPriority) {
+            <div class="field-row">
+              <div class="field-group">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Orden</mat-label>
+                  <input matInput type="number" formControlName="order" min="1" placeholder="1" />
+                  @if (form.get('order')?.hasError('required') && form.get('order')?.touched) {
+                    <mat-error>El orden es obligatorio</mat-error>
+                  }
+                  @if (form.get('order')?.hasError('min') && form.get('order')?.touched) {
+                    <mat-error>Mínimo 1</mat-error>
+                  }
+                  <mat-hint>Define la posición en listas y selectores</mat-hint>
+                </mat-form-field>
+              </div>
+              <div class="field-group">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>SLA (horas)</mat-label>
+                  <input matInput type="number" formControlName="slaHours" min="0" placeholder="72" />
+                  <mat-hint>Tiempo esperado para resolver tareas con esta prioridad</mat-hint>
+                  @if (form.get('slaHours')?.hasError('min') && form.get('slaHours')?.touched) {
+                    <mat-error>Mínimo 0</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+            </div>
+          }
+
+
+          @if (isTeam) {
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Área / Departamento</mat-label>
+                <input matInput formControlName="area" placeholder="Ej: Cadena de suministro, Manufactura" />
+                <mat-hint>Área o departamento al que pertenece el equipo</mat-hint>
+              </mat-form-field>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <aside class="form-sidebar">
+      <mat-card class="form-section form-section-sidebar">
+        <mat-card-header>
+          <mat-card-title>Acciones</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="sidebar-hint">Revisa los datos antes de guardar.</p>
+          <div class="sidebar-actions">
+            <button mat-stroked-button type="button" (click)="cancel()">
+              Cancelar
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              [disabled]="form.invalid || !connectivity.isOnline() || saving"
+              [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+            >
+              @if (saving) {
+                Guardando…
+              } @else {
+                <ng-container>
+                  <mat-icon>check_circle</mat-icon>
+                  {{ isEditMode ? 'Guardar cambios' : 'Crear ' + labels().singular }}
+                </ng-container>
+              }
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </aside>
+  </div>
+</form>

@@ -1,0 +1,64 @@
+@let t = task();
+@let effStatus = effectiveStatus();
+@if (!t) {
+  <div class="task-not-found">
+    <app-page-header title="Tarea no encontrada" icon="error" />
+    <p>La tarea solicitada no existe.</p>
+    <button mat-button (click)="goBack()">Volver a lista</button>
+  </div>
+} @else {
+  <app-task-detail-header
+    [task]="t"
+    [effectiveStatus]="effStatus"
+    [assigneeName]="t.assignee || 'Sin asignar'"
+    [hasOverdueBadge]="effStatus === 'Vencida'"
+    (menuAction)="onMenuAction($event)"
+  />
+
+  <div class="task-control-center animate-stagger">
+    <div class="row g-3">
+      <!-- Col 1: DETALLE (30-35%) -->
+      <div class="col-12 col-lg-4">
+        <app-task-workflow-actions
+          [currentStatus]="effStatus"
+          [allowedTransitions]="allowedTransitions()"
+          [isOnline]="connectivity.isOnline()"
+          (transitionClicked)="executeTransition($event)"
+        />
+        <app-task-detail-form
+          [task]="t"
+          [isOnline]="connectivity.isOnline()"
+          (saveChanges)="onSaveChanges($event)"
+          (cancelEdit)="onCancelEdit()"
+        />
+      </div>
+
+      <!-- Col 2: EVIDENCIA (35-40%) -->
+      <div class="col-12 col-lg-5">
+        <app-task-evidence-panel
+          [taskId]="t.id"
+          [attachments]="taskAttachments()"
+          [isOnline]="connectivity.isOnline()"
+          (filesSelected)="onFilesSelected($event)"
+          (downloadRequested)="onDownloadRequested($event)"
+          (removeRequested)="onRemoveRequested($event)"
+        />
+      </div>
+
+      <!-- Col 3: TIMELINE (25-30%) -->
+      <div class="col-12 col-lg-3">
+        <app-task-timeline
+          [taskId]="t.id"
+          [history]="t.history"
+          [isOnline]="connectivity.isOnline()"
+          (commentSubmitted)="onCommentSubmitted($event)"
+          (itemMenuAction)="onTimelineItemMenu($event)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="back-actions">
+    <button mat-button (click)="goBack()">Volver a lista</button>
+  </div>
+}

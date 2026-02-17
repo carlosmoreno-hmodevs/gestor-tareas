@@ -1,0 +1,24 @@
+@use 'styles/tokens' as *;
+
+.priority-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px $spacing-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  border-radius: $radius-sm;
+  text-transform: capitalize;
+
+  &[data-priority='Alta'] {
+    background: rgba(211, 47, 47, 0.15);
+    color: #c62828;
+  }
+  &[data-priority='Media'] {
+    background: rgba(237, 108, 2, 0.15);
+    color: #e65100;
+  }
+  &[data-priority='Baja'] {
+    background: rgba(46, 125, 50, 0.15);
+    color: #2e7d32;
+  }
+}

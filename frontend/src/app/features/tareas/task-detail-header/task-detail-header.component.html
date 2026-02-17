@@ -1,0 +1,68 @@
+@let t = task();
+@if (t) {
+  <nav class="breadcrumb">
+    <a [routerLink]="['/tareas']">Lista de tareas</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>{{ t.title }}</span>
+  </nav>
+
+  <header class="task-detail-header">
+    <div class="header-top">
+      <div class="header-main">
+        <h1 class="task-title">{{ t.title }}</h1>
+        <span
+          class="status-chip"
+          [class.en-progreso]="effectiveStatus() === 'En Progreso'"
+          [class.pendiente]="effectiveStatus() === 'Pendiente'"
+          [class.completada]="effectiveStatus() === 'Completada'"
+          [class.liberada]="effectiveStatus() === 'Liberada'"
+          [class.rechazada]="effectiveStatus() === 'Rechazada'"
+          [class.vencida]="effectiveStatus() === 'Vencida'"
+          [class.cancelada]="effectiveStatus() === 'Cancelada'"
+          [class.en-espera]="effectiveStatus() === 'En Espera'"
+        >
+          {{ effectiveStatus() | uppercase }}
+        </span>
+      </div>
+      <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Más acciones">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="onMenuAction('export')">
+          <mat-icon>download</mat-icon>
+          <span>Exportar</span>
+        </button>
+        <button mat-menu-item (click)="onMenuAction('duplicate')">
+          <mat-icon>content_copy</mat-icon>
+          <span>Duplicar</span>
+        </button>
+      </mat-menu>
+    </div>
+
+    <div class="header-meta">
+      <app-avatar
+        [name]="assigneeName()"
+        [size]="32"
+      />
+      <div class="meta-text">
+        <span class="folio">{{ t.folio }}</span>
+        <span class="separator">•</span>
+        <span>Responsable: {{ assigneeName() }}</span>
+        <span class="separator">•</span>
+        <span class="due-date" [class.overdue]="hasOverdueBadge()">
+          {{ hasOverdueBadge() ? 'Venció' : (t.dueDate | dateFormat: 'short') }}
+          @if (hasOverdueBadge()) {
+            <mat-icon class="badge-icon">warning</mat-icon>
+          }
+        </span>
+      </div>
+    </div>
+
+    @if (effectiveStatus() === 'Rechazada' && t.rejectionComment) {
+      <div class="rejection-block">
+        <strong>Motivo de rechazo:</strong>
+        <p>{{ t.rejectionComment }}</p>
+      </div>
+    }
+  </header>
+}

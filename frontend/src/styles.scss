@@ -1,0 +1,135 @@
+/* Gestor de Tareas - Global styles */
+@use './styles/tokens' as *;
+@use './styles/helpers';
+@use './styles/animations';
+
+@use 'bootstrap/scss/bootstrap';
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  font-family: $font-family-base;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  line-height: 1.5;
+  color: var(--color-text, $color-text);
+  background-color: var(--color-bg, $color-bg);
+  min-height: 100vh;
+}
+
+[data-theme='dark'] {
+  --color-bg: #121212;
+  --color-bg-card: #1e1e1e;
+  --color-surface: #2d2d2d;
+  --color-text: #e0e0e0;
+  --color-text-secondary: #b0b0b0;
+}
+
+[data-theme='dark'] html,
+[data-theme='dark'] body {
+  background-color: #121212 !important;
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .app-content {
+  background-color: #121212;
+}
+
+[data-theme='dark'] .mat-mdc-card,
+[data-theme='dark'] .mat-mdc-dialog-container {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .mat-mdc-form-field {
+  --mdc-filled-text-field-container-color: rgba(255, 255, 255, 0.05);
+}
+
+// Fuente Inter en toda la aplicación - regla global para cubrir todas las páginas
+body,
+body *:not(.mat-icon):not(.material-icons),
+.mat-mdc-toolbar,
+.mat-mdc-card,
+.mat-mdc-sidenav,
+.mat-mdc-nav-list,
+.mat-mdc-button,
+.mat-mdc-form-field,
+.mat-mdc-dialog-container,
+.mat-mdc-tab-header,
+.mat-mdc-card-title,
+.mat-mdc-card-subtitle,
+.mat-mdc-header-cell,
+.mat-mdc-cell,
+.mat-mdc-chip,
+.mat-mdc-tab,
+.mat-mdc-option,
+.mat-mdc-select,
+.mat-mdc-input,
+.mat-mdc-label,
+h1, h2, h3, h4, h5, h6,
+p, span, a, button, input, label, select, textarea {
+  font-family: $font-family-base !important;
+}
+
+// Mantener Material Icons para los iconos (no usar Inter)
+.mat-icon,
+.material-icons {
+  font-family: 'Material Icons' !important;
+}
+
+// Mobile-first: base para móvil
+.app-content {
+  padding: $spacing-md;
+  min-height: calc(100vh - 64px);
+}
+
+@media (min-width: 768px) {
+  .app-content {
+    padding: $spacing-lg;
+  }
+}
+
+// Refinamiento visual global
+.mat-mdc-card {
+  border-radius: $radius-lg !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mat-mdc-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .mat-mdc-card:hover {
+    transition-duration: 0.25s;
+  }
+  .mat-mdc-button,
+  .mat-mdc-icon-button {
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+  .mat-mdc-icon-button:active {
+    transform: scale(0.94);
+  }
+}
+
+.mat-mdc-button {
+  text-transform: none;
+  font-weight: $font-weight-medium;
+}
+
+// Animación de entrada para contenido de rutas
+@media (prefers-reduced-motion: no-preference) {
+  router-outlet + * {
+    animation: fade-in 0.3s ease-out;
+  }
+}

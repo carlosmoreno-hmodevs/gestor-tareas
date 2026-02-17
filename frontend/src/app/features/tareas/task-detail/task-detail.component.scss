@@ -1,0 +1,13 @@
+@use 'styles/tokens' as *;
+
+.task-not-found {
+  padding: $spacing-lg;
+}
+
+.task-control-center {
+  margin-bottom: $spacing-lg;
+}
+
+.back-actions {
+  margin-top: $spacing-lg;
+}

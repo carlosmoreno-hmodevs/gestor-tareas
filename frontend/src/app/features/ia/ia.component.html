@@ -1,0 +1,83 @@
+<div class="ia-page">
+  <header class="ia-hero">
+    <div class="ia-hero-glow"></div>
+    <div class="ia-hero-content">
+      <div class="ia-hero-icon">
+        <mat-icon>smart_toy</mat-icon>
+      </div>
+      <h1 class="ia-hero-title">Asistente de IA</h1>
+      <p class="ia-hero-subtitle">Captura asistida y consultas rápidas con inteligencia artificial</p>
+    </div>
+  </header>
+
+  <div class="ia-grid">
+    <section class="ia-card ia-card-capture">
+      <div class="ia-card-border"></div>
+      <div class="ia-card-body">
+        <div class="ia-card-header">
+          <span class="ia-card-badge">Captura asistida</span>
+          <h2 class="ia-card-title">Genera tareas desde texto libre</h2>
+          <p class="ia-card-desc">Escribe en lenguaje natural y la IA extraerá título, prioridad y detalles</p>
+        </div>
+        <mat-form-field appearance="outline" class="ia-textarea-field">
+          <mat-label>Descripción de la tarea</mat-label>
+          <textarea
+            matInput
+            [ngModel]="freeText()"
+            (ngModelChange)="freeText.set($event)"
+            rows="4"
+            placeholder="Ej: Revisar informe trimestral urgente para el jueves"
+          ></textarea>
+        </mat-form-field>
+        <button class="ia-btn-generate" mat-flat-button (click)="generateTask()">
+          <mat-icon>auto_awesome</mat-icon>
+          <span>Generar tarea</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="ia-card ia-card-queries">
+      <div class="ia-card-border"></div>
+      <div class="ia-card-body">
+        <div class="ia-card-header">
+          <span class="ia-card-badge">Consultas rápidas</span>
+          <h2 class="ia-card-title">Respuestas instantáneas</h2>
+        </div>
+        <div class="ia-quick-chips">
+          <button class="ia-chip" (click)="quickQuery('por-vencer')">
+            <mat-icon>schedule</mat-icon>
+            Por vencer
+          </button>
+          <button class="ia-chip" (click)="quickQuery('vencidas')">
+            <mat-icon>warning</mat-icon>
+            Vencidas
+          </button>
+          <button class="ia-chip" (click)="quickQuery('carga')">
+            <mat-icon>people</mat-icon>
+            Carga por responsable
+          </button>
+        </div>
+      </div>
+    </section>
+
+    @if (responses().length) {
+      <section class="ia-card ia-card-responses">
+        <div class="ia-card-border"></div>
+        <div class="ia-card-body">
+          <div class="ia-card-header">
+            <span class="ia-card-badge">Respuestas</span>
+            <h2 class="ia-card-title">Resultados de la IA</h2>
+          </div>
+          <div class="ia-responses">
+            @for (r of responses(); track $index) {
+              <div class="ia-response-item">
+                <span class="ia-response-prompt">›</span>
+                <span class="ia-response-text">{{ r }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    }
+  </div>
+</div>

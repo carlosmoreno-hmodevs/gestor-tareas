@@ -1,0 +1,29 @@
+@use 'styles/tokens' as *;
+
+.workflow-actions {
+  margin-bottom: $spacing-lg;
+}
+
+.section-title {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--color-text-secondary, #757575);
+  letter-spacing: 0.5px;
+  margin: 0 0 $spacing-sm;
+}
+
+.current-status {
+  font-size: $font-size-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.transition-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.no-actions {
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+}

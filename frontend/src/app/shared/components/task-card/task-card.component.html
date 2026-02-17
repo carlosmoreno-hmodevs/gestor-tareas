@@ -1,0 +1,44 @@
+<a
+  mat-card
+  class="task-card"
+  [routerLink]="['/tareas', task().id]"
+  (click)="onView($event, task())"
+>
+  <mat-card-header>
+    <mat-card-title>
+      <span class="task-folio">{{ task().folio }}</span>
+      {{ task().title }}
+    </mat-card-title>
+    <div class="task-meta">
+      <app-status-chip [status]="task().status" />
+      <app-priority-pill [priority]="task().priority" />
+    </div>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="task-info">
+      <span class="task-assignee">
+        <mat-icon>person</mat-icon>
+        {{ task().assignee || 'Sin asignar' }}
+      </span>
+      <span class="task-due">
+        <mat-icon>event</mat-icon>
+        {{ task().dueDate | date: 'dd/MM/yyyy' }}
+      </span>
+    </div>
+    @if (task().riskIndicator === 'por-vencer' || task().riskIndicator === 'vencida') {
+      <span class="risk-badge" [class.vencida]="task().riskIndicator === 'vencida'">
+        {{ task().riskIndicator === 'vencida' ? 'Vencida' : 'Por vencer' }}
+      </span>
+    }
+    @if (task().commentsCount || task().attachmentsCount) {
+      <div class="task-counts">
+        @if (task().commentsCount) {
+          <span><mat-icon>comment</mat-icon> {{ task().commentsCount }}</span>
+        }
+        @if (task().attachmentsCount) {
+          <span><mat-icon>attach_file</mat-icon> {{ task().attachmentsCount }}</span>
+        }
+      </div>
+    }
+  </mat-card-content>
+</a>

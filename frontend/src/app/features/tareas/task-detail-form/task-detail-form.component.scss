@@ -1,0 +1,72 @@
+@use 'styles/tokens' as *;
+
+.detail-column {
+  background: var(--color-bg-card, #fff);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.section-title {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--color-text-secondary, #757575);
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.detail-view {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.detail-field {
+  .field-label {
+    display: block;
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #757575);
+    margin-bottom: 0.25rem;
+  }
+
+  .field-value {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: var(--color-text, #212121);
+    white-space: pre-wrap;
+  }
+
+  .tag-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-right: $spacing-xs;
+    margin-bottom: $spacing-xs;
+    font-size: $font-size-xs;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: $radius-md;
+  }
+}
+
+.detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  flex-wrap: wrap;
+}

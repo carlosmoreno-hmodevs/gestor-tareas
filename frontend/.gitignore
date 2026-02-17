@@ -1,0 +1,47 @@
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# Angular (cache/artifacts)
+.angular/
+!.angular/cache/  # (opcional) si por alguna razón quieres trackear algo, si no, borra esta línea
+
+# Additional logs
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Test / tooling artifacts
+/playwright-report/
+/test-results/
+/cypress/videos/
+/cypress/screenshots/
+/.nyc_output/
+
+# Local tooling / tunnels
+.ngrok2/
+.ngrok.yml
+
+# Package manager / installs
+.pnpm-store/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# TypeScript incremental builds
+*.tsbuildinfo
+
+# Local runtime
+*.pid
+*.seed
+*.pid.lock
+
+# Optional: lockfiles policy (elige según tu equipo)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

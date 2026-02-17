@@ -1,0 +1,120 @@
+@use 'styles/tokens' as *;
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  font-size: $font-size-sm;
+
+  a {
+    color: $color-primary;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.user-form {
+  max-width: 1200px;
+}
+
+.form-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xl;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 320px;
+  }
+}
+
+.form-main {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.form-section {
+  border-radius: $radius-lg !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+
+  mat-card-header {
+    padding: $spacing-lg $spacing-xl 0;
+  }
+
+  mat-card-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+  }
+
+  mat-card-subtitle {
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  mat-card-content {
+    padding: $spacing-xl;
+  }
+}
+
+.form-section-sidebar {
+  position: sticky;
+  top: $spacing-lg;
+  height: fit-content;
+
+  .sidebar-hint {
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+    margin: 0 0 $spacing-lg;
+  }
+
+  .sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+
+    button mat-icon {
+      margin-right: $spacing-xs;
+    }
+  }
+}
+
+.field-group {
+  margin-bottom: $spacing-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+
+  .field-group {
+    margin-bottom: 0;
+  }
+}
+
+.field-hint {
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+  margin: $spacing-sm 0 0;
+}
+
+.full-width {
+  width: 100%;
+}

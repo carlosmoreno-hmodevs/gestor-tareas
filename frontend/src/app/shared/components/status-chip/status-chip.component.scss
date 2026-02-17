@@ -1,0 +1,44 @@
+@use 'styles/tokens' as *;
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  border-radius: $radius-md;
+  text-transform: capitalize;
+
+  &[data-status='Pendiente'] {
+    background: rgba(33, 33, 33, 0.08);
+    color: #424242;
+  }
+  &[data-status='En Progreso'] {
+    background: rgba(25, 118, 210, 0.12);
+    color: #1565c0;
+  }
+  &[data-status='En Espera'] {
+    background: rgba(237, 108, 2, 0.12);
+    color: #e65100;
+  }
+  &[data-status='Completada'] {
+    background: rgba(46, 125, 50, 0.12);
+    color: #2e7d32;
+  }
+  &[data-status='Liberada'] {
+    background: rgba(2, 136, 209, 0.12);
+    color: #0288d1;
+  }
+  &[data-status='Vencida'] {
+    background: rgba(211, 47, 47, 0.12);
+    color: #c62828;
+  }
+  &[data-status='Rechazada'] {
+    background: rgba(211, 47, 47, 0.15);
+    color: #c62828;
+  }
+  &[data-status='Cancelada'] {
+    background: rgba(117, 117, 117, 0.12);
+    color: #616161;
+  }
+}

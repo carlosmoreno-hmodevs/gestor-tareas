@@ -1,0 +1,62 @@
+<app-page-header
+  title="Reglas y notificaciones"
+  subtitle="Configura cuándo y qué avisos reciben los usuarios sobre las tareas"
+  icon="rule"
+/>
+
+<mat-card class="rules-card">
+  <mat-card-header>
+    <mat-card-title>¿Cuándo avisar?</mat-card-title>
+    <mat-card-subtitle>Define en qué momento una tarea se marca como &quot;por vencer&quot;</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="rule-row due-soon-row">
+      <div>
+        <span class="rule-label">Tiempo antes del vencimiento</span>
+        <p class="rule-hint">Las tareas pasan a &quot;por vencer&quot; cuando falte este tiempo para la fecha límite</p>
+      </div>
+      <div class="due-soon-inputs">
+        <mat-form-field appearance="outline" class="amount-input">
+          <mat-label>Cantidad</mat-label>
+          <input
+            matInput
+            type="text"
+            inputmode="numeric"
+            [value]="dueDateRules().daysUntilDueSoon"
+            (input)="onAmountInput($event)"
+            (blur)="onAmountBlur()"
+            placeholder="1"
+          />
+          <mat-hint>Máx. {{ dueSoonMax() }} {{ (dueDateRules().dueSoonUnit ?? 'days') === 'hours' ? 'horas' : 'días' }}</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="unit-input">
+          <mat-label>Unidad</mat-label>
+          <mat-select [value]="dueDateRules().dueSoonUnit ?? 'days'" (selectionChange)="onUnitChange($event.value)">
+            <mat-option value="days">Días</mat-option>
+            <mat-option value="hours">Horas</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<mat-card class="rules-card">
+  <mat-card-header>
+    <mat-card-title>¿Qué avisos enviar?</mat-card-title>
+    <mat-card-subtitle>Activa o desactiva cada tipo de notificación que recibirán los usuarios</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @for (r of notificationRules(); track r.id) {
+      <div class="rule-row">
+        <span class="rule-label">{{ r.label }}</span>
+        <mat-slide-toggle
+          [checked]="r.enabled"
+          [disabled]="!connectivity.isOnline()"
+          (change)="toggleNotification(r.id, $event.checked)"
+          matTooltip="Requiere conexión cuando está offline"
+        ></mat-slide-toggle>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

@@ -1,0 +1,277 @@
+<div class="task-list-layout">
+  <!-- Sidebar filtros -->
+  <aside class="filters-sidebar">
+    <div class="sidebar-header">
+      <mat-icon>task_alt</mat-icon>
+      <h2>Tareas</h2>
+    </div>
+    <div class="filters-section">
+      <h3>
+        <mat-icon>filter_list</mat-icon>
+        Filtros rápidos
+      </h3>
+      <button
+        class="filter-item"
+        [class.active]="quickFilter() === 'all'"
+        (click)="allFilter()"
+      >
+        <span class="filter-icon all"></span>
+        <span class="filter-text">Todas</span>
+        <span class="filter-badge filter-badge-empty"></span>
+      </button>
+      <button
+        class="filter-item"
+        [class.active]="quickFilter() === 'hoy'"
+        (click)="quickFilter.set('hoy')"
+      >
+        <span class="filter-icon hoy"></span>
+        <span class="filter-text">Hoy</span>
+        <span class="filter-badge">{{ hoyCount() }}</span>
+      </button>
+      <button
+        class="filter-item"
+        [class.active]="quickFilter() === 'vencidas'"
+        (click)="quickFilter.set('vencidas')"
+      >
+        <span class="filter-icon vencidas"></span>
+        <span class="filter-text">Vencidas</span>
+        <span class="filter-badge">{{ vencidasCount() }}</span>
+      </button>
+      <button
+        class="filter-item"
+        [class.active]="quickFilter() === 'alta'"
+        (click)="quickFilter.set('alta')"
+      >
+        <span class="filter-icon alta"></span>
+        <span class="filter-text">Alta prioridad</span>
+        <span class="filter-badge">{{ altaCount() }}</span>
+      </button>
+      <button
+        class="filter-item"
+        [class.active]="quickFilter() === 'sin-asignar'"
+        (click)="quickFilter.set('sin-asignar')"
+      >
+        <span class="filter-icon sin-asignar"></span>
+        <span class="filter-text">Sin asignar</span>
+        <span class="filter-badge">{{ sinAsignarCount() }}</span>
+      </button>
+    </div>
+    <div class="filters-section">
+      <h3>Estado</h3>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="status" [checked]="statusFilter() === ''" (change)="statusFilter.set('')" />
+          <span>Todos</span>
+        </label>
+        @for (s of statuses; track s.id) {
+          <label class="radio-item">
+            <input
+              type="radio"
+              name="status"
+              [checked]="statusFilter() === s.value"
+              (change)="statusFilter.set(s.value)"
+            />
+            <span>{{ s.name }}</span>
+          </label>
+        }
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Prioridad</h3>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="priority" [checked]="priorityFilter() === ''" (change)="priorityFilter.set('')" />
+          <span>Todas</span>
+        </label>
+        @for (p of priorities; track p.id) {
+          <label class="radio-item">
+            <input
+              type="radio"
+              name="priority"
+              [checked]="priorityFilter() === p.value"
+              (change)="priorityFilter.set(p.value)"
+            />
+            <span>{{ p.name }}</span>
+          </label>
+        }
+      </div>
+    </div>
+  </aside>
+
+  <!-- Área principal -->
+  <main class="task-main">
+    <div class="main-toolbar">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="search"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          placeholder="Buscar por texto, ID o responsable..."
+        />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+      <mat-button-toggle-group [value]="viewMode()" (valueChange)="viewMode.set($event)" class="view-toggle">
+        <mat-button-toggle value="list">
+          <mat-icon>view_list</mat-icon>
+          <span class="view-toggle-label">Lista</span>
+        </mat-button-toggle>
+        <mat-button-toggle value="board">
+          <mat-icon>view_column</mat-icon>
+          <span class="view-toggle-label">Tablero</span>
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+      <div class="toolbar-actions">
+        <button mat-stroked-button [disabled]="!connectivity.isOnline()" [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''">
+          <mat-icon>upload</mat-icon>
+          Exportar
+        </button>
+        <button mat-flat-button color="primary" [disabled]="!connectivity.isOnline()" [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión para crear tareas' : ''" (click)="openNewTask()">
+          <mat-icon>add</mat-icon>
+          Nueva tarea
+        </button>
+      </div>
+    </div>
+
+    <div class="kpi-mini animate-stagger">
+      <div class="kpi-mini-item">
+        <span class="kpi-mini-label">Asignadas</span>
+        <span class="kpi-mini-value">{{ activeCount() }}</span>
+      </div>
+      <div class="kpi-mini-item por-vencer">
+        <span class="kpi-mini-label">Por vencer</span>
+        <span class="kpi-mini-value">{{ dueSoonCount() }}</span>
+      </div>
+      <div class="kpi-mini-item vencidas">
+        <span class="kpi-mini-label">Vencidas</span>
+        <span class="kpi-mini-value">{{ overdueCount() }}</span>
+      </div>
+    </div>
+
+    <div class="results-header">
+      <span class="results-count">Resultados ({{ filteredTasks().length }})</span>
+      <mat-form-field appearance="outline" class="sort-field">
+        <mat-label>Orden</mat-label>
+        <mat-select value="vencimiento">
+          <mat-option value="vencimiento">Vencimiento</mat-option>
+          <mat-option value="prioridad">Prioridad</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (filteredTasks().length === 0) {
+      <app-empty-state
+        icon="search_off"
+        title="Sin resultados"
+        message="Ajusta los filtros o crea una nueva tarea"
+      />
+    } @else if (viewMode() === 'board') {
+      <div class="kanban-board animate-stagger">
+        @for (col of kanbanColumns; track col.status) {
+          <div class="kanban-column" [attr.data-status]="col.status">
+            <div class="kanban-column-header">
+              <span class="kanban-column-title">{{ col.label }}</span>
+              <span class="kanban-column-count">{{ (tasksByStatus().get(col.status) ?? []).length }}</span>
+            </div>
+            <div class="kanban-column-cards">
+              @for (task of (tasksByStatus().get(col.status) ?? []); track task.id) {
+                <a class="kanban-card-link" [routerLink]="['/tareas', task.id]">
+                  <div
+                    class="kanban-card"
+                    [class.vencida]="getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida'"
+                    [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
+                    [class.prio-alta]="task.priority === 'Alta'"
+                    [class.prio-media]="task.priority === 'Media'"
+                    [class.prio-baja]="task.priority === 'Baja'"
+                  >
+                    <h4 class="kanban-card-title">{{ task.title }}</h4>
+                    <p class="kanban-card-meta">{{ task.folio }} • {{ task.assignee || 'Sin asignar' }}</p>
+                    <div class="kanban-card-footer">
+                      <span class="kanban-card-priority">{{ task.priority }}</span>
+                      <span class="kanban-card-due">
+                        {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
+                      </span>
+                      <app-avatar
+                        [name]="task.assignee || 'Sin asignar'"
+                        [avatarUrl]="getUserById(task.assigneeId)?.avatarUrl ?? getUserByName(task.assignee)?.avatarUrl"
+                        [size]="24"
+                      />
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="task-cards-list animate-stagger">
+        @for (task of filteredTasks(); track task.id) {
+          <a class="task-card-link" [routerLink]="['/tareas', task.id]">
+            <div
+              class="task-card-v2"
+              [class.vencida]="getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida'"
+              [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
+            >
+              <span class="task-card-prio-dot" [attr.data-prio]="task.priority"></span>
+              <app-avatar
+                class="task-card-avatar"
+                [name]="task.assignee || 'Sin asignar'"
+                [avatarUrl]="getUserById(task.assigneeId)?.avatarUrl ?? getUserByName(task.assignee)?.avatarUrl"
+                [size]="36"
+              />
+              <div class="task-card-body">
+                <h4 class="task-title">{{ task.title }}</h4>
+                <p class="task-details">
+                  {{ task.folio }} • {{ task.assignee || 'Sin asignar' }} • {{ task.priority }} •
+                  {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : task.riskIndicator === 'por-vencer' ? 'Por vencer' : (task.dueDate | date: 'dd/MM/yyyy') }}
+                </p>
+                <div class="task-card-footer">
+                  <span
+                    class="status-badge"
+                    [class.vencida]="getEffectiveStatus(task) === 'Vencida'"
+                    [class.en-progreso]="getEffectiveStatus(task) === 'En Progreso'"
+                    [class.pendiente]="getEffectiveStatus(task) === 'Pendiente'"
+                    [class.en-espera]="getEffectiveStatus(task) === 'En Espera'"
+                    [class.rechazada]="getEffectiveStatus(task) === 'Rechazada'"
+                    [class.completada]="getEffectiveStatus(task) === 'Completada'"
+                    [class.liberada]="getEffectiveStatus(task) === 'Liberada'"
+                    [class.cancelada]="getEffectiveStatus(task) === 'Cancelada'"
+                  >
+                    {{ getEffectiveStatus(task) | uppercase }}
+                  </span>
+                  <div class="task-card-right">
+                    <span class="task-due-label">
+                      {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
+                    </span>
+                    <div class="task-actions">
+                      <button mat-icon-button type="button" (click)="$event.preventDefault(); $event.stopPropagation()" tabindex="-1">
+                        <mat-icon>visibility</mat-icon>
+                      </button>
+                      <button mat-icon-button type="button" (click)="$event.preventDefault(); $event.stopPropagation()" tabindex="-1">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button type="button" (click)="$event.preventDefault(); $event.stopPropagation()" tabindex="-1">
+                        <mat-icon>more_vert</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+
+      <div class="pagination">
+        <span class="pagination-info">1-{{ filteredTasks().length }} de {{ filteredTasks().length }}</span>
+        <div class="pagination-controls">
+          <button mat-icon-button disabled><mat-icon>chevron_left</mat-icon></button>
+          <span class="page-num">1</span>
+          <button mat-icon-button disabled><mat-icon>chevron_right</mat-icon></button>
+        </div>
+      </div>
+    }
+  </main>
+</div>

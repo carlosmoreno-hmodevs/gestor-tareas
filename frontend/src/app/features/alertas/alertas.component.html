@@ -1,0 +1,65 @@
+<app-page-header
+  title="Alertas"
+  subtitle="Reglas de vencimiento y escalamiento"
+  icon="notifications_active"
+/>
+
+<div class="alerts-intro">
+  <mat-card class="intro-card">
+    <mat-card-content>
+      <div class="intro-content">
+        <mat-icon class="intro-icon">info</mat-icon>
+        <div>
+          <p class="intro-text">Configura cuándo y cómo se notifican las tareas próximas a vencer o vencidas.</p>
+          <span class="intro-hint">{{ rules.length }} regla(s) activa(s)</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<div class="rules-list">
+  @for (rule of rules; track rule.id) {
+    <mat-card class="rule-card">
+      <mat-card-header>
+        <div class="rule-header">
+          <mat-icon class="rule-icon">schedule</mat-icon>
+          <div>
+            <mat-card-title>{{ rule.name }}</mat-card-title>
+            <mat-card-subtitle>{{ getThresholdLabel(rule) }} · {{ getFrequencyLabel(rule.frequency) }}</mat-card-subtitle>
+          </div>
+          <button mat-stroked-button color="primary" (click)="openEdit(rule)" class="edit-btn">
+            <mat-icon>edit</mat-icon>
+            Editar
+          </button>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="rule-details">
+          <div class="detail-row">
+            <span class="detail-label">
+              <mat-icon class="detail-icon">arrow_upward</mat-icon>
+              Escalamiento
+            </span>
+            <div class="chips-wrap">
+              @for (target of rule.escalationTargets; track target) {
+                <span class="chip chip--escalation">{{ target }}</span>
+              }
+            </div>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <mat-icon class="detail-icon">build</mat-icon>
+              Acciones en vencidas
+            </span>
+            <div class="chips-wrap">
+              @for (action of rule.allowedActionsForOverdue; track action) {
+                <span class="chip chip--action">{{ getActionLabel(action) }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

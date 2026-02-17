@@ -1,0 +1,367 @@
+@use 'styles/tokens' as *;
+
+// Paleta IA: violeta → cian
+$ia-violet: #8b5cf6;
+$ia-violet-light: #a78bfa;
+$ia-cyan: #06b6d4;
+$ia-cyan-light: #22d3ee;
+$ia-glow: rgba(139, 92, 246, 0.4);
+
+.ia-page {
+  font-family: 'Outfit', $font-family-base !important;
+  min-height: 100%;
+  position: relative;
+  padding-bottom: $spacing-2xl;
+
+  h1, h2, p, span, button:not(.mat-icon), .ia-chip, .ia-response-text {
+    font-family: 'Outfit', $font-family-base !important;
+  }
+}
+
+// Patrón de fondo sutil
+.ia-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba($ia-violet, 0.03) 0%, transparent 50%, rgba($ia-cyan, 0.03) 100%),
+    radial-gradient(circle at 20% 20%, rgba($ia-violet, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba($ia-cyan, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Grid sutil
+.ia-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba($ia-violet, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba($ia-violet, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme='dark'] .ia-page::before {
+  background:
+    linear-gradient(135deg, rgba($ia-violet, 0.08) 0%, transparent 50%, rgba($ia-cyan, 0.08) 100%),
+    radial-gradient(circle at 20% 20%, rgba($ia-violet, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba($ia-cyan, 0.1) 0%, transparent 40%);
+}
+
+[data-theme='dark'] .ia-page::after {
+  background-image:
+    linear-gradient(rgba($ia-violet, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba($ia-violet, 0.06) 1px, transparent 1px);
+}
+
+// Hero
+.ia-hero {
+  position: relative;
+  text-align: center;
+  padding: $spacing-xl 0 $spacing-2xl;
+  margin-bottom: $spacing-lg;
+  z-index: 1;
+}
+
+.ia-hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba($ia-violet, 0.15) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.ia-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.ia-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: $spacing-md;
+  background: linear-gradient(135deg, $ia-violet 0%, $ia-cyan 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba($ia-violet, 0.35);
+
+  mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: white;
+  }
+}
+
+.ia-hero-title {
+  margin: 0 0 $spacing-sm;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, $ia-violet 0%, $ia-cyan 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ia-hero-subtitle {
+  margin: 0;
+  font-size: $font-size-base;
+  color: var(--color-text-secondary, #64748b);
+}
+
+// Grid de cards
+.ia-grid {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+// Card base
+.ia-card {
+  position: relative;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  background: var(--color-bg-card, #ffffff);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .ia-card {
+  background: rgba(30, 30, 30, 0.8);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.ia-card-border {
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, $ia-violet 0%, transparent 50%, $ia-cyan 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+}
+
+.ia-card-body {
+  position: relative;
+  padding: $spacing-xl;
+}
+
+.ia-card-header {
+  margin-bottom: $spacing-lg;
+}
+
+.ia-card-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  margin-bottom: $spacing-sm;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $ia-violet;
+  background: rgba($ia-violet, 0.1);
+  border-radius: 20px;
+}
+
+[data-theme='dark'] .ia-card-badge {
+  color: $ia-violet-light;
+  background: rgba($ia-violet, 0.25);
+}
+
+.ia-card-title {
+  margin: 0 0 $spacing-xs;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.ia-card-desc {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #64748b);
+}
+
+// Form field
+.ia-textarea-field {
+  width: 100%;
+  margin-bottom: $spacing-lg;
+
+  textarea {
+    min-height: 100px;
+  }
+}
+
+::ng-deep .ia-textarea-field .mat-mdc-text-field-wrapper {
+  background: rgba($ia-violet, 0.02);
+  border-radius: $radius-md;
+}
+
+[data-theme='dark'] ::ng-deep .ia-textarea-field .mat-mdc-text-field-wrapper {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+// Botón generar
+.ia-btn-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 12px 24px !important;
+  font-weight: 600 !important;
+  font-size: $font-size-base !important;
+  color: white !important;
+  background: linear-gradient(135deg, $ia-violet 0%, $ia-cyan 100%) !important;
+  border: none !important;
+  border-radius: $radius-md !important;
+  box-shadow: 0 4px 16px rgba($ia-violet, 0.35) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba($ia-violet, 0.45) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+// Chips de consultas
+.ia-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+}
+
+.ia-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 12px 20px;
+  font-family: inherit;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $ia-violet;
+  background: rgba($ia-violet, 0.06);
+  border: 1px solid rgba($ia-violet, 0.2);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    opacity: 0.8;
+  }
+
+  &:hover {
+    background: rgba($ia-violet, 0.12);
+    border-color: rgba($ia-violet, 0.4);
+    box-shadow: 0 0 20px rgba($ia-violet, 0.15);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+[data-theme='dark'] .ia-chip {
+  color: $ia-violet-light;
+  background: rgba($ia-violet, 0.15);
+  border-color: rgba($ia-violet, 0.35);
+
+  &:hover {
+    background: rgba($ia-violet, 0.25);
+    border-color: rgba($ia-violet, 0.5);
+    box-shadow: 0 0 24px rgba($ia-violet, 0.2);
+  }
+}
+
+// Respuestas tipo terminal
+.ia-responses {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.ia-response-item {
+  display: flex;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: $radius-md;
+  border-left: 3px solid $ia-violet;
+  font-size: $font-size-sm;
+  line-height: 1.6;
+}
+
+[data-theme='dark'] .ia-response-item {
+  background: rgba(255, 255, 255, 0.04);
+  border-left-color: $ia-violet-light;
+}
+
+.ia-response-prompt {
+  flex-shrink: 0;
+  color: $ia-cyan;
+  font-weight: 600;
+}
+
+.ia-response-text {
+  color: var(--color-text, #334155);
+}
+
+[data-theme='dark'] .ia-response-text {
+  color: #e2e8f0;
+}
+
+// Animaciones de entrada
+@media (prefers-reduced-motion: no-preference) {
+  .ia-card {
+    animation: ia-fade-up 0.4s ease-out backwards;
+  }
+
+  .ia-card-capture { animation-delay: 0.05s; }
+  .ia-card-queries { animation-delay: 0.1s; }
+  .ia-card-responses { animation-delay: 0.15s; }
+
+  .ia-response-item {
+    animation: ia-fade-up 0.3s ease-out backwards;
+  }
+
+  .ia-response-item:nth-child(1) { animation-delay: 0.05s; }
+  .ia-response-item:nth-child(2) { animation-delay: 0.1s; }
+  .ia-response-item:nth-child(3) { animation-delay: 0.15s; }
+  .ia-response-item:nth-child(n + 4) { animation-delay: 0.2s; }
+}
+
+@keyframes ia-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,157 @@
+<nav class="breadcrumb">
+  <a routerLink="/admin">Administración</a>
+  <mat-icon>chevron_right</mat-icon>
+  <a routerLink="/admin/usuarios">Usuarios</a>
+  <mat-icon>chevron_right</mat-icon>
+  <span>{{ isEditMode ? 'Editar usuario' : 'Nuevo usuario' }}</span>
+</nav>
+
+<app-page-header
+  [title]="isEditMode ? 'Editar usuario' : 'Nuevo usuario'"
+  [subtitle]="isEditMode ? 'Modifica los datos del usuario' : 'Completa el formulario para crear un nuevo usuario'"
+  [icon]="isEditMode ? 'person' : 'person_add'"
+/>
+
+<form [formGroup]="form" class="user-form animate-fade-in" (ngSubmit)="save()">
+  <div class="form-layout">
+    <div class="form-main">
+      <mat-card class="form-section">
+        <mat-card-header>
+          <mat-card-title>Información básica</mat-card-title>
+          <mat-card-subtitle>Nombre, email, rol y equipo</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="field-row">
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nombre completo</mat-label>
+                <input matInput formControlName="name" placeholder="Ej: María García" />
+                @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
+                  <mat-error>El nombre es obligatorio</mat-error>
+                }
+                @if (form.get('name')?.hasError('minlength') && form.get('name')?.touched) {
+                  <mat-error>Mínimo 2 caracteres</mat-error>
+                }
+              </mat-form-field>
+            </div>
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="email" placeholder="correo@empresa.com" [readonly]="isEditMode" />
+                @if (form.get('email')?.hasError('required') && form.get('email')?.touched) {
+                  <mat-error>El email es obligatorio</mat-error>
+                }
+                @if (form.get('email')?.hasError('email') && form.get('email')?.touched) {
+                  <mat-error>Email no válido</mat-error>
+                }
+                @if (isEditMode) {
+                  <mat-hint>No se puede modificar en edición</mat-hint>
+                }
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Rol</mat-label>
+                <mat-select formControlName="roleId">
+                  <mat-option value="">Seleccionar</mat-option>
+                  @for (r of roles(); track r.id) {
+                    <mat-option [value]="r.id">{{ r.name }}</mat-option>
+                  }
+                </mat-select>
+                @if (form.get('roleId')?.hasError('required') && form.get('roleId')?.touched) {
+                  <mat-error>El rol es obligatorio</mat-error>
+                }
+              </mat-form-field>
+            </div>
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Equipo / Área</mat-label>
+                <mat-select formControlName="teamId">
+                  <mat-option value="">Seleccionar</mat-option>
+                  @for (t of teams(); track t.id) {
+                    <mat-option [value]="t.id">{{ t.name }}</mat-option>
+                  }
+                </mat-select>
+                @if (form.get('teamId')?.hasError('required') && form.get('teamId')?.touched) {
+                  <mat-error>El equipo es obligatorio</mat-error>
+                }
+              </mat-form-field>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="form-section">
+        <mat-card-header>
+          <mat-card-title>Información adicional</mat-card-title>
+          <mat-card-subtitle>Teléfono, cargo y notas</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="field-row">
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Teléfono</mat-label>
+                <input matInput formControlName="phone" placeholder="+34 600 000 000" />
+              </mat-form-field>
+            </div>
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Cargo / Puesto</mat-label>
+                <input matInput formControlName="position" placeholder="Ej: Responsable de Calidad" />
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Notas</mat-label>
+              <textarea matInput formControlName="notes" rows="3" placeholder="Notas internas sobre el usuario"></textarea>
+            </mat-form-field>
+          </div>
+
+          @if (isEditMode) {
+            <div class="field-group">
+              <mat-slide-toggle formControlName="isActive">Usuario activo</mat-slide-toggle>
+              <p class="field-hint">Los usuarios inactivos no podrán acceder al sistema</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <aside class="form-sidebar">
+      <mat-card class="form-section form-section-sidebar">
+        <mat-card-header>
+          <mat-card-title>Acciones</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="sidebar-hint">Revisa que todos los datos sean correctos antes de guardar.</p>
+          <div class="sidebar-actions">
+            <button mat-stroked-button type="button" (click)="cancel()">
+              Cancelar
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              [disabled]="form.invalid || !connectivity.isOnline() || saving"
+              [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+            >
+              @if (saving) {
+                Guardando…
+              } @else {
+                <ng-container>
+                  <mat-icon>check_circle</mat-icon>
+                  {{ isEditMode ? 'Guardar cambios' : 'Crear usuario' }}
+                </ng-container>
+              }
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </aside>
+  </div>
+</form>

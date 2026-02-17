@@ -1,0 +1,128 @@
+@use 'styles/tokens' as *;
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+  font-size: $font-size-sm;
+
+  a {
+    color: $color-primary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  span {
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.task-detail-header {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-lg;
+  background: var(--color-bg-card, #fff);
+  border-radius: $radius-lg;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+}
+
+.header-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.task-title {
+  margin: 0;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+}
+
+.status-chip {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+  border-radius: $radius-md;
+  letter-spacing: 0.5px;
+
+  &.en-progreso {
+    background: rgba(46, 125, 50, 0.15);
+    color: #2e7d32;
+  }
+  &.pendiente {
+    background: rgba(25, 118, 210, 0.15);
+    color: #1565c0;
+  }
+  &.completada {
+    background: rgba(2, 136, 209, 0.15);
+    color: #0277bd;
+  }
+  &.vencida {
+    background: rgba(211, 47, 47, 0.15);
+    color: #c62828;
+  }
+  &.liberada { background: rgba(76, 175, 80, 0.15); color: #2e7d32; }
+  &.rechazada { background: rgba(211, 47, 47, 0.15); color: #c62828; }
+  &.cancelada { background: rgba(117, 117, 117, 0.15); color: #424242; }
+  &.en-espera { background: rgba(255, 152, 0, 0.15); color: #e65100; }
+  &:not(.en-progreso):not(.pendiente):not(.completada):not(.vencida):not(.liberada):not(.rechazada):not(.cancelada):not(.en-espera) {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.meta-text {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+
+  .separator { opacity: 0.6; }
+  .folio { font-weight: $font-weight-medium; color: var(--color-text, #212121); }
+  .due-date.overdue {
+    color: $color-danger;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+
+    .badge-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}
+
+.rejection-block {
+  width: 100%;
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: rgba(211, 47, 47, 0.08);
+  border-left: 4px solid #c62828;
+  border-radius: 0 $radius-md $radius-md 0;
+
+  strong { font-size: $font-size-sm; }
+  p { margin: $spacing-xs 0 0; font-size: $font-size-sm; }
+}

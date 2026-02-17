@@ -1,0 +1,30 @@
+@use 'styles/tokens' as *;
+
+mat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+
+  button mat-icon {
+    margin-right: $spacing-xs;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.status-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: $font-size-xs;
+  background: rgba($color-success, 0.15);
+  color: $color-success;
+
+  &.inactive {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--color-text-secondary, #757575);
+  }
+}

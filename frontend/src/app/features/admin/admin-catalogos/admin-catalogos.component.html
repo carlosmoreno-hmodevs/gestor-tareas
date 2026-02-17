@@ -1,0 +1,145 @@
+<app-page-header
+  title="Catálogos"
+  subtitle="Categorías, prioridades, equipos y más"
+  icon="category"
+/>
+
+<mat-tab-group>
+  <mat-tab label="Categorías">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Categorías</mat-card-title>
+        <button mat-flat-button color="primary" [disabled]="!connectivity.isOnline()" (click)="addCategory()">
+          <mat-icon>add</mat-icon>
+          Agregar
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <table mat-table [dataSource]="categories()" class="full-width">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let c">{{ c.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="color">
+            <th mat-header-cell *matHeaderCellDef>Color</th>
+            <td mat-cell *matCellDef="let c">
+              <span class="color-dot" [style.background]="c.color || '#999'"></span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let c">
+              <button mat-icon-button [matMenuTriggerFor]="catMenu" [disabled]="!connectivity.isOnline()">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #catMenu="matMenu">
+                <button mat-menu-item (click)="editCategory(c)">
+                  <mat-icon>edit</mat-icon>
+                  Editar
+                </button>
+                <button mat-menu-item (click)="deleteCategory(c)">
+                  <mat-icon>delete</mat-icon>
+                  Eliminar
+                </button>
+              </mat-menu>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['name','color','actions']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['name','color','actions']"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+  <mat-tab label="Prioridades">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Prioridades</mat-card-title>
+        <button mat-flat-button color="primary" [disabled]="!connectivity.isOnline()" (click)="addPriority()">
+          <mat-icon>add</mat-icon>
+          Agregar
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <table mat-table [dataSource]="priorities()" class="full-width">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let p">{{ p.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="color">
+            <th mat-header-cell *matHeaderCellDef>Color</th>
+            <td mat-cell *matCellDef="let p">
+              <span class="color-dot" [style.background]="p.color || '#999'"></span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="sla">
+            <th mat-header-cell *matHeaderCellDef>SLA (h)</th>
+            <td mat-cell *matCellDef="let p">{{ p.slaHours ?? '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let p">
+              <button mat-icon-button [matMenuTriggerFor]="priMenu" [disabled]="!connectivity.isOnline()">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #priMenu="matMenu">
+                <button mat-menu-item (click)="editPriority(p)">
+                  <mat-icon>edit</mat-icon>
+                  Editar
+                </button>
+                <button mat-menu-item (click)="deletePriority(p)">
+                  <mat-icon>delete</mat-icon>
+                  Eliminar
+                </button>
+              </mat-menu>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['name','color','sla','actions']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['name','color','sla','actions']"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+  <mat-tab label="Equipos">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Equipos</mat-card-title>
+        <button mat-flat-button color="primary" [disabled]="!connectivity.isOnline()" (click)="addTeam()">
+          <mat-icon>add</mat-icon>
+          Agregar
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <table mat-table [dataSource]="teams()" class="full-width">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let t">{{ t.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="area">
+            <th mat-header-cell *matHeaderCellDef>Área</th>
+            <td mat-cell *matCellDef="let t">{{ t.area }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let t">
+              <button mat-icon-button [matMenuTriggerFor]="teamMenu" [disabled]="!connectivity.isOnline()">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #teamMenu="matMenu">
+                <button mat-menu-item (click)="editTeam(t)">
+                  <mat-icon>edit</mat-icon>
+                  Editar
+                </button>
+                <button mat-menu-item (click)="deleteTeam(t)">
+                  <mat-icon>delete</mat-icon>
+                  Eliminar
+                </button>
+              </mat-menu>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="['name','area','actions']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['name','area','actions']"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+</mat-tab-group>

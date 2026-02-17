@@ -1,0 +1,123 @@
+<div class="tablero-header">
+  <app-page-header
+    title="Tablero operativo"
+    subtitle="Supervisión: estado general, vencidas, carga, prioridades"
+    icon="dashboard"
+  />
+  <mat-form-field appearance="outline" class="period-filter">
+    <mat-label>Período</mat-label>
+    <mat-select [value]="selectedPeriod()" (selectionChange)="selectedPeriod.set($event.value)">
+      <mat-option value="7">Últimos 7 días</mat-option>
+      <mat-option value="30">Últimos 30 días</mat-option>
+      <mat-option value="90">Últimos 90 días</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="kpi-row animate-stagger">
+  <mat-card class="kpi-card kpi-pendientes">
+    <mat-card-content>
+      <span class="kpi-value">{{ activeCount() }}</span>
+      <span class="kpi-label">Pendientes</span>
+      <span class="kpi-sublabel">Asignadas: {{ activeCount() }}</span>
+    </mat-card-content>
+    <a mat-button [routerLink]="['/tareas']">Ver</a>
+  </mat-card>
+  <mat-card class="kpi-card kpi-por-vencer">
+    <mat-card-content>
+      <span class="kpi-value">{{ dueSoonCount() }}</span>
+      <span class="kpi-label">Por vencer</span>
+      <span class="kpi-sublabel">Esta semana</span>
+    </mat-card-content>
+    <a mat-button [routerLink]="['/tareas']">Ver</a>
+  </mat-card>
+  <mat-card class="kpi-card kpi-vencidas">
+    <mat-card-content>
+      <span class="kpi-value">{{ overdueCount() }}</span>
+      <span class="kpi-label">Vencidas</span>
+      <span class="kpi-sublabel">Alta prioridad: {{ overdueAltaCount() }}</span>
+    </mat-card-content>
+    <a mat-button [routerLink]="['/tareas']" [queryParams]="{ filtro: 'vencidas' }">Ver</a>
+  </mat-card>
+  <mat-card class="kpi-card kpi-completadas">
+    <mat-card-content>
+      <span class="kpi-value">{{ completedCount() }}</span>
+      <span class="kpi-label">Completadas</span>
+      <span class="kpi-sublabel">Esta semana</span>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<div class="charts-grid animate-stagger">
+  <mat-card class="chart-card chart-doughnut">
+    <mat-card-header>
+      <mat-card-title>Estado de las tareas</mat-card-title>
+      <mat-card-subtitle>Distribución por estado ({{ totalTasks() }} total)</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-container">
+        <canvas baseChart [data]="doughnutChartData()" [options]="doughnutChartOptions" [type]="'doughnut'"></canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="chart-card chart-line">
+    <mat-card-header>
+      <mat-card-title>Tendencia por día</mat-card-title>
+      <mat-card-subtitle>Tareas por vencimiento (últimos 7 días)</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-container">
+        <canvas baseChart [data]="lineTrendChartData()" [options]="lineTrendChartOptions" [type]="'line'"></canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="chart-card chart-bar-h">
+    <mat-card-header>
+      <mat-card-title>Carga por responsable</mat-card-title>
+      <mat-card-subtitle>Tareas activas asignadas</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-container">
+        <canvas baseChart [data]="barAssigneeChartData()" [options]="barAssigneeChartOptions" [type]="'bar'"></canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="chart-card chart-bar">
+    <mat-card-header>
+      <mat-card-title>Carga por prioridad</mat-card-title>
+      <mat-card-subtitle>Distribución Alta / Media / Baja</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-container">
+        <canvas baseChart [data]="barPriorityChartData()" [options]="barPriorityChartOptions" [type]="'bar'"></canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="chart-card chart-radar">
+    <mat-card-header>
+      <mat-card-title>Balance por responsable</mat-card-title>
+      <mat-card-subtitle>Comparativa de carga (gráfico radar)</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-container">
+        <canvas baseChart [data]="radarChartData()" [options]="radarChartOptions" [type]="'radar'"></canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="chart-card chart-polar">
+    <mat-card-header>
+      <mat-card-title>Prioridad (área polar)</mat-card-title>
+      <mat-card-subtitle>Visualización por prioridad</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="chart-container">
+        <canvas baseChart [data]="polarAreaChartData()" [options]="polarAreaChartOptions" [type]="'polarArea'"></canvas>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,67 @@
+<app-page-header
+  title="Roles y permisos"
+  subtitle="RBAC - Gestiona permisos por rol"
+  icon="admin_panel_settings"
+/>
+
+<div class="roles-layout">
+  <mat-card class="roles-list-card">
+    <mat-card-header>
+      <mat-card-title>Roles</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="role-items">
+        @for (r of roles(); track r.id) {
+          <button
+            class="role-item"
+            [class.selected]="selectedRoleId() === r.id"
+            (click)="selectRole(r.id)"
+          >
+            <span class="role-name">{{ r.name }}</span>
+            <span class="role-desc">{{ r.description }}</span>
+          </button>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="permissions-card">
+    <mat-card-header>
+      <mat-card-title>Permisos</mat-card-title>
+      @if (selectedRoleId(); as rid) {
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="!connectivity.isOnline()"
+          [matTooltip]="!connectivity.isOnline() ? 'Requires connection' : ''"
+          (click)="onSave()"
+        >
+          Guardar
+        </button>
+      }
+    </mat-card-header>
+    <mat-card-content>
+      @if (selectedRoleId(); as rid) {
+        @for (group of groupByModule(permissions); track group[0]) {
+          <div class="perm-group">
+            <h4>{{ group[0] }}</h4>
+            <div class="perm-toggles">
+              @for (p of group[1]; track p.key) {
+                <div class="perm-row">
+                  <span>{{ p.label }}</span>
+                  <mat-slide-toggle
+                    [checked]="hasPermission(rid, p.key)"
+                    [disabled]="rid === 'role-owner'"
+                    (change)="togglePermission(rid, p.key)"
+                  ></mat-slide-toggle>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <p class="empty-hint">Selecciona un rol para editar permisos</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

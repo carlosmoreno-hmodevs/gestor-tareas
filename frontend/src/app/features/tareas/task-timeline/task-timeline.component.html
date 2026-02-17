@@ -1,0 +1,81 @@
+<section class="timeline-column">
+  <h3 class="section-title">TIMELINE</h3>
+
+  <div class="timeline-feed">
+    @for (entry of sortedHistory(); track entry.id) {
+      <div class="timeline-item">
+        <app-avatar
+          class="timeline-avatar"
+          [name]="getUserDisplayName(entry)"
+          [size]="40"
+        />
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="timeline-user">{{ getUserDisplayName(entry) }}</span>
+            <span class="timeline-time">{{ entry.timestamp | relativeTime }}</span>
+            <button
+              mat-icon-button
+              [matMenuTriggerFor]="itemMenu"
+              class="timeline-menu"
+            >
+              <mat-icon>more_horiz</mat-icon>
+            </button>
+            <mat-menu #itemMenu="matMenu">
+              @if (entry.type === 'COMMENT_ADDED') {
+                <button mat-menu-item (click)="onItemMenu(entry, 'edit')">
+                  <mat-icon>edit</mat-icon>
+                  <span>Editar</span>
+                </button>
+                <button mat-menu-item (click)="onItemMenu(entry, 'delete')">
+                  <mat-icon>delete</mat-icon>
+                  <span>Eliminar</span>
+                </button>
+              }
+              @if (entry.type !== 'COMMENT_ADDED') {
+                <button mat-menu-item disabled>
+                  <span>Acciones limitadas</span>
+                </button>
+              }
+            </mat-menu>
+          </div>
+          <p class="timeline-text">{{ entry | taskHistoryText }}</p>
+        </div>
+      </div>
+    }
+    @if (history().length === 0) {
+      <p class="no-activity">Sin actividad aún</p>
+    }
+  </div>
+
+  <div class="comment-box sticky-comment">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Escribe un comentario…</mat-label>
+      <textarea
+        matInput
+        [(ngModel)]="commentText"
+        rows="2"
+        [disabled]="!isOnline()"
+        [matTooltip]="!isOnline() ? 'Requires connection' : ''"
+        (keydown.enter)="$event.preventDefault(); onSubmitComment()"
+      ></textarea>
+    </mat-form-field>
+    <div class="comment-actions">
+      <button
+        mat-stroked-button
+        type="button"
+        matTooltip="Adjuntar"
+      >
+        <mat-icon>attach_file</mat-icon>
+        Adjuntar
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="!commentText.trim() || !isOnline()"
+        (click)="onSubmitComment()"
+      >
+        Enviar
+      </button>
+    </div>
+  </div>
+</section>

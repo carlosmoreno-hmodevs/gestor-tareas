@@ -1,0 +1,31 @@
+@use 'styles/tokens' as *;
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.page-header-icon {
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.8;
+}
+
+.page-header-title {
+  margin: 0;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+
+  @media (min-width: 768px) {
+    font-size: $font-size-2xl;
+  }
+}
+
+.page-header-subtitle {
+  margin: $spacing-xs 0 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+}

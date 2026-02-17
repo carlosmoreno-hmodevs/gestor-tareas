@@ -1,0 +1,38 @@
+<nav class="admin-breadcrumb">
+  <a routerLink="/admin">Administración</a>
+  <mat-icon>chevron_right</mat-icon>
+  <span>Configuración</span>
+</nav>
+
+<div class="admin-layout">
+  <button mat-icon-button class="admin-menu-btn" (click)="toggleSidenav()" aria-label="Menú admin">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <mat-sidenav-container class="admin-sidenav-container">
+    <mat-sidenav
+      #sidenav
+      [mode]="isDesktop() ? 'side' : 'over'"
+      [opened]="sidenavOpened()"
+      class="admin-sidenav"
+    >
+      <mat-nav-list>
+        @for (item of navItems; track item.path) {
+          <a
+            mat-list-item
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            (click)="closeIfOverlay()"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="admin-content">
+      <router-outlet />
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

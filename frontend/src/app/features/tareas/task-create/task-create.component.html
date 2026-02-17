@@ -1,0 +1,224 @@
+<nav class="breadcrumb">
+  @if (fixedProjectId) {
+    <a routerLink="/proyectos">Proyectos</a>
+    <mat-icon>chevron_right</mat-icon>
+    <a [routerLink]="['/proyectos', fixedProjectId]">{{ fixedProjectName }}</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>Nueva tarea</span>
+  } @else {
+    <a routerLink="/tareas">Tareas</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>Nueva tarea</span>
+  }
+</nav>
+
+@if (fixedProjectId) {
+  <div class="project-context-banner">
+    <mat-icon>folder</mat-icon>
+    <div>
+      <span class="project-context-label">La tarea pertenecerá al proyecto</span>
+      <span class="project-context-name">{{ fixedProjectName }}</span>
+    </div>
+  </div>
+}
+
+<app-page-header
+  title="Nueva tarea"
+  subtitle="Completa el formulario para crear una nueva tarea"
+  icon="add_task"
+/>
+
+<form [formGroup]="form" class="task-create-form animate-fade-in" (ngSubmit)="save()">
+  <div class="form-layout">
+    <!-- Columna principal -->
+    <div class="form-main">
+      <mat-card class="form-section">
+        <mat-card-header>
+          <mat-card-title>Información básica</mat-card-title>
+          <mat-card-subtitle>Título, descripción y clasificación</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Título</mat-label>
+              <input matInput formControlName="title" placeholder="Ej: Revisar documentación de calidad" />
+              <mat-hint>Mínimo 3 caracteres</mat-hint>
+              @if (form.get('title')?.hasError('required') && form.get('title')?.touched) {
+                <mat-error>El título es obligatorio</mat-error>
+              }
+              @if (form.get('title')?.hasError('minlength') && form.get('title')?.touched) {
+                <mat-error>Mínimo 3 caracteres</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Descripción</mat-label>
+              <textarea matInput formControlName="description" rows="4" placeholder="Descripción detallada de la tarea"></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Categoría</mat-label>
+                <mat-select formControlName="categoryId">
+                  <mat-option value="">Seleccionar</mat-option>
+                  @for (c of categories; track c.id) {
+                    <mat-option [value]="c.id">{{ c.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Prioridad</mat-label>
+                <mat-select formControlName="priority">
+                  @for (p of priorities; track p.id) {
+                    <mat-option [value]="p.value">{{ p.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="field-group attach-group">
+            <label class="section-label">Adjuntos</label>
+            <div class="attach-zone" (click)="fileInput.click()">
+              <input #fileInput type="file" multiple hidden (change)="onFileSelect($event)" />
+              <mat-icon>cloud_upload</mat-icon>
+              <span>Seleccionar archivos</span>
+              <span class="attach-hint">Solo se guarda metadata</span>
+            </div>
+            @if (selectedFiles.length) {
+              <ul class="file-list">
+                @for (f of selectedFiles; track f.name + f.size; let i = $index) {
+                  <li>
+                    <mat-icon>description</mat-icon>
+                    <span class="file-name">{{ f.name }}</span>
+                    <span class="file-size">{{ f.size | number }} B</span>
+                    <button mat-icon-button type="button" (click)="removeFile(i)">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="form-section">
+        <mat-card-header>
+          <mat-card-title>Asignación y fechas</mat-card-title>
+          <mat-card-subtitle>Responsables y fecha límite</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Responsable principal</mat-label>
+              <mat-select formControlName="assigneeId">
+                <mat-option value="">
+                  <span class="assignee-option"><app-avatar name="Sin asignar" [size]="28" /><span>Sin asignar</span></span>
+                </mat-option>
+                @for (u of teamUsers(); track u.id) {
+                  <mat-option [value]="u.id">
+                    <span class="assignee-option"><app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="28" /><span>{{ u.name }}</span></span>
+                  </mat-option>
+                }
+              </mat-select>
+              @if (form.get('assigneeId')?.hasError('required') && form.get('assigneeId')?.touched) {
+                <mat-error>Responsable obligatorio</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Subresponsables</mat-label>
+              <mat-select formControlName="subAssigneeIds" multiple>
+                @for (u of teamUsers(); track u.id) {
+                  <mat-option [value]="u.id">
+                    <span class="assignee-option"><app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="24" /><span>{{ u.name }}</span></span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Fecha límite</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="dueDate" />
+              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Columna lateral -->
+    <aside class="form-sidebar">
+      <mat-card class="form-section form-section-sidebar">
+        <mat-card-header>
+          <mat-card-title>Contexto adicional</mat-card-title>
+          <mat-card-subtitle>Proyecto y etiquetas</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (!fixedProjectId) {
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Proyecto</mat-label>
+                <mat-select formControlName="projectId">
+                  <mat-option value="">Ninguno</mat-option>
+                  @for (prj of projects; track prj.id) {
+                    <mat-option [value]="prj.id">{{ prj.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          }
+
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Etiquetas</mat-label>
+              <input matInput [ngModel]="tagInput" [ngModelOptions]="{standalone: true}" (keydown.enter)="addTag(); $event.preventDefault()" placeholder="Enter para añadir" />
+              <button mat-icon-button matSuffix type="button" (click)="addTag()" aria-label="Añadir etiqueta">
+                <mat-icon>add_circle_outline</mat-icon>
+              </button>
+            </mat-form-field>
+            @if (tagsList.length) {
+              <mat-chip-set class="tags-chips">
+                @for (tag of tagsList; track tag) {
+                  <mat-chip-row (removed)="removeTag(tag)">
+                    {{ tag }}
+                    <button matChipRemove><mat-icon>cancel</mat-icon></button>
+                  </mat-chip-row>
+                }
+              </mat-chip-set>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </aside>
+  </div>
+
+  <div class="form-actions">
+    <button mat-button type="button" (click)="cancel()">Cancelar</button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="submit"
+      [disabled]="form.invalid || !connectivity.isOnline() || saving"
+      [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+    >
+      @if (saving) {
+        <span class="btn-loading">Guardando...</span>
+      } @else {
+        <span class="btn-content"><mat-icon>check_circle</mat-icon> Guardar tarea</span>
+      }
+    </button>
+  </div>
+</form>

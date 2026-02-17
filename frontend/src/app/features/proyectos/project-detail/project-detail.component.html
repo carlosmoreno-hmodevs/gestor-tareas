@@ -1,0 +1,298 @@
+@let p = project();
+@if (!p) {
+  <div class="project-not-found">
+    <h2>Proyecto no encontrado</h2>
+    <button mat-button (click)="goBack()">Volver a proyectos</button>
+  </div>
+} @else {
+  <nav class="breadcrumb">
+    <a [routerLink]="['/proyectos']">Proyectos</a>
+    <mat-icon>chevron_right</mat-icon>
+    <span>{{ p.name }}</span>
+  </nav>
+
+  <div class="project-detail-layout">
+    <div class="project-main">
+  <header class="project-detail-header animate-fade-in">
+    <div class="header-media">
+      @if (p.image?.previewUrl) {
+        <img [src]="p.image!.previewUrl" alt="" class="project-cover" />
+      } @else {
+        <div class="project-avatar">
+          <mat-icon>folder</mat-icon>
+        </div>
+      }
+    </div>
+    <div class="header-content">
+      <div class="header-top">
+        <h1 class="project-title">{{ p.name }}</h1>
+        <button
+          mat-flat-button
+          color="primary"
+          class="add-task-header-btn"
+          [disabled]="!connectivity.isOnline()"
+          [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+          (click)="openAddTask()"
+        >
+          <mat-icon>add</mat-icon>
+          Nueva tarea
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Más acciones">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button mat-menu-item (click)="onMenuAction('edit')">
+            <mat-icon>edit</mat-icon>
+            <span>Editar proyecto</span>
+          </button>
+          <button mat-menu-item (click)="onMenuAction('export')">
+            <mat-icon>download</mat-icon>
+            <span>Exportar</span>
+          </button>
+          <button mat-menu-item (click)="onMenuAction('archive')">
+            <mat-icon>archive</mat-icon>
+            <span>Archivar</span>
+          </button>
+        </mat-menu>
+      </div>
+      <div class="header-chips">
+        @if (p.status) {
+          <span class="chip status">{{ p.status }}</span>
+        }
+        @if (p.clientArea) {
+          <span class="chip">{{ p.clientArea }}</span>
+        }
+        @if (p.dueDate) {
+          <span class="chip">Vence: {{ p.dueDate | dateFormat: 'short' }}</span>
+        }
+        @if (!p.status && !p.clientArea && !p.dueDate) {
+          <span class="chip muted">—</span>
+        }
+      </div>
+      <div class="header-owner">
+        <app-avatar [name]="p.owner" [size]="28" />
+        <span>{{ p.owner }}</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="kpis-strip animate-fade-in">
+    <div class="kpi-card">
+      <span class="kpi-value">{{ kpis().tasksInProgress }}</span>
+      <span class="kpi-label">En progreso</span>
+    </div>
+    <div class="kpi-card danger">
+      <span class="kpi-value">{{ kpis().tasksOverdue }}</span>
+      <span class="kpi-label">Vencidas</span>
+    </div>
+    <div class="kpi-card success">
+      <span class="kpi-value">{{ kpis().completedTasks }}</span>
+      <span class="kpi-label">Completadas</span>
+    </div>
+    <div class="kpi-card progress">
+      <span class="kpi-value">{{ kpis().progressPercent }}%</span>
+      <span class="kpi-label">Progreso</span>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" [style.width.%]="kpis().progressPercent"></div>
+      </div>
+    </div>
+  </section>
+
+  <mat-tab-group class="project-tabs">
+    <mat-tab label="Overview">
+      <div class="tab-content overview-tab">
+        <div class="overview-grid-cards">
+          <mat-card class="overview-card">
+            <mat-card-header>
+              <mat-card-title>Descripción</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              @if (p.description) {
+                <p class="description-text">{{ p.description }}</p>
+              } @else {
+                <p class="empty-state">Sin descripción</p>
+              }
+            </mat-card-content>
+          </mat-card>
+          <mat-card class="overview-card">
+            <mat-card-header>
+              <mat-card-title>Equipo</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              @if (p.members.length) {
+                <div class="team-avatars">
+                  @for (m of p.members; track m.userId) {
+                    <div class="team-member">
+                      <app-avatar [name]="getUserById(m.userId)?.name ?? m.userId" [size]="40" />
+                      <span class="member-name">{{ getUserById(m.userId)?.name ?? m.userId }}</span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="empty-state">Sin miembros</p>
+              }
+            </mat-card-content>
+          </mat-card>
+          <mat-card class="overview-card">
+            <mat-card-header>
+              <mat-card-title>Fechas clave</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="key-dates">
+                <div class="key-date-row">
+                  <mat-icon>event</mat-icon>
+                  <div>
+                    <span class="label">Inicio</span>
+                    <span class="value">{{ p.startDate ? (p.startDate | dateFormat: 'short') : '—' }}</span>
+                  </div>
+                </div>
+                <div class="key-date-row">
+                  <mat-icon>flag</mat-icon>
+                  <div>
+                    <span class="label">Objetivo</span>
+                    <span class="value">{{ p.dueDate ? (p.dueDate | dateFormat: 'short') : '—' }}</span>
+                  </div>
+                </div>
+                <div class="key-date-row">
+                  <mat-icon>update</mat-icon>
+                  <div>
+                    <span class="label">Última actualización</span>
+                    <span class="value">{{ p.lastUpdatedAt ? (p.lastUpdatedAt | relativeTime) : '—' }}</span>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+          @if (p.milestones.length) {
+            <mat-card class="overview-card milestones-card">
+              <mat-card-header>
+                <mat-card-title>Hitos</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <ul class="milestones-list">
+                  @for (m of p.milestones; track m.id) {
+                    <li class="milestone-item">
+                      <span class="status-badge" [class]="m.status">{{ getMilestoneLabel(m.status) }}</span>
+                      <span class="milestone-title">{{ m.title }}</span>
+                      @if (m.dueDate) {
+                        <span class="due">{{ m.dueDate | dateFormat: 'short' }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+            </mat-card-content>
+          </mat-card>
+        }
+        </div>
+      </div>
+    </mat-tab>
+    <mat-tab label="Tasks">
+      <div class="tab-content tasks-tab">
+        <button
+          mat-flat-button
+          color="primary"
+          class="add-task-btn"
+          [disabled]="!connectivity.isOnline()"
+          (click)="openAddTask()"
+        >
+          <mat-icon>add</mat-icon>
+          Nueva tarea
+        </button>
+        @if (projectTasks().length) {
+          <div class="tasks-list">
+            @for (t of projectTasks(); track t.id) {
+              <div class="task-card" (click)="goToTask(t.id)">
+                <div class="task-main">
+                  <span class="task-title">{{ t.title }}</span>
+                  <span class="task-status" [class]="t.status">{{ t.status }}</span>
+                </div>
+                <div class="task-meta">
+                  @if (t.assignee) {
+                    <span class="assignee">{{ t.assignee }}</span>
+                  }
+                  @if (t.dueDate) {
+                    <span class="due-badge">{{ t.dueDate | dateFormat: 'short' }}</span>
+                  }
+                  <mat-icon>chevron_right</mat-icon>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">Sin tareas. Añade la primera.</p>
+        }
+      </div>
+    </mat-tab>
+    <mat-tab label="Files">
+      <div class="tab-content files-tab">
+        @if (p.filesMeta.length) {
+          <div class="files-list">
+            @for (f of p.filesMeta; track f.id) {
+              <div class="file-card">
+                <mat-icon>insert_drive_file</mat-icon>
+                <div class="file-info">
+                  <span class="file-name">{{ f.name }}</span>
+                  <span class="file-meta">{{ f.uploadedBy }} · {{ f.uploadedAt | dateFormat: 'short' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">Sin archivos adjuntos</p>
+        }
+      </div>
+    </mat-tab>
+    <mat-tab label="Activity">
+      <div class="tab-content activity-tab">
+        @if (p.activity.length) {
+          <div class="activity-timeline">
+            @for (a of (p.activity | slice:0:20); track a.id) {
+              <div class="activity-timeline-item">
+                <div class="avatar-wrap"><app-avatar [name]="a.userName ?? a.userId" [size]="36" /></div>
+                <div class="content">
+                  <span class="user">{{ a.userName ?? a.userId }}</span>
+                  <span class="text">{{ getActivityLabel(a.type) }}</span>
+                  <span class="time">{{ a.timestamp | relativeTime }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">Sin actividad</p>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+  <div class="back-actions">
+    <button mat-button (click)="goBack()">Volver a proyectos</button>
+  </div>
+    </div>
+
+    <aside class="global-activity-sidebar">
+      <mat-card class="sidebar-activity-card">
+        <mat-card-header>
+          <mat-card-title>Actividad reciente</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (p.activity.length) {
+            <div class="activity-feed-vertical">
+              @for (a of (p.activity | slice:0:15); track a.id) {
+                <div class="activity-item">
+                  <app-avatar [name]="a.userName ?? a.userId" [size]="28" />
+                  <div class="activity-body">
+                    <span class="user">{{ a.userName ?? a.userId }}</span>
+                    <span class="time">{{ a.timestamp | relativeTime }}</span>
+                    <span class="text">{{ getActivityLabel(a.type) }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="empty-state">Sin actividad</p>
+          }
+        </mat-card-content>
+      </mat-card>
+    </aside>
+  </div>
+}

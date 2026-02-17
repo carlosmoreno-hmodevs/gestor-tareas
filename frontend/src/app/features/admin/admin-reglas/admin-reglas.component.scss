@@ -1,0 +1,85 @@
+@use 'styles/tokens' as *;
+
+.rules-card {
+  margin-bottom: $spacing-xl;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  border-radius: $radius-lg !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+
+  mat-card-header {
+    margin-bottom: $spacing-md;
+  }
+
+  mat-card-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+  }
+
+  mat-card-subtitle {
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  mat-card-content {
+    padding-top: 0;
+  }
+}
+
+.rule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-md 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.rule-label {
+  font-weight: $font-weight-medium;
+  font-size: $font-size-base;
+}
+
+.rule-hint {
+  margin: $spacing-xs 0 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+  font-weight: normal;
+}
+
+.due-soon-row {
+  align-items: flex-start;
+}
+
+.due-soon-inputs {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.amount-input {
+  width: 100px;
+
+  input {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.unit-input {
+  min-width: 140px;
+}

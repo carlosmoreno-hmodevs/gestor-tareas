@@ -1,0 +1,66 @@
+<section class="evidence-column">
+  <h3 class="section-title">EVIDENCIA</h3>
+
+  <div
+    class="dropzone"
+    [class.disabled]="!isOnline()"
+    (click)="onDropzoneClick()"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+    [matTooltip]="!isOnline() ? 'Requires connection' : ''"
+  >
+    <input
+      [id]="'file-input-' + taskId()"
+      type="file"
+      multiple
+      class="file-input-hidden"
+      (change)="onFileInputChange($event)"
+    />
+    <mat-icon class="dropzone-icon">cloud_upload</mat-icon>
+    <p class="dropzone-text">Arrastra y suelta o haz clic para adjuntar</p>
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="!isOnline()"
+      (click)="onDropzoneClick(); $event.stopPropagation()"
+    >
+      Adjuntar archivos
+    </button>
+  </div>
+
+  <div class="evidence-list">
+    @for (att of attachmentsList(); track att.id) {
+      <div class="evidence-item">
+        <mat-icon class="file-icon">{{ getFileIcon(att.name, att.type) }}</mat-icon>
+        <div class="file-info">
+          <span class="file-name">{{ att.name }}</span>
+          <span class="file-meta">
+            {{ formatSize(att.size) }} · {{ att.uploadedAt | date:'short' }}
+            @if (att.uploadedBy) {
+              · {{ att.uploadedBy }}
+            }
+          </span>
+        </div>
+        <div class="file-actions">
+          <button
+            mat-icon-button
+            matTooltip="Descargar"
+            (click)="onDownload(att); $event.stopPropagation()"
+          >
+            <mat-icon>download</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            matTooltip="Eliminar"
+            (click)="onRemove(att); $event.stopPropagation()"
+          >
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+    @if (attachmentsList().length === 0) {
+      <p class="no-files">Sin archivos adjuntos</p>
+    }
+  </div>
+</section>

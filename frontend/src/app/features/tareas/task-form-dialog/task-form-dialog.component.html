@@ -1,0 +1,143 @@
+<h2 mat-dialog-title>Nueva tarea</h2>
+<mat-dialog-content class="task-form-content">
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Título</mat-label>
+      <input matInput formControlName="title" placeholder="Título de la tarea" />
+      @if (form.get('title')?.hasError('required') && form.get('title')?.touched) {
+        <mat-error>Title is required</mat-error>
+      }
+      @if (form.get('title')?.hasError('minlength') && form.get('title')?.touched) {
+        <mat-error>Minimum 3 characters</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Descripción</mat-label>
+      <textarea matInput formControlName="description" rows="3" placeholder="Descripción detallada"></textarea>
+      @if (form.get('description')?.hasError('required') && form.get('description')?.touched) {
+        <mat-error>Description is required</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Categoría</mat-label>
+        <mat-select formControlName="categoryId">
+          <mat-option value="">—</mat-option>
+          @for (c of categories; track c.id) {
+            <mat-option [value]="c.id">{{ c.name }}</mat-option>
+          }
+        </mat-select>
+        @if (form.get('categoryId')?.hasError('required') && form.get('categoryId')?.touched) {
+          <mat-error>Category is required</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Prioridad</mat-label>
+        <mat-select formControlName="priority">
+          @for (p of priorities; track p.id) {
+            <mat-option [value]="p.value">{{ p.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Responsable principal</mat-label>
+      <mat-select formControlName="assigneeId">
+        <mat-option value="">
+          <span class="assignee-option"><app-avatar name="Sin asignar" [size]="28" /><span>Sin asignar</span></span>
+        </mat-option>
+        @for (u of teamUsers(); track u.id) {
+          <mat-option [value]="u.id">
+            <span class="assignee-option"><app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="28" /><span>{{ u.name }}</span></span>
+          </mat-option>
+        }
+      </mat-select>
+      @if (form.get('assigneeId')?.hasError('required') && form.get('assigneeId')?.touched) {
+        <mat-error>Assignee is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Subresponsables</mat-label>
+      <mat-select formControlName="subAssigneeIds" multiple>
+        @for (u of teamUsers(); track u.id) {
+          <mat-option [value]="u.id">
+            <span class="assignee-option"><app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="24" /><span>{{ u.name }}</span></span>
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Fecha límite</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="dueDate" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
+      @if (form.get('dueDate')?.hasError('required') && form.get('dueDate')?.touched) {
+        <mat-error>Due date is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Proyecto</mat-label>
+      <mat-select formControlName="projectId">
+        <mat-option value="">—</mat-option>
+        @for (prj of projects; track prj.id) {
+          <mat-option [value]="prj.id">{{ prj.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Etiquetas</mat-label>
+      <input matInput [ngModel]="tagInput" [ngModelOptions]="{standalone: true}" (keydown.enter)="addTag(); $event.preventDefault()" placeholder="Escribe y presiona Enter" />
+      <button mat-icon-button matSuffix type="button" (click)="addTag()" aria-label="Añadir etiqueta">
+        <mat-icon>add</mat-icon>
+      </button>
+    </mat-form-field>
+    @if (tagsList.length) {
+      <mat-chip-set class="tags-chips">
+        @for (tag of tagsList; track tag) {
+          <mat-chip-row (removed)="removeTag(tag)">
+            {{ tag }}
+            <button matChipRemove><mat-icon>cancel</mat-icon></button>
+          </mat-chip-row>
+        }
+      </mat-chip-set>
+    }
+
+    <div class="attachments-section">
+      <label class="attach-label">Adjuntos</label>
+      <div class="attach-zone" (click)="fileInput.click()">
+        <input #fileInput type="file" multiple hidden (change)="onFileSelect($event)" />
+        <mat-icon>cloud_upload</mat-icon>
+        <span>Seleccionar archivos (solo metadata)</span>
+      </div>
+      @if (selectedFiles.length) {
+        <ul class="file-list">
+          @for (f of selectedFiles; track f.name + f.size; let i = $index) {
+            <li>
+              <mat-icon>description</mat-icon>
+              <span>{{ f.name }} ({{ f.size | number }} B)</span>
+              <button mat-icon-button type="button" (click)="removeFile(i)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Observaciones</mat-label>
+      <textarea matInput formControlName="observations" rows="2" placeholder="Opcional"></textarea>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">Guardar</button>
+</mat-dialog-actions>

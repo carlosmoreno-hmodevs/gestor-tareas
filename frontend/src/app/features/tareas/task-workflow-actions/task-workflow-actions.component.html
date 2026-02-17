@@ -1,0 +1,19 @@
+<section class="workflow-actions">
+  <h3 class="section-title">ACCIONES</h3>
+  <p class="current-status">Estado actual: <strong>{{ currentStatus() }}</strong></p>
+  <div class="transition-buttons">
+    @for (tr of allowedTransitions(); track tr.to + tr.label) {
+      <button
+        mat-stroked-button
+        [disabled]="!isOnline()"
+        [matTooltip]="!isOnline() ? 'Requires connection' : ''"
+        (click)="onTransition(tr)"
+      >
+        {{ tr.label }}
+      </button>
+    }
+    @if (allowedTransitions().length === 0) {
+      <span class="no-actions">No hay acciones disponibles</span>
+    }
+  </div>
+</section>

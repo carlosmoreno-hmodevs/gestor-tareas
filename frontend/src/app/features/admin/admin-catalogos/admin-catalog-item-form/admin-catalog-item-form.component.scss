@@ -1,0 +1,135 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+
+  a {
+    color: var(--color-primary, #1976d2);
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.catalog-form {
+  max-width: 1200px;
+}
+
+.form-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 320px;
+  }
+}
+
+.form-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-section {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+
+  mat-card-header {
+    padding: 1rem 1.5rem 0;
+  }
+
+  mat-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  mat-card-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  mat-card-content {
+    padding: 1.5rem;
+  }
+}
+
+.form-section-sidebar {
+  position: sticky;
+  top: 1rem;
+  height: fit-content;
+
+  .sidebar-hint {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary, #757575);
+    margin: 0 0 1rem;
+  }
+
+  .sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+.field-group {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+
+  .field-group {
+    margin-bottom: 0;
+  }
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #757575);
+  margin: 0.25rem 0 0;
+}
+
+.color-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .color-text-input {
+    flex: 1;
+  }
+
+  .color-picker {
+    width: 48px;
+    height: 48px;
+    padding: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    cursor: pointer;
+    background: transparent;
+    flex-shrink: 0;
+  }
+}
+
+.full-width {
+  width: 100%;
+}

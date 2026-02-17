@@ -1,0 +1,68 @@
+<h2 mat-dialog-title>{{ data.user ? 'Editar usuario' : 'Crear usuario' }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nombre completo</mat-label>
+      <input matInput formControlName="name" />
+      @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
+        <mat-error>Name is required</mat-error>
+      }
+      @if (form.get('name')?.hasError('minlength') && form.get('name')?.touched) {
+        <mat-error>Minimum 2 characters</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" [readonly]="!!data.user" />
+      @if (form.get('email')?.hasError('required') && form.get('email')?.touched) {
+        <mat-error>Email is required</mat-error>
+      }
+      @if (form.get('email')?.hasError('email') && form.get('email')?.touched) {
+        <mat-error>Invalid email</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Rol</mat-label>
+      <mat-select formControlName="roleId">
+        <mat-option value="">Seleccionar</mat-option>
+        @for (r of roles(); track r.id) {
+          <mat-option [value]="r.id">{{ r.name }}</mat-option>
+        }
+      </mat-select>
+      @if (form.get('roleId')?.hasError('required') && form.get('roleId')?.touched) {
+        <mat-error>Role is required</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Equipo / Área</mat-label>
+      <mat-select formControlName="teamId">
+        <mat-option value="">Seleccionar</mat-option>
+        @for (t of teams(); track t.id) {
+          <mat-option [value]="t.id">{{ t.name }}</mat-option>
+        }
+      </mat-select>
+      @if (form.get('teamId')?.hasError('required') && form.get('teamId')?.touched) {
+        <mat-error>Team is required</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Teléfono</mat-label>
+      <input matInput formControlName="phone" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Cargo / Puesto</mat-label>
+      <input matInput formControlName="position" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Notas</mat-label>
+      <textarea matInput formControlName="notes" rows="2"></textarea>
+    </mat-form-field>
+    @if (data.user) {
+      <mat-slide-toggle formControlName="isActive">Activo</mat-slide-toggle>
+    }
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">Guardar</button>
+</mat-dialog-actions>
