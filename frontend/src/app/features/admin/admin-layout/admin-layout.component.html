@@ -5,34 +5,48 @@
 </nav>
 
 <div class="admin-layout">
-  <button mat-icon-button class="admin-menu-btn" (click)="toggleSidenav()" aria-label="Menú admin">
-    <mat-icon>menu</mat-icon>
-  </button>
+  @if (isDesktop()) {
+    <mat-sidenav-container class="admin-sidenav-container">
+      <mat-sidenav
+        #sidenav
+        mode="side"
+        [opened]="sidenavOpened()"
+        class="admin-sidenav"
+      >
+        <mat-nav-list>
+          @for (item of navItems; track item.path) {
+            <a
+              mat-list-item
+              [routerLink]="item.path"
+              routerLinkActive="active"
+            >
+              <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+              <span matListItemTitle>{{ item.label }}</span>
+            </a>
+          }
+        </mat-nav-list>
+      </mat-sidenav>
 
-  <mat-sidenav-container class="admin-sidenav-container">
-    <mat-sidenav
-      #sidenav
-      [mode]="isDesktop() ? 'side' : 'over'"
-      [opened]="sidenavOpened()"
-      class="admin-sidenav"
-    >
-      <mat-nav-list>
-        @for (item of navItems; track item.path) {
-          <a
-            mat-list-item
-            [routerLink]="item.path"
-            routerLinkActive="active"
-            (click)="closeIfOverlay()"
-          >
-            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-            <span matListItemTitle>{{ item.label }}</span>
-          </a>
-        }
-      </mat-nav-list>
-    </mat-sidenav>
-
-    <mat-sidenav-content class="admin-content">
+      <mat-sidenav-content class="admin-content">
+        <router-outlet />
+      </mat-sidenav-content>
+    </mat-sidenav-container>
+  } @else {
+    <nav class="admin-nav-chips" aria-label="Opciones de administración">
+      @for (item of navItems; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="admin-chip-active"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="admin-nav-chip"
+        >
+          <mat-icon class="admin-chip-icon">{{ item.icon }}</mat-icon>
+          <span class="admin-chip-label">{{ item.shortLabel }}</span>
+        </a>
+      }
+    </nav>
+    <div class="admin-content admin-content-mobile">
       <router-outlet />
-    </mat-sidenav-content>
-  </mat-sidenav-container>
+    </div>
+  }
 </div>

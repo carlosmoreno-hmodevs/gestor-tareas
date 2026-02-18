@@ -2,6 +2,8 @@ import { Component, inject, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TaskService } from '../../../core/services/task.service';
@@ -15,6 +17,7 @@ import { TaskDetailFormComponent } from '../task-detail-form/task-detail-form.co
 import { TaskEvidencePanelComponent } from '../task-evidence-panel/task-evidence-panel.component';
 import { TaskTimelineComponent } from '../task-timeline/task-timeline.component';
 import { TaskWorkflowActionsComponent } from '../task-workflow-actions/task-workflow-actions.component';
+import { TaskRelationsPanelComponent } from '../task-relations-panel/task-relations-panel.component';
 import { RejectDialogComponent } from '../reject-dialog/reject-dialog.component';
 import { RescheduleDialogComponent } from '../reschedule-dialog/reschedule-dialog.component';
 import type { Task, TaskStatus } from '../../../shared/models';
@@ -26,8 +29,11 @@ import type { Transition } from '../../../core/services/task-workflow.service';
   imports: [
     CommonModule,
     MatButtonModule,
+    MatTabsModule,
+    MatIconModule,
     PageHeaderComponent,
     TaskDetailHeaderComponent,
+    TaskRelationsPanelComponent,
     TaskDetailFormComponent,
     TaskEvidencePanelComponent,
     TaskTimelineComponent,
@@ -47,7 +53,10 @@ export class TaskDetailComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   taskId = input.required<string>({ alias: 'id' });
-  task = computed(() => this.taskService.getById(this.taskId()));
+  /** Usa la lista filtrada por org para que al cambiar de organización la tarea desaparezca si está fuera de scope */
+  task = computed(() =>
+    this.taskService.tasks().find((t) => t.id === this.taskId())
+  );
 
   allowedTransitions = computed(() => {
     const t = this.task();

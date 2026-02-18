@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import type { Task } from '../../shared/models';
+import type { Task, TaskLink } from '../../shared/models';
 import type { Project } from '../../shared/models';
 import { TenantContextService } from './tenant-context.service';
 
 const SNAPSHOT_VERSION = 1;
 const STORAGE_PREFIX_TASKS = 'gestor-tareas:snapshot:tasks.';
 const STORAGE_PREFIX_PROJECTS = 'gestor-tareas:snapshot:projects.';
+const STORAGE_PREFIX_TASK_LINKS = 'gestor-tareas:snapshot:taskLinks.';
 
 export interface SnapshotMeta {
   version: number;
@@ -187,5 +188,40 @@ export class OfflineSnapshotService {
 
   hasProjectsSnapshot(): boolean {
     return localStorage.getItem(this.storageKeyProjects()) !== null;
+  }
+
+  private storageKeyTaskLinks(): string {
+    const tid = this.tenantContext.currentTenantId();
+    return tid ? STORAGE_PREFIX_TASK_LINKS + tid : '';
+  }
+
+  saveTaskLinks(links: TaskLink[]): void {
+    const key = this.storageKeyTaskLinks();
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify(links));
+      localStorage.setItem(
+        key + ':meta',
+        JSON.stringify({
+          version: SNAPSHOT_VERSION,
+          savedAt: new Date().toISOString(),
+          linksCount: links.length
+        })
+      );
+    } catch (e) {
+      console.warn('OfflineSnapshot: could not save task links', e);
+    }
+  }
+
+  loadTaskLinks(): TaskLink[] | null {
+    const key = this.storageKeyTaskLinks();
+    if (!key) return null;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw) as TaskLink[];
+    } catch {
+      return null;
+    }
   }
 }

@@ -8,6 +8,13 @@
     padding-bottom: $spacing-lg;
     margin-bottom: $spacing-md;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+    @media (max-width: 479px) {
+      .upload-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   }
 
   mat-card-title {
@@ -45,15 +52,29 @@
   flex-wrap: wrap;
   gap: $spacing-md;
   align-items: center;
+  width: 100%;
 
   @media (min-width: 768px) {
     flex-shrink: 0;
+    width: auto;
   }
 }
 
 .filter-field {
-  min-width: 200px;
-  max-width: 280px;
+  flex: 1;
+  min-width: 0;
+
+  @media (min-width: 768px) {
+    flex: none;
+    min-width: 200px;
+    max-width: 280px;
+  }
+}
+
+.upload-btn .btn-label {
+  @media (max-width: 360px) {
+    display: none;
+  }
 }
 
 .documents-table {
@@ -114,6 +135,73 @@
 .file-name {
   font-weight: $font-weight-medium;
   word-break: break-word;
+}
+
+/* Mobile card layout */
+.doc-cards {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.doc-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='dark'] .doc-card {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.doc-card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-card-main .file-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  font-size: 40px;
+}
+
+.doc-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.doc-card-name {
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-base;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.doc-card-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary, #757575);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  line-height: 1.5;
+}
+
+.doc-card-menu {
+  flex-shrink: 0;
 }
 
 .meta-cell {

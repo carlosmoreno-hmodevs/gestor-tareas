@@ -49,14 +49,19 @@ export class TaskFormDialogComponent {
   private readonly currentUser = inject(CurrentUserService);
   private readonly tenantContext = inject(TenantContextService);
 
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
   categories = this.dataService.getCategories();
   priorities = this.dataService.getPriorities();
-  projects = this.dataService.getProjects();
+  projects = this.dataService.projectsForCurrentOrg;
 
   teamUsers = computed(() =>
-    this.users.filter((u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin')
+    this.users().filter((u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin')
   );
+
+  get usersForSubAssignees() {
+    const assigneeId = this.form.get('assigneeId')?.value;
+    return this.users().filter((u) => u.id !== assigneeId);
+  }
 
   minDate = new Date();
 
@@ -72,6 +77,16 @@ export class TaskFormDialogComponent {
     tags: [''],
     observations: ['']
   });
+
+  constructor() {
+    this.form.get('assigneeId')?.valueChanges.subscribe((assigneeId) => {
+      const subCtrl = this.form.get('subAssigneeIds');
+      const subs = (subCtrl?.value ?? []) as string[];
+      if (assigneeId && subs.includes(assigneeId)) {
+        subCtrl?.setValue(subs.filter((id) => id !== assigneeId), { emitEvent: false });
+      }
+    });
+  }
 
   tagInput = '';
   selectedFiles: { name: string; size: number }[] = [];
@@ -127,10 +142,11 @@ export class TaskFormDialogComponent {
     }
     const v = this.form.getRawValue();
     const folio = `TASK-${String(Date.now()).slice(-6)}`;
-    const assignee = this.users.find((u) => u.id === v.assigneeId);
+    const assignee = this.users().find((u) => u.id === v.assigneeId);
     const category = this.categories.find((c) => c.id === v.categoryId);
-    const subIds = v.subAssigneeIds ?? [];
-    const subNames = subIds.map((id) => this.users.find((u) => u.id === id)?.name ?? '').filter(Boolean);
+    const assigneeId = v.assigneeId ?? '';
+    const subIds = (v.subAssigneeIds ?? []).filter((id) => id && id !== assigneeId);
+    const subNames = subIds.map((id) => this.users().find((u) => u.id === id)?.name ?? '').filter(Boolean);
 
     this.dialogRef.close({
       tenantId: this.tenantContext.currentTenantId() ?? 'tenant-1',
@@ -138,7 +154,7 @@ export class TaskFormDialogComponent {
       title: v.title!,
       description: v.description ?? '',
       assignee: assignee?.name ?? 'Sin asignar',
-      assigneeId: v.assigneeId ?? '',
+      assigneeId,
       status: 'Pendiente' as const,
       priority: v.priority!,
       dueDate: v.dueDate!,

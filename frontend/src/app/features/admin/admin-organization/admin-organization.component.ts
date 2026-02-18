@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrgService } from '../../../core/services/org.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
@@ -19,6 +20,7 @@ import type { OrgUnit, OrgUnitTreeNode } from '../../../shared/models/org.model'
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -113,29 +115,4 @@ export class AdminOrganizationComponent {
     });
   });
 
-  /** Usuarios que aún no están en la unidad seleccionada (para el dropdown) */
-  usersAvailableForUnit = computed(() => {
-    this.orgService.memberships(); // dependencia reactiva
-    const unitId = this.selectedUnitForUsers();
-    const tid = this.tenantContext.currentTenantId();
-    const all = this.tenantUsers();
-    if (!unitId || !tid) return all;
-    const inUnit = this.orgService.getMembershipsByOrgUnit(tid, unitId).map((m) => m.userId);
-    return all.filter((u) => !inUnit.includes(u.id));
-  });
-
-  newUserToAdd = '';
-
-  addUserToUnit(): void {
-    const unitId = this.selectedUnitForUsers();
-    const userId = this.newUserToAdd.trim();
-    const tid = this.tenantContext.currentTenantId();
-    if (!unitId || !userId || !tid) return;
-    this.orgService.assignUserToOrgUnit(userId, unitId, tid);
-    this.newUserToAdd = '';
-  }
-
-  removeUserFromUnit(membershipId: string): void {
-    this.orgService.removeUserFromOrgUnit(membershipId);
-  }
 }

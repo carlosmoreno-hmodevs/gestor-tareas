@@ -7,16 +7,24 @@
     <button mat-button (click)="goBack()">Volver a lista</button>
   </div>
 } @else {
-  <app-task-detail-header
-    [task]="t"
-    [effectiveStatus]="effStatus"
-    [assigneeName]="t.assignee || 'Sin asignar'"
-    [hasOverdueBadge]="effStatus === 'Vencida'"
-    (menuAction)="onMenuAction($event)"
-  />
+  <div class="task-detail-hero">
+    <app-task-detail-header
+      [task]="t"
+      [effectiveStatus]="effStatus"
+      [assigneeName]="t.assignee || 'Sin asignar'"
+      [hasOverdueBadge]="effStatus === 'Vencida'"
+      (menuAction)="onMenuAction($event)"
+    />
 
-  <div class="task-control-center animate-stagger">
-    <div class="row g-3">
+    <div class="task-detail-tabs-wrapper">
+    <mat-tab-group class="task-detail-tabs" animationDuration="0ms">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">summarize</mat-icon>
+          <span>Resumen</span>
+        </ng-template>
+      <div class="task-control-center animate-stagger tab-content">
+        <div class="row g-3">
       <!-- Col 1: DETALLE (30-35%) -->
       <div class="col-12 col-lg-4">
         <app-task-workflow-actions
@@ -56,6 +64,22 @@
         />
       </div>
     </div>
+  </div>
+      </mat-tab>
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">account_tree</mat-icon>
+          <span>Relaciones</span>
+        </ng-template>
+      <div class="tab-content">
+        <app-task-relations-panel
+          [taskId]="t.id"
+          [isOnline]="connectivity.isOnline()"
+        />
+      </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
   </div>
 
   <div class="back-actions">

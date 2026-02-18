@@ -1,0 +1,47 @@
+<app-page-header title="Flujos" subtitle="Task Workflow - transiciones permitidas" icon="account_tree" />
+<mat-card>
+  <mat-card-content>
+    <p>Vista de solo lectura de las transiciones del flujo de tareas.</p>
+    @if (isMobile()) {
+      <div class="transition-cards">
+        @for (t of transitions; track t.from + t.to + t.label) {
+          <div class="transition-card">
+            <span class="transition-from">{{ t.from }}</span>
+            <mat-icon class="transition-arrow">arrow_forward</mat-icon>
+            <span class="transition-to">{{ t.to }}</span>
+            <span class="transition-label">{{ t.label }}</span>
+            @if (t.requiresComment || t.requiresNewDueDate) {
+              <span class="transition-requires">
+                {{ t.requiresComment ? 'Comentario' : '' }}{{ t.requiresComment && t.requiresNewDueDate ? ', ' : '' }}{{ t.requiresNewDueDate ? 'Nueva fecha' : '' }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <table mat-table [dataSource]="transitions" class="full-width">
+        <ng-container matColumnDef="from">
+          <th mat-header-cell *matHeaderCellDef>Desde</th>
+          <td mat-cell *matCellDef="let t">{{ t.from }}</td>
+        </ng-container>
+        <ng-container matColumnDef="to">
+          <th mat-header-cell *matHeaderCellDef>Hacia</th>
+          <td mat-cell *matCellDef="let t">{{ t.to }}</td>
+        </ng-container>
+        <ng-container matColumnDef="label">
+          <th mat-header-cell *matHeaderCellDef>Acción</th>
+          <td mat-cell *matCellDef="let t">{{ t.label }}</td>
+        </ng-container>
+        <ng-container matColumnDef="requires">
+          <th mat-header-cell *matHeaderCellDef>Requiere</th>
+          <td mat-cell *matCellDef="let t">
+            {{ t.requiresComment ? 'Comentario' : '' }}
+            {{ t.requiresNewDueDate ? 'Nueva fecha' : '' }}
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="['from','to','label','requires']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['from','to','label','requires']"></tr>
+      </table>
+    }
+  </mat-card-content>
+</mat-card>

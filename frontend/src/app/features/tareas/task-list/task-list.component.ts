@@ -47,7 +47,7 @@ import type { TaskStatus, Priority } from '../../../shared/models';
   styleUrl: './task-list.component.scss'
 })
 export class TaskListComponent {
-  private readonly taskService = inject(TaskService);
+  readonly taskService = inject(TaskService);
   private readonly dataService = inject(DataService);
   readonly connectivity = inject(ConnectivityService);
   readonly workflow = inject(TaskWorkflowService);
@@ -72,15 +72,15 @@ export class TaskListComponent {
 
   statuses = this.dataService.getStatuses();
   priorities = this.dataService.getPriorities();
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
   displayedColumns = ['folio', 'title', 'assignee', 'status', 'priority', 'dueDate', 'risk', 'counts'];
 
   getUserById(id: string) {
-    return this.users.find((u) => u.id === id);
+    return this.users().find((u) => u.id === id);
   }
 
   getUserByName(name: string) {
-    return this.users.find((u) => u.name === name);
+    return this.users().find((u) => u.name === name);
   }
 
   getEffectiveStatus(task: import('../../../shared/models').Task) {

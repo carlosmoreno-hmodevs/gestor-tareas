@@ -1,0 +1,49 @@
+<div class="add-subtask-dialog">
+  <div class="dialog-header">
+    <h2 class="dialog-title">Nueva subtarea</h2>
+    <p class="dialog-subtitle">Tarea padre: {{ parentTask.title }}</p>
+  </div>
+  <mat-dialog-content>
+    <form [formGroup]="form" class="dialog-form">
+      <mat-form-field appearance="outline" class="full-width field-title">
+        <mat-label>Título</mat-label>
+        <input matInput formControlName="title" placeholder="Ej: Revisar documentación" />
+        @if (form.get('title')?.hasError('required') && form.get('title')?.touched) {
+          <mat-error>Título requerido</mat-error>
+        }
+      </mat-form-field>
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="field-half">
+          <mat-label>Fecha límite</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="dueDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-half">
+          <mat-label>Prioridad</mat-label>
+          <mat-select formControlName="priority">
+            @for (p of priorities; track p.id) {
+              <mat-option [value]="p.value">{{ p.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Responsable</mat-label>
+        <mat-select formControlName="assigneeId">
+          <mat-option value="">Sin asignar</mat-option>
+          @for (u of users(); track u.id) {
+            <mat-option [value]="u.id">{{ u.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="cancel()">Cancelar</button>
+    <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">
+      <mat-icon>add</mat-icon>
+      Crear
+    </button>
+  </mat-dialog-actions>
+</div>

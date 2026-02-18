@@ -20,7 +20,10 @@ export type TaskHistoryType =
   | 'CANCELLED'
   | 'REJECTED'
   | 'RESCHEDULED'
-  | 'ATTACHMENT_ADDED';
+  | 'ATTACHMENT_ADDED'
+  | 'PARENT_CHANGED'
+  | 'LINK_ADDED'
+  | 'LINK_REMOVED';
 
 export interface TaskHistoryEntry {
   id: string;
@@ -71,6 +74,8 @@ export interface Task {
   createdByName?: string;
   projectId?: string;
   orgUnitId?: string;
+  parentTaskId?: string;
+  sortOrder?: number;
   categoryId?: string;
   categoryName?: string;
   subAssigneeIds?: string[];
@@ -79,4 +84,32 @@ export interface Task {
   attachments?: TaskAttachment[];
   rejectionComment?: string;
   history: TaskHistoryEntry[];
+}
+
+/** Task link type for dependencies (graph) */
+export type TaskLinkType = 'BLOCKS' | 'RELATES' | 'DUPLICATES';
+
+export interface TaskLink {
+  id: string;
+  tenantId: string;
+  fromTaskId: string;
+  toTaskId: string;
+  type: TaskLinkType;
+  createdAt: string;
+  createdByUserId: string;
+}
+
+/** Links grouped by type for UI */
+export interface TaskLinksForTask {
+  blockedBy: TaskLink[];
+  blocking: TaskLink[];
+  related: TaskLink[];
+  duplicates: TaskLink[];
+}
+
+/** For task tree / subtasks display */
+export interface TaskTreeNode {
+  task: Task;
+  children: TaskTreeNode[];
+  depth: number;
 }

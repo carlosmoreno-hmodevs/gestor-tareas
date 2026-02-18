@@ -54,11 +54,15 @@ export class TaskDetailFormComponent {
 
   isEditing = signal(false);
 
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
   priorities = this.dataService.getPriorities();
   categories = this.dataService.getCategories();
-  projects = this.dataService.getProjects();
+  projects = this.dataService.projectsForCurrentOrg;
 
+  get usersForSubAssignees() {
+    const assigneeId = this.form.get('assigneeId')?.value;
+    return this.users().filter((u) => u.id !== assigneeId);
+  }
 
   form = this.fb.group({
     description: [''],
@@ -122,6 +126,13 @@ export class TaskDetailFormComponent {
         );
       }
     });
+    this.form.get('assigneeId')?.valueChanges.subscribe((assigneeId) => {
+      const subCtrl = this.form.get('subAssigneeIds');
+      const subs = (subCtrl?.value ?? []) as string[];
+      if (assigneeId && subs.includes(assigneeId)) {
+        subCtrl?.setValue(subs.filter((id) => id !== assigneeId), { emitEvent: false });
+      }
+    });
   }
 
   addTag(event: MatChipInputEvent): void {
@@ -145,17 +156,19 @@ export class TaskDetailFormComponent {
     const t = this.task();
     if (!t) return;
     const v = this.form.value;
-    const user = this.users.find((u) => u.id === v.assigneeId);
+    const user = this.users().find((u) => u.id === v.assigneeId);
+    const assigneeId = v.assigneeId ?? '';
+    const subAssigneeIds = (v.subAssigneeIds ?? []).filter((id) => id && id !== assigneeId);
     this.saveChanges.emit({
       description: v.description ?? t.description,
       assignee: user?.name ?? 'Sin asignar',
-      assigneeId: v.assigneeId ?? '',
+      assigneeId,
       priority: (v.priority as Priority) ?? t.priority,
       categoryId: v.categoryId ?? t.categoryId,
       categoryName: this.categories.find((c) => c.id === v.categoryId)?.name,
       dueDate: v.dueDate ? new Date(v.dueDate) : t.dueDate,
       projectId: v.projectId ?? t.projectId,
-      subAssigneeIds: v.subAssigneeIds ?? [],
+      subAssigneeIds,
       tags: v.tags ?? []
     });
     this.isEditing.set(false);
@@ -188,7 +201,7 @@ export class TaskDetailFormComponent {
 
   getAssigneeName(id: string): string {
     if (!id) return 'Sin asignar';
-    return this.users.find((u) => u.id === id)?.name ?? 'Sin asignar';
+    return this.users().find((u) => u.id === id)?.name ?? 'Sin asignar';
   }
 
   getCategoryName(id: string | undefined): string {
@@ -198,7 +211,7 @@ export class TaskDetailFormComponent {
 
   getProjectName(id: string | undefined): string {
     if (!id) return '—';
-    return this.projects.find((p) => p.id === id)?.name ?? '—';
+    return this.projects().find((p) => p.id === id)?.name ?? '—';
   }
 
   getSubAssigneeNames(ids: string[] | undefined): string {

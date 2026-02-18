@@ -66,10 +66,10 @@ export class ProjectCreateComponent {
   private readonly snackBar = inject(MatSnackBar);
   readonly connectivity = inject(ConnectivityService);
 
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
   orgUnits = this.orgService.getOrgUnits(this.tenantContext.currentTenantId() ?? '');
   teamUsers = computed(() => {
-    const base = this.users.filter(
+    const base = this.users().filter(
       (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
     );
     const tid = this.tenantContext.currentTenantId();
@@ -110,6 +110,21 @@ export class ProjectCreateComponent {
   );
 
   tagInput = '';
+
+  constructor() {
+    this.form.get('ownerId')?.valueChanges.subscribe((ownerId) => {
+      const memberCtrl = this.form.get('memberIds');
+      const ids = (memberCtrl?.value ?? []) as string[];
+      if (ownerId && ids.includes(ownerId)) {
+        memberCtrl?.setValue(ids.filter((id) => id !== ownerId), { emitEvent: false });
+      }
+    });
+  }
+
+  get usersForMemberSelect() {
+    const ownerId = this.form.get('ownerId')?.value;
+    return this.users().filter((u) => u.id !== ownerId);
+  }
 
   addTagFromInput(): void {
     const value = this.tagInput.trim();
@@ -170,10 +185,12 @@ export class ProjectCreateComponent {
 
     this.saving = true;
     const v = this.form.getRawValue();
-    const owner = this.users.find((u) => u.id === v.ownerId);
-    const members = (v.memberIds ?? []).map((userId) => ({ userId, role: 'Miembro' }));
-    if (v.ownerId && !members.some((m) => m.userId === v.ownerId)) {
-      members.unshift({ userId: v.ownerId, role: 'Líder' });
+    const owner = this.users().find((u) => u.id === v.ownerId);
+    const ownerId = v.ownerId ?? '';
+    const memberIdsFiltered = (v.memberIds ?? []).filter((id) => id && id !== ownerId);
+    const members: { userId: string; role: 'Miembro' | 'Líder' }[] = memberIdsFiltered.map((userId) => ({ userId, role: 'Miembro' }));
+    if (ownerId && !members.some((m) => m.userId === ownerId)) {
+      members.unshift({ userId: ownerId, role: 'Líder' });
     }
 
     const payload = {

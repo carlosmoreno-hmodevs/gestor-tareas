@@ -10,25 +10,41 @@
   </mat-card-header>
   <mat-card-content>
     <div class="org-tree">
-      @for (node of orgTree(); track node.id) {
+      @for (node of orgTree(); track node.id; let i = $index; let lastRoot = $last) {
         <div class="org-tree-rec">
-          <ng-container *ngTemplateOutlet="treeNode; context: { node: node, depth: 0 }" />
+          <ng-container *ngTemplateOutlet="treeNode; context: { node: node, depth: 0, isLast: lastRoot, parentIsLast: [] }" />
         </div>
       }
     </div>
   </mat-card-content>
 </mat-card>
 
-<ng-template #treeNode let-node="node" let-depth="depth">
-  <div class="org-tree-node" [style.padding-left.rem]="depth * 1.5">
-    <span class="org-node-name">{{ node.name }}</span>
-    @if (node.code) { <span class="org-node-code">({{ node.code }})</span> }
+<ng-template #treeNode let-node="node" let-depth="depth" let-isLast="isLast" let-parentIsLast="parentIsLast">
+  <div class="org-tree-node" [class.org-tree-node--root]="depth === 0">
+    <span class="org-tree-connector">
+      @if (depth > 0) {
+        @for (p of parentIsLast; track $index) {
+          <span class="org-tree-vline" [class.org-tree-vline--hidden]="p">│</span>
+        }
+        <span class="org-tree-branch">{{ isLast ? '└' : '├' }}──</span>
+      } @else {
+        <span class="org-tree-root-icon">◆</span>
+      }
+    </span>
+    <span class="org-node-content">
+      <span class="org-node-name">{{ node.name }}</span>
+      @if (node.code) { <span class="org-node-code">({{ node.code }})</span> }
+    </span>
     <button mat-icon-button (click)="deactivate(node)" matTooltip="Desactivar" class="org-node-btn">
       <mat-icon>remove_circle_outline</mat-icon>
     </button>
   </div>
-  @for (child of node.children; track child.id) {
-    <ng-container *ngTemplateOutlet="treeNode; context: { node: child, depth: depth + 1 }" />
+  @if (node.children?.length) {
+    <div class="org-tree-children">
+      @for (child of node.children; track child.id; let i = $index; let lastChild = $last) {
+        <ng-container *ngTemplateOutlet="treeNode; context: { node: child, depth: depth + 1, isLast: lastChild, parentIsLast: [...parentIsLast, isLast] }" />
+      }
+    </div>
   }
 </ng-template>
 
@@ -76,12 +92,16 @@
 <mat-card class="users-section">
   <mat-card-header>
     <mat-card-title>Usuarios por unidad</mat-card-title>
-    <mat-card-subtitle>Asigna usuarios a cada unidad organizativa</mat-card-subtitle>
+    <mat-card-subtitle>
+      Consulta qué usuarios pertenecen a cada unidad. Para modificar la unidad de algún usuario, ve a Usuarios y edita su perfil.
+      <a routerLink="/admin/usuarios" class="link-usuarios">Ir a Usuarios →</a>
+    </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
     <div class="users-by-unit">
+      <p class="users-instruction">Para asignar o cambiar la unidad organizativa de un usuario, ve a <a routerLink="/admin/usuarios">Usuarios</a> y edita el perfil del usuario.</p>
       <mat-form-field appearance="outline">
-        <mat-label>Unidad</mat-label>
+        <mat-label>Ver unidad</mat-label>
         <mat-select [ngModel]="selectedUnitForUsers()" (ngModelChange)="selectedUnitForUsers.set($event)">
           <mat-option value="">Seleccionar unidad</mat-option>
           @for (item of flatOrgUnits(); track item.id) {
@@ -92,41 +112,19 @@
 
       @if (selectedUnitForUsers()) {
         <div class="unit-users-panel">
-          <div class="unit-users-list">
-            <span class="section-label">Usuarios en esta unidad:</span>
-            @if (usersInSelectedUnit().length === 0) {
-              <p class="empty-hint">Ningún usuario asignado. Añade uno abajo.</p>
-            } @else {
-              <ul class="user-chips">
-                @for (u of usersInSelectedUnit(); track u.membershipId) {
-                  <li>
-                    <span class="user-chip">{{ u.userName }}</span>
-                    <button mat-icon-button type="button" (click)="removeUserFromUnit(u.membershipId)" matTooltip="Quitar de unidad" aria-label="Quitar">
-                      <mat-icon>close</mat-icon>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-          <div class="add-user-form">
-            <mat-form-field appearance="outline">
-              <mat-label>Añadir usuario</mat-label>
-              <mat-select [(ngModel)]="newUserToAdd">
-                <mat-option value="">Seleccionar</mat-option>
-                @for (u of usersAvailableForUnit(); track u.id) {
-                  <mat-option [value]="u.id">{{ u.name }}</mat-option>
-                }
-              </mat-select>
-              @if (usersAvailableForUnit().length === 0 && usersInSelectedUnit().length > 0) {
-                <mat-hint>Todos los usuarios ya están asignados</mat-hint>
+          <span class="section-label">Usuarios en esta unidad:</span>
+          @if (usersInSelectedUnit().length === 0) {
+            <p class="empty-hint">Ningún usuario asignado. Para asignar usuarios a esta unidad, ve a <a routerLink="/admin/usuarios">Usuarios</a> y edita el perfil de cada usuario.</p>
+          } @else {
+            <ul class="user-chips readonly">
+              @for (u of usersInSelectedUnit(); track u.membershipId) {
+                <li>
+                  <mat-icon class="user-icon">person</mat-icon>
+                  <span class="user-chip">{{ u.userName }}</span>
+                </li>
               }
-            </mat-form-field>
-            <button mat-flat-button color="primary" (click)="addUserToUnit()" [disabled]="!newUserToAdd">
-              <mat-icon>person_add</mat-icon>
-              Añadir
-            </button>
-          </div>
+            </ul>
+          }
         </div>
       }
     </div>

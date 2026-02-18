@@ -1,0 +1,63 @@
+<div class="add-link-dialog">
+  <div class="dialog-header">
+    <h2 class="dialog-title">Añadir dependencia / enlace</h2>
+    <p class="dialog-subtitle">{{ currentTask.folio }} — {{ currentTask.title }}</p>
+  </div>
+  <mat-dialog-content>
+    <form [formGroup]="form" class="dialog-form">
+      @if (form.get('type')?.value === 'BLOCKS') {
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="field-half">
+            <mat-label>Tipo</mat-label>
+            <mat-select formControlName="type">
+              @for (opt of linkTypes; track opt.value) {
+                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="field-half">
+            <mat-label>Dirección</mat-label>
+            <mat-select formControlName="blockedBy">
+              <mat-option [value]="true">La seleccionada bloquea a esta</mat-option>
+              <mat-option [value]="false">Esta bloquea a la seleccionada</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      } @else {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="type">
+            @for (opt of linkTypes; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Filtrar tareas</mat-label>
+        <input matInput placeholder="Folio, título o responsable..." (input)="searchTerm.set($any($event.target).value)" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tarea destino</mat-label>
+        <mat-select formControlName="targetTaskId">
+          @for (t of filteredTasks(); track t.id) {
+            <mat-option [value]="t.id">
+              {{ t.folio }} — {{ t.title }} ({{ t.assignee || 'Sin asignar' }})
+            </mat-option>
+          }
+        </mat-select>
+        @if (form.get('targetTaskId')?.hasError('required') && form.get('targetTaskId')?.touched) {
+          <mat-error>Selecciona una tarea</mat-error>
+        }
+      </mat-form-field>
+      <p class="hint">Solo se muestran tareas del mismo tenant y compatible con el alcance organizacional.</p>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="cancel()">Cancelar</button>
+    <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">
+      <mat-icon>add_link</mat-icon>
+      Crear enlace
+    </button>
+  </mat-dialog-actions>
+</div>

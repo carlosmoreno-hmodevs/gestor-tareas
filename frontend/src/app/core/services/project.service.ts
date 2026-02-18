@@ -27,27 +27,28 @@ export class ProjectService {
   private readonly tenantContext = inject(TenantContextService);
   private readonly orgService = inject(OrgService);
 
-  private readonly _projects = signal<Project[]>(this.initialProjects());
+  private readonly _projects = signal<Project[]>([]);
 
   constructor() {
+    effect(() => {
+      const tid = this.tenantContext.currentTenantId();
+      if (!tid) {
+        this._projects.set([]);
+        return;
+      }
+      const initial = getInitialProjects(tid);
+      const cached = this.connectivity.isOnline() ? null : this.snapshot.loadProjects();
+      const list = cached?.length ? cached.filter((p: Project) => p.tenantId === tid) : initial;
+      const hydrated = list.map((p) => this.hydrateDates(p));
+      this._projects.set(hydrated);
+    }, { allowSignalWrites: true });
+
     effect(() => {
       const projects = this._projects();
       if (this.connectivity.isOnline()) {
         this.snapshot.saveProjects(projects);
       }
     });
-  }
-
-  private initialProjects(): Project[] {
-    const tid = this.tenantContext.currentTenantId();
-    if (!tid) return [];
-    const initial = getInitialProjects(tid);
-    if (this.connectivity.isOnline()) {
-      return initial.map((p) => this.hydrateDates(p));
-    }
-    const cached = this.snapshot.loadProjects();
-    const list = cached?.length ? cached : initial;
-    return list.filter((p) => p.tenantId === tid).map((p) => this.hydrateDates(p));
   }
 
   private filterByContext(projects: Project[]): Project[] {
@@ -221,5 +222,57 @@ export class ProjectService {
 
   getProjectTasks(projectId: string): Task[] {
     return this.taskService.getTasksByProjectId(projectId);
+  }
+
+  /**
+   * Añade los responsables de una tarea como miembros del proyecto si aún no lo son.
+   * Se llama cuando una tarea se crea o actualiza con projectId.
+   */
+  addTaskAssigneesAsMembers(
+    projectId: string,
+    assigneeId: string,
+    subAssigneeIds: string[],
+    getUserName?: (id: string) => string
+  ): void {
+    const project = this._projects().find((p) => p.id === projectId);
+    if (!project) return;
+
+    const existingIds = new Set([
+      project.ownerId,
+      ...(project.members ?? []).map((m) => m.userId)
+    ]);
+
+    const toAdd = [
+      ...(assigneeId && !existingIds.has(assigneeId) ? [assigneeId] : []),
+      ...(subAssigneeIds ?? []).filter((id) => id && !existingIds.has(id))
+    ];
+
+    if (toAdd.length === 0) return;
+
+    const newMembers = toAdd.map((userId) => ({ userId, role: 'Miembro' as const }));
+    const members = [...(project.members ?? []), ...newMembers];
+
+    const activityEntries: ProjectActivityEntry[] = toAdd.map((userId) => ({
+      id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      type: 'MEMBER_ADDED',
+      timestamp: new Date(),
+      userId,
+      userName: getUserName?.(userId),
+      details: { source: 'task_assignee' }
+    }));
+
+    this._projects.update((list) => {
+      const idx = list.findIndex((p) => p.id === projectId);
+      if (idx === -1) return list;
+      const next = [...list];
+      const proj = next[idx];
+      next[idx] = {
+        ...proj,
+        members,
+        activity: [...(proj.activity ?? []), ...activityEntries],
+        lastUpdatedAt: new Date()
+      };
+      return next;
+    });
   }
 }

@@ -12,11 +12,14 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, MatMenuModule],
   template: `
-    <button mat-button [matMenuTriggerFor]="contextMenu" class="context-selector-btn">
-      <mat-icon>account_tree</mat-icon>
-      <span class="context-label">{{ label() }}</span>
-      <mat-icon class="context-chevron">expand_more</mat-icon>
-    </button>
+    <div class="context-selector-wrap">
+      <span class="selector-label">Unidad</span>
+      <button mat-button [matMenuTriggerFor]="contextMenu" class="context-selector-btn">
+        <mat-icon>account_tree</mat-icon>
+        <span class="context-label">{{ label() }}</span>
+        <mat-icon class="context-chevron">expand_more</mat-icon>
+      </button>
+    </div>
     <mat-menu #contextMenu="matMenu" class="context-menu">
       <button mat-menu-item (click)="selectAll()">
         <span>Todos</span>
@@ -41,9 +44,42 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
     </mat-menu>
   `,
   styles: [`
-    .context-selector-btn { display: flex; align-items: center; gap: 0.5rem; }
+    .context-selector-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .selector-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-secondary, #757575);
+    }
+    @media (max-width: 700px) {
+      .selector-label { display: none; }
+    }
+    .context-selector-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 4px 8px;
+      min-height: 36px;
+      border-radius: 8px;
+      color: var(--color-text-secondary, #757575);
+    }
+    .context-selector-btn:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--color-text, #212121);
+    }
+    [data-theme='dark'] .context-selector-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--color-text, #e0e0e0);
+    }
+    .context-selector-btn mat-icon:first-of-type { font-size: 20px; width: 20px; height: 20px; }
     .context-label { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .context-chevron { margin-left: 0.25rem; }
+    .context-chevron { margin-left: 0.25rem; font-size: 18px; width: 18px; height: 18px; }
   `]
 })
 export class ContextSelectorComponent {

@@ -1,0 +1,273 @@
+@let t = task();
+@if (!t) {
+  <p>No se encontró la tarea.</p>
+} @else {
+  <!-- Mapa visual esqueleto -->
+  <mat-card class="relations-card skeleton-map-card">
+    <mat-card-header>
+      <mat-card-title>Mapa de relaciones</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="skeleton-map">
+        <!-- Jerarquía vertical: Parent → Current → Children -->
+        <div class="skeleton-tree">
+          @if (parentTask(); as parent) {
+            <div class="tree-row">
+              <div class="skeleton-node parent" (click)="navigateToTask(parent.id)">
+                <span class="node-folio">{{ parent.folio }}</span>
+                <span class="node-title">{{ parent.title }}</span>
+                <span class="node-meta">{{ getEffectiveStatus(parent) }} · {{ parent.assignee || 'Sin asignar' }}</span>
+              </div>
+            </div>
+            <div class="tree-connector vertical"></div>
+          }
+          <div class="tree-row">
+            <div class="skeleton-node current">
+              <span class="node-folio">{{ t.folio }}</span>
+              <span class="node-title">{{ t.title }}</span>
+              <span class="node-meta">{{ getEffectiveStatus(t) }} · {{ t.assignee || 'Sin asignar' }}</span>
+            </div>
+          </div>
+          @if (subtasks().length > 0) {
+            <div class="tree-connector vertical"></div>
+            <div class="tree-branch">
+              <div class="children-row">
+                @for (st of subtasks(); track st.id) {
+                  <div class="skeleton-node child" (click)="navigateToTask(st.id)">
+                      <span class="node-folio">{{ st.folio }}</span>
+                      <span class="node-title">{{ st.title }}</span>
+                      <span class="node-meta">{{ getEffectiveStatus(st) }}</span>
+                    </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Enlaces laterales: Blocked by | Related / Blocking / Duplicates -->
+        @if (links().blockedBy.length || links().blocking.length || links().related.length || links().duplicates.length) {
+          <div class="skeleton-links">
+            @if (links().blockedBy.length) {
+              <div class="links-group">
+                <span class="links-label">Bloqueada por</span>
+                <div class="links-row">
+                  @for (link of links().blockedBy; track link.id) {
+                    @if (getTaskForLink(link, t.id); as ot) {
+                      <div class="skeleton-node link-node blocked-by" (click)="navigateToTask(ot.id)">
+                        <span class="node-folio">{{ ot.folio }}</span>
+                        <span class="node-title">{{ ot.title }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+            @if (links().blocking.length || links().related.length || links().duplicates.length) {
+              <div class="links-group">
+                <span class="links-label">Enlazadas</span>
+                <div class="links-row">
+                  @for (link of links().blocking; track link.id) {
+                    @if (getTaskForLink(link, t.id); as ot) {
+                      <div class="skeleton-node link-node blocking" (click)="navigateToTask(ot.id)">
+                        <span class="node-badge">Bloquea</span>
+                        <span class="node-folio">{{ ot.folio }}</span>
+                        <span class="node-title">{{ ot.title }}</span>
+                      </div>
+                    }
+                  }
+                  @for (link of links().related; track link.id) {
+                    @if (getTaskForLink(link, t.id); as ot) {
+                      <div class="skeleton-node link-node related" (click)="navigateToTask(ot.id)">
+                        <span class="node-badge">Rel.</span>
+                        <span class="node-folio">{{ ot.folio }}</span>
+                        <span class="node-title">{{ ot.title }}</span>
+                      </div>
+                    }
+                  }
+                  @for (link of links().duplicates; track link.id) {
+                    @if (getTaskForLink(link, t.id); as ot) {
+                      <div class="skeleton-node link-node duplicates" (click)="navigateToTask(ot.id)">
+                        <span class="node-badge">Dup.</span>
+                        <span class="node-folio">{{ ot.folio }}</span>
+                        <span class="node-title">{{ ot.title }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (!parentTask() && subtasks().length === 0 && !links().blockedBy.length && !links().blocking.length && !links().related.length && !links().duplicates.length) {
+          <p class="skeleton-empty">Solo esta tarea. Añade relaciones para ver el mapa.</p>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (isBlocked()) {
+    <div class="blocked-banner">
+      <mat-icon>block</mat-icon>
+      <span>Esta tarea está bloqueada por otras que no han finalizado.</span>
+    </div>
+  }
+
+  <!-- Subtasks / Hierarchy -->
+  <mat-card class="relations-card subtasks-card">
+    <mat-card-header class="subtasks-header">
+      <mat-card-title>Subtareas ({{ subtasks().length }})</mat-card-title>
+      <div class="header-actions">
+        <button mat-stroked-button [disabled]="!isOnline()" (click)="openLinkExistingSubtask()" class="btn-link">
+          <mat-icon>link</mat-icon>
+          Vincular existente
+        </button>
+        <button mat-flat-button color="primary" [disabled]="!isOnline()" (click)="openAddSubtask()">
+          <mat-icon>add</mat-icon>
+          Añadir
+        </button>
+      </div>
+    </mat-card-header>
+    <mat-card-content class="subtasks-content">
+      @if (parentTask(); as parent) {
+        <div class="subtasks-parent-block">
+          <span class="section-label">Tarea padre</span>
+          <div class="subtask-tile parent-tile" (click)="navigateToTask(parent.id)">
+            <app-avatar [name]="parent.assignee || 'Sin asignar'" [size]="36" />
+            <div class="tile-body">
+              <span class="tile-folio">{{ parent.folio }}</span>
+              <span class="tile-title">{{ parent.title }}</span>
+              <span class="tile-meta">{{ parent.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(parent) }} · {{ parent.dueDate | date:'shortDate' }}</span>
+              <div class="tile-chips">
+                <span class="chip-priority" [class]="parent.priority.toLowerCase()">{{ parent.priority }}</span>
+              </div>
+            </div>
+            @if (isOnline()) {
+              <button mat-icon-button (click)="removeParent(); $event.stopPropagation()" matTooltip="Desvincular" class="tile-action">
+                <mat-icon>link_off</mat-icon>
+              </button>
+            }
+          </div>
+        </div>
+      }
+      <div class="subtasks-list-block">
+        <span class="section-label">Lista de subtareas</span>
+        @if (subtasks().length === 0) {
+          <div class="subtasks-empty">
+            <mat-icon>playlist_add</mat-icon>
+            <p>No hay subtareas</p>
+            <span>Añade una nueva o vincula una tarea existente desde los botones de arriba.</span>
+          </div>
+        } @else {
+          <div class="subtasks-list">
+            @for (st of subtasks(); track st.id; let i = $index) {
+              <div class="subtask-tile" (click)="navigateToTask(st.id)">
+                <span class="tile-index">{{ i + 1 }}</span>
+                <app-avatar [name]="st.assignee || 'Sin asignar'" [size]="32" />
+                <div class="tile-body">
+                  <span class="tile-folio">{{ st.folio }}</span>
+                  <span class="tile-title">{{ st.title }}</span>
+                  <span class="tile-meta">{{ st.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(st) }} · {{ st.dueDate | date:'shortDate' }}</span>
+                  <div class="tile-chips">
+                    <span class="chip-priority" [class]="st.priority.toLowerCase()">{{ st.priority }}</span>
+                  </div>
+                </div>
+                <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+              </div>
+            }
+          </div>
+          <div class="subtasks-add-row">
+            <button mat-stroked-button [disabled]="!isOnline()" (click)="openAddSubtask()">
+              <mat-icon>add</mat-icon>
+              Añadir otra subtarea
+            </button>
+          </div>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Dependencies / Links -->
+  <mat-card class="relations-card">
+    <mat-card-header>
+      <mat-card-title>Dependencias y enlaces</mat-card-title>
+      <button mat-flat-button color="primary" [disabled]="!isOnline()" (click)="openAddLink()">
+        <mat-icon>add</mat-icon>
+        Añadir enlace
+      </button>
+    </mat-card-header>
+    <mat-card-content>
+      @if (links().blockedBy.length) {
+        <div class="relation-section">
+          <span class="section-label">Bloqueada por</span>
+          @for (link of links().blockedBy; track link.id) {
+            @if (getTaskForLink(link, t.id); as ot) {
+              <div class="relation-item" (click)="navigateToTask(ot.id)">
+                <mat-chip class="type-chip blocks">{{ getTypeLabel(link.type) }}</mat-chip>
+                <span class="item-title">{{ ot.folio }} — {{ ot.title }}</span>
+                <span class="item-meta">{{ ot.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(ot) }}</span>
+                @if (isOnline()) {
+                  <button mat-icon-button (click)="removeLink(link); $event.stopPropagation()"><mat-icon>close</mat-icon></button>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+      @if (links().blocking.length) {
+        <div class="relation-section">
+          <span class="section-label">Bloqueando</span>
+          @for (link of links().blocking; track link.id) {
+            @if (getTaskForLink(link, t.id); as ot) {
+              <div class="relation-item" (click)="navigateToTask(ot.id)">
+                <mat-chip class="type-chip blocks">{{ getTypeLabel(link.type) }}</mat-chip>
+                <span class="item-title">{{ ot.folio }} — {{ ot.title }}</span>
+                <span class="item-meta">{{ ot.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(ot) }}</span>
+                @if (isOnline()) {
+                  <button mat-icon-button (click)="removeLink(link); $event.stopPropagation()"><mat-icon>close</mat-icon></button>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+      @if (links().related.length) {
+        <div class="relation-section">
+          <span class="section-label">Relacionadas</span>
+          @for (link of links().related; track link.id) {
+            @if (getTaskForLink(link, t.id); as ot) {
+              <div class="relation-item" (click)="navigateToTask(ot.id)">
+                <mat-chip class="type-chip relates">{{ getTypeLabel(link.type) }}</mat-chip>
+                <span class="item-title">{{ ot.folio }} — {{ ot.title }}</span>
+                <span class="item-meta">{{ ot.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(ot) }}</span>
+                @if (isOnline()) {
+                  <button mat-icon-button (click)="removeLink(link); $event.stopPropagation()"><mat-icon>close</mat-icon></button>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+      @if (links().duplicates.length) {
+        <div class="relation-section">
+          <span class="section-label">Duplicados</span>
+          @for (link of links().duplicates; track link.id) {
+            @if (getTaskForLink(link, t.id); as ot) {
+              <div class="relation-item" (click)="navigateToTask(ot.id)">
+                <mat-chip class="type-chip duplicates">{{ getTypeLabel(link.type) }}</mat-chip>
+                <span class="item-title">{{ ot.folio }} — {{ ot.title }}</span>
+                <span class="item-meta">{{ ot.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(ot) }}</span>
+                @if (isOnline()) {
+                  <button mat-icon-button (click)="removeLink(link); $event.stopPropagation()"><mat-icon>close</mat-icon></button>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+      @if (!links().blockedBy.length && !links().blocking.length && !links().related.length && !links().duplicates.length) {
+        <p class="empty-hint">No hay dependencias ni enlaces.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+}

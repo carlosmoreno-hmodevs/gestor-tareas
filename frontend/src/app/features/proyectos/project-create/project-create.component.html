@@ -39,7 +39,7 @@
               <mat-label>Owner / Responsable</mat-label>
               <mat-select formControlName="ownerId">
                 <mat-option value="">Seleccionar</mat-option>
-                @for (u of teamUsers(); track u.id) {
+                @for (u of users(); track u.id) {
                   <mat-option [value]="u.id">{{ u.name }}</mat-option>
                 }
               </mat-select>
@@ -162,7 +162,7 @@
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Miembros del equipo</mat-label>
               <mat-select formControlName="memberIds" multiple>
-                @for (u of teamUsers(); track u.id) {
+                @for (u of usersForMemberSelect; track u.id) {
                   <mat-option [value]="u.id">{{ u.name }}</mat-option>
                 }
               </mat-select>

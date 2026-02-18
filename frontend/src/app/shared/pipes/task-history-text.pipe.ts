@@ -28,6 +28,12 @@ export class TaskHistoryTextPipe implements PipeTransform {
         return d.comment ? `Reagendada: ${d.comment}` : 'Tarea reagendada';
       case 'ATTACHMENT_ADDED':
         return d.fileNames?.length ? `Adjuntó: ${d.fileNames.join(', ')}` : 'Archivo adjuntado';
+      case 'PARENT_CHANGED':
+        return d.newValue ? 'Subtask asignada a otra tarea' : 'Subtask desvinculada';
+      case 'LINK_ADDED':
+        return 'Dependencia/enlace agregada';
+      case 'LINK_REMOVED':
+        return 'Dependencia/enlace eliminada';
       default:
         return entry.type ?? 'Actividad';
     }

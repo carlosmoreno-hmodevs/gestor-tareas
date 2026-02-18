@@ -1,12 +1,66 @@
 @use 'styles/tokens' as *;
 
+.empty-projects-card {
+  margin-top: $spacing-lg;
+  border-radius: $radius-lg !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.01);
+
+  [data-theme='dark'] & {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  mat-card-content {
+    padding: $spacing-2xl $spacing-xl !important;
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  app-empty-state .empty-state-icon {
+    font-size: 5rem;
+    width: 5rem;
+    height: 5rem;
+    opacity: 0.35;
+    color: var(--color-primary, #1976d2);
+  }
+
+  app-empty-state .empty-state-title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    color: var(--color-text, #212121);
+    margin-top: $spacing-sm;
+  }
+
+  app-empty-state .empty-state-message {
+    max-width: 420px;
+    line-height: 1.5;
+    margin-top: $spacing-sm;
+  }
+}
+
+.empty-cta {
+  margin-top: $spacing-xl;
+
+  mat-icon {
+    margin-right: $spacing-xs;
+  }
+}
+
 .projects-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: $spacing-md;
-  margin-bottom: $spacing-lg;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  a[mat-flat-button] {
+    padding: $spacing-sm $spacing-lg;
+  }
 }
 
 .project-card {

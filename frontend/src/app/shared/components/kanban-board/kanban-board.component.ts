@@ -7,6 +7,7 @@ import { TaskWorkflowService } from '../../../core/services/task-workflow.servic
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { DataService } from '../../../core/services/data.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatIconModule } from '@angular/material/icon';
 import { AvatarComponent } from '../avatar/avatar.component';
 import type { Task, TaskStatus } from '../../../shared/models';
 
@@ -24,12 +25,12 @@ const KANBAN_COLUMNS: { status: TaskStatus; label: string }[] = [
 @Component({
   selector: 'app-kanban-board',
   standalone: true,
-  imports: [CommonModule, RouterLink, DragDropModule, AvatarComponent],
+  imports: [CommonModule, RouterLink, DragDropModule, MatIconModule, AvatarComponent],
   templateUrl: './kanban-board.component.html',
   styleUrl: './kanban-board.component.scss'
 })
 export class KanbanBoardComponent {
-  private readonly taskService = inject(TaskService);
+  readonly taskService = inject(TaskService);
   private readonly workflow = inject(TaskWorkflowService);
   private readonly connectivity = inject(ConnectivityService);
   private readonly dataService = inject(DataService);
@@ -40,7 +41,7 @@ export class KanbanBoardComponent {
 
   columns = KANBAN_COLUMNS;
   columnIds = KANBAN_COLUMNS.map((c) => 'drop-' + c.status.replace(/\s+/g, '-'));
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
 
   tasksByStatus = computed(() => {
     const tasks = this.tasks();
@@ -69,11 +70,11 @@ export class KanbanBoardComponent {
   }
 
   getUserById(id: string) {
-    return this.users.find((u) => u.id === id);
+    return this.users().find((u) => u.id === id);
   }
 
   getUserByName(name: string) {
-    return this.users.find((u) => u.name === name);
+    return this.users().find((u) => u.name === name);
   }
 
   onDrop(event: CdkDragDrop<Task[]>): void {

@@ -73,7 +73,7 @@
           <mat-option value="">
             <span class="assignee-option">Sin asignar</span>
           </mat-option>
-          @for (u of users; track u.id) {
+          @for (u of users(); track u.id) {
             <mat-option [value]="u.id">{{ u.name }}</mat-option>
           }
         </mat-select>
@@ -130,7 +130,7 @@
         <mat-label>Proyecto</mat-label>
         <mat-select formControlName="projectId">
           <mat-option value="">—</mat-option>
-          @for (pr of projects; track pr.id) {
+          @for (pr of projects(); track pr.id) {
             <mat-option [value]="pr.id">{{ pr.name }}</mat-option>
           }
         </mat-select>
@@ -139,7 +139,7 @@
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Subresponsables</mat-label>
         <mat-select formControlName="subAssigneeIds" multiple>
-          @for (u of users; track u.id) {
+          @for (u of usersForSubAssignees; track u.id) {
             <mat-option [value]="u.id">{{ u.name }}</mat-option>
           }
         </mat-select>

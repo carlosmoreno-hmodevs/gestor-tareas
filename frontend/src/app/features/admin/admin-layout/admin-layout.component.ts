@@ -10,6 +10,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 interface AdminNavItem {
   path: string;
   label: string;
+  shortLabel: string;
   icon: string;
 }
 
@@ -36,28 +37,19 @@ export class AdminLayoutComponent {
   isDesktop = signal(true);
 
   navItems: AdminNavItem[] = [
-    { path: '/admin/usuarios', label: 'Usuarios', icon: 'people' },
-    { path: '/admin/roles', label: 'Roles y permisos', icon: 'admin_panel_settings' },
-    { path: '/admin/catalogos', label: 'Catálogos', icon: 'category' },
-    { path: '/admin/organization', label: 'Organización', icon: 'account_tree' },
-    { path: '/admin/reglas', label: 'Reglas y notificaciones', icon: 'rule' },
-    { path: '/admin/flujos', label: 'Flujos', icon: 'account_tree' },
-    { path: '/admin/campos', label: 'Campos personalizados', icon: 'tune' }
+    { path: '/admin/usuarios', label: 'Usuarios', shortLabel: 'Usuarios', icon: 'people' },
+    { path: '/admin/roles', label: 'Roles y permisos', shortLabel: 'Roles', icon: 'admin_panel_settings' },
+    { path: '/admin/catalogos', label: 'Catálogos', shortLabel: 'Catálogos', icon: 'category' },
+    { path: '/admin/organization', label: 'Organización', shortLabel: 'Org.', icon: 'account_tree' },
+    { path: '/admin/reglas', label: 'Reglas y notificaciones', shortLabel: 'Reglas', icon: 'rule' },
+    { path: '/admin/flujos', label: 'Flujos', shortLabel: 'Flujos', icon: 'account_tree' },
+    { path: '/admin/campos', label: 'Campos personalizados', shortLabel: 'Campos', icon: 'tune' }
   ];
 
   constructor() {
     this.breakpoint.observe('(min-width: 1024px)').subscribe((r) => {
-      const desktop = r.matches;
-      this.isDesktop.set(desktop);
-      this.sidenavOpened.set(desktop);
+      this.isDesktop.set(r.matches);
+      this.sidenavOpened.set(r.matches);
     });
-  }
-
-  toggleSidenav(): void {
-    this.sidenavOpened.update((v) => !v);
-  }
-
-  closeIfOverlay(): void {
-    if (!this.isDesktop()) this.sidenavOpened.set(false);
   }
 }

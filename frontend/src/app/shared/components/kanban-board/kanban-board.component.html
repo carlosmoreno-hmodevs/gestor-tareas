@@ -32,7 +32,20 @@
               [class.prio-baja]="task.priority === 'Baja'"
             >
               <a class="kanban-card-link" [routerLink]="['/tareas', task.id]" (click)="$event.stopPropagation()">
-                <h4 class="kanban-card-title">{{ task.title }}</h4>
+                <h4 class="kanban-card-title">
+                  <span class="kanban-title-text">{{ task.title }}</span>
+                  <span class="kanban-rel-icons">
+                    @if (task.parentTaskId) {
+                      <mat-icon class="rel-icon" title="Subtarea">subdirectory_arrow_right</mat-icon>
+                    }
+                    @if (taskService.getSubtasks(task.id).length) {
+                      <span class="rel-chip" title="{{ taskService.getSubtasks(task.id).length }} subtareas">{{ taskService.getSubtasks(task.id).length }}</span>
+                    }
+                    @if (taskService.isBlocked(task.id)) {
+                      <mat-icon class="rel-icon blocked" title="Bloqueada">block</mat-icon>
+                    }
+                  </span>
+                </h4>
                 <p class="kanban-card-meta">{{ task.folio }} • {{ task.assignee || 'Sin asignar' }}</p>
               </a>
               <div class="kanban-card-footer">

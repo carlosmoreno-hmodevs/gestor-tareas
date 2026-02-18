@@ -17,15 +17,55 @@
           <input matInput placeholder="Ej: TASK-008" [ngModel]="taskFilter()" (ngModelChange)="taskFilter.set($event)" />
           <mat-icon matPrefix>search</mat-icon>
         </mat-form-field>
-        <button mat-flat-button color="primary" disabled matTooltip="Próximamente">
+        <button mat-flat-button color="primary" class="upload-btn" disabled matTooltip="Próximamente">
           <mat-icon>upload_file</mat-icon>
-          Subir archivo
+          <span class="btn-label">Subir archivo</span>
         </button>
       </div>
     </div>
   </mat-card-header>
   <mat-card-content>
     @if (filteredDocuments().length > 0) {
+      @if (isMobile()) {
+        <div class="doc-cards">
+          @for (doc of filteredDocuments(); track doc.id) {
+            <div class="doc-card">
+              <div class="doc-card-main">
+                <mat-icon class="file-icon" [class]="'file-icon--' + getFileType(doc.name)">{{ getFileIcon(doc.name) }}</mat-icon>
+                <div class="doc-card-info">
+                  <span class="doc-card-name">{{ doc.name }}</span>
+                  <div class="doc-card-meta">
+                    <span>{{ formatSize(doc.size) }}</span>
+                    @if (doc.taskId) {
+                      <span>·</span>
+                      <span>{{ formatTaskId(doc.taskId) }}</span>
+                    }
+                    <span>·</span>
+                    <span>{{ doc.uploadedAt | dateFormat: 'short' }}</span>
+                    <span>·</span>
+                    <span>{{ doc.uploadedBy }}</span>
+                  </div>
+                </div>
+              </div>
+              <button mat-icon-button [matMenuTriggerFor]="docCardMenu" (click)="menuDoc.set(doc)" class="doc-card-menu">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+        <mat-menu #docCardMenu="matMenu">
+          @if (menuDoc(); as doc) {
+            <button mat-menu-item disabled>
+              <mat-icon>visibility</mat-icon>
+              Ver
+            </button>
+            <button mat-menu-item disabled>
+              <mat-icon>download</mat-icon>
+              Descargar
+            </button>
+          }
+        </mat-menu>
+      } @else {
       <table mat-table [dataSource]="filteredDocuments()" class="documents-table">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Nombre</th>
@@ -81,6 +121,7 @@
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns" class="doc-row"></tr>
       </table>
+      }
     } @else {
       <div class="empty-state">
         <mat-icon>folder_open</mat-icon>

@@ -22,9 +22,13 @@ export const INITIAL_ORG_UNITS: OrgUnit[] = [
 ];
 
 export const INITIAL_USER_ORG_MEMBERSHIPS: UserOrgMembership[] = [
-  { id: 'uom-1', tenantId: 'tenant-1', userId: 'user-1', orgUnitId: 'ou-1' },
-  { id: 'uom-2', tenantId: 'tenant-1', userId: 'user-2', orgUnitId: 'ou-2' },
-  { id: 'uom-3', tenantId: 'tenant-1', userId: 'user-3', orgUnitId: 'ou-3' },
-  { id: 'uom-4', tenantId: 'tenant-2', userId: 'user-4', orgUnitId: 'ou-6' },
-  { id: 'uom-5', tenantId: 'tenant-2', userId: 'user-5', orgUnitId: 'ou-7' }
+  // tenant-1: Región Norte (ou-1) -> Tienda Centro (ou-2) -> Ventas (ou-3); Tienda Sur (ou-4)
+  { id: 'uom-1', tenantId: 'tenant-1', userId: 'user-owner', orgUnitId: 'ou-1' },
+  { id: 'uom-2', tenantId: 'tenant-1', userId: 'user-1', orgUnitId: 'ou-1' },
+  { id: 'uom-3', tenantId: 'tenant-1', userId: 'user-2', orgUnitId: 'ou-2' },
+  { id: 'uom-4', tenantId: 'tenant-1', userId: 'user-3', orgUnitId: 'ou-3' },
+  { id: 'uom-5', tenantId: 'tenant-1', userId: 'user-1', orgUnitId: 'ou-4' },
+  // tenant-2
+  { id: 'uom-6', tenantId: 'tenant-2', userId: 'user-4', orgUnitId: 'ou-6' },
+  { id: 'uom-7', tenantId: 'tenant-2', userId: 'user-5', orgUnitId: 'ou-7' }
 ];

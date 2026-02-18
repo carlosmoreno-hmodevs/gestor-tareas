@@ -1,5 +1,5 @@
 import { ApplicationConfig, APP_INITIALIZER, provideBrowserGlobalErrorListeners, isDevMode, inject } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { TenantContextService } from './core/services/tenant-context.service';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -19,7 +19,11 @@ export const appConfig: ApplicationConfig = {
       },
       multi: true
     },
-    provideRouter(routes, withComponentInputBinding()),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withInMemoryScrolling({ scrollPositionRestoration: 'top' })
+    ),
     provideAnimations(),
     provideCharts(withDefaultRegisterables()),
     provideServiceWorker('ngsw-worker.js', {

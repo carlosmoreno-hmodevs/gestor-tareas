@@ -6,7 +6,8 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: $spacing-md;
+    gap: $spacing-lg;
+    padding-bottom: $spacing-lg;
     padding-bottom: $spacing-md;
     margin-bottom: $spacing-sm;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -26,8 +27,9 @@
   grid-template-columns: 280px 1fr;
   gap: $spacing-xl;
 
-  @media (max-width: 900px) {
+  @media (max-width: 767px) {
     grid-template-columns: 1fr;
+    gap: $spacing-md;
   }
 }
 
@@ -89,8 +91,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
   padding: $spacing-sm 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  span {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .empty-hint {

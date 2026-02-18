@@ -5,6 +5,10 @@
   align-items: flex-start;
   gap: $spacing-md;
   margin-bottom: $spacing-lg;
+
+  @media (max-width: 600px) {
+    margin-bottom: $spacing-md;
+  }
 }
 
 .page-header-icon {

@@ -28,12 +28,17 @@
   }
 }
 
+:host {
+  display: block;
+  padding: $spacing-lg $spacing-lg 0;
+}
+
 .task-detail-header {
-  margin-bottom: $spacing-lg;
-  padding: $spacing-lg;
-  background: var(--color-bg-card, #fff);
-  border-radius: $radius-lg;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 0;
+  padding-bottom: $spacing-md;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .header-top {

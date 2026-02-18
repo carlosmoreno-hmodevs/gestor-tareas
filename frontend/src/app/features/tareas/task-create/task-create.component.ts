@@ -64,14 +64,14 @@ export class TaskCreateComponent implements OnInit {
   fixedProjectId: string | null = null;
   fixedProjectName = '';
 
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
   categories = this.dataService.getCategories();
   orgUnits = this.orgService.getOrgUnits(this.tenantContext.currentTenantId() ?? '');
   priorities = this.dataService.getPriorities();
-  projects = this.dataService.getProjects();
+  projects = this.dataService.projectsForCurrentOrg;
 
   teamUsers = computed(() => {
-    const base = this.users.filter(
+    const base = this.users().filter(
       (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
     );
     const tid = this.tenantContext.currentTenantId();
@@ -101,6 +101,11 @@ export class TaskCreateComponent implements OnInit {
   selectedFiles: { name: string; size: number }[] = [];
   saving = false;
 
+  get usersForSubAssignees() {
+    const assigneeId = this.form.get('assigneeId')?.value;
+    return this.users().filter((u) => u.id !== assigneeId);
+  }
+
   ngOnInit(): void {
     const projectId = this.route.snapshot.queryParamMap.get('projectId');
     if (projectId) {
@@ -110,6 +115,13 @@ export class TaskCreateComponent implements OnInit {
       this.form.patchValue({ projectId });
       this.form.get('projectId')?.disable();
     }
+    this.form.get('assigneeId')?.valueChanges.subscribe((assigneeId) => {
+      const subCtrl = this.form.get('subAssigneeIds');
+      const subs = (subCtrl?.value ?? []) as string[];
+      if (assigneeId && subs.includes(assigneeId)) {
+        subCtrl?.setValue(subs.filter((id) => id !== assigneeId), { emitEvent: false });
+      }
+    });
   }
 
   addTag(): void {
@@ -166,10 +178,11 @@ export class TaskCreateComponent implements OnInit {
     const v = this.form.getRawValue();
     const projectId = this.fixedProjectId ?? v.projectId;
     const folio = `TASK-${String(Date.now()).slice(-6)}`;
-    const assignee = this.users.find((u) => u.id === v.assigneeId);
+    const assignee = this.users().find((u) => u.id === v.assigneeId);
     const category = this.categories.find((c) => c.id === v.categoryId);
-    const subIds = v.subAssigneeIds ?? [];
-    const subNames = subIds.map((id) => this.users.find((u) => u.id === id)?.name ?? '').filter(Boolean);
+    const assigneeId = v.assigneeId ?? '';
+    const subIds = (v.subAssigneeIds ?? []).filter((id) => id && id !== assigneeId);
+    const subNames = subIds.map((id) => this.users().find((u) => u.id === id)?.name ?? '').filter(Boolean);
 
     const payload = {
       tenantId: this.tenantContext.currentTenantId() ?? 'tenant-1',
@@ -177,7 +190,7 @@ export class TaskCreateComponent implements OnInit {
       title: v.title!,
       description: v.description ?? '',
       assignee: assignee?.name ?? 'Sin asignar',
-      assigneeId: v.assigneeId ?? '',
+      assigneeId,
       status: 'Pendiente' as const,
       priority: (v.priority ?? 'Media') as Priority,
       dueDate: v.dueDate ? new Date(v.dueDate) : new Date(),

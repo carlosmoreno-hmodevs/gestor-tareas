@@ -32,10 +32,10 @@ export class TableroComponent {
   private readonly dataService = inject(DataService);
 
   selectedPeriod = signal('7');
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
 
   getUserByName(name: string) {
-    return this.users.find((u) => u.name === name);
+    return this.users().find((u) => u.name === name);
   }
 
   activeCount = this.taskService.activeCount;

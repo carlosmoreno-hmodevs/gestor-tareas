@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -54,9 +54,11 @@ export class ProjectCreateDialogComponent {
   private readonly catalog = inject(ProjectCatalogService);
   readonly connectivity = inject(ConnectivityService);
 
-  users = this.dataService.getUsers();
-  teamUsers = this.users.filter(
-    (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
+  users = this.dataService.usersForCurrentOrg;
+  teamUsers = computed(() =>
+    this.users().filter(
+      (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
+    )
   );
   statuses = this.catalog.getStatuses();
   priorities = this.catalog.getPriorities();
@@ -85,6 +87,21 @@ export class ProjectCreateDialogComponent {
     },
     { validators: dueDateValidator }
   );
+
+  constructor() {
+    this.form.get('ownerId')?.valueChanges.subscribe((ownerId) => {
+      const memberCtrl = this.form.get('memberIds');
+      const ids = (memberCtrl?.value ?? []) as string[];
+      if (ownerId && ids.includes(ownerId)) {
+        memberCtrl?.setValue(ids.filter((id) => id !== ownerId), { emitEvent: false });
+      }
+    });
+  }
+
+  get usersForMemberSelect() {
+    const ownerId = this.form.get('ownerId')?.value;
+    return this.users().filter((u) => u.id !== ownerId);
+  }
 
   addTag(event: MatChipInputEvent): void {
     const value = (event.value ?? '').trim();
@@ -143,20 +160,22 @@ export class ProjectCreateDialogComponent {
   save(): void {
     if (this.form.invalid || !this.connectivity.isOnline()) return;
     const v = this.form.getRawValue();
-    const owner = this.users.find((u) => u.id === v.ownerId);
-    const members = (v.memberIds ?? []).map((userId) => ({
+    const owner = this.users().find((u) => u.id === v.ownerId);
+    const ownerId = v.ownerId ?? '';
+    const memberIdsFiltered = (v.memberIds ?? []).filter((id) => id && id !== ownerId);
+    const members = memberIdsFiltered.map((userId) => ({
       userId,
       role: 'Miembro'
     }));
-    if (v.ownerId && !members.some((m) => m.userId === v.ownerId)) {
-      members.unshift({ userId: v.ownerId, role: 'Líder' });
+    if (ownerId && !members.some((m) => m.userId === ownerId)) {
+      members.unshift({ userId: ownerId, role: 'Líder' });
     }
 
     const payload = {
       name: v.name!,
       description: v.description ?? '',
       owner: owner?.name ?? 'Sin asignar',
-      ownerId: v.ownerId ?? '',
+      ownerId,
       status: (v.status || undefined) as ProjectStatus | undefined,
       image: this.imageMeta ?? undefined,
       startDate: v.startDate ?? undefined,

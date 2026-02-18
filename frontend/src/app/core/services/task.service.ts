@@ -1,5 +1,5 @@
 import { Injectable, inject, Injector, signal, computed, effect } from '@angular/core';
-import type { Task, TaskStatus } from '../../shared/models';
+import type { Task, TaskStatus, TaskLink, TaskLinkType, TaskLinksForTask, TaskTreeNode } from '../../shared/models';
 import { getInitialTasks } from '../data/dummy-data';
 import { ConnectivityService } from './connectivity.service';
 import { OfflineSnapshotService } from './offline-snapshot.service';
@@ -8,6 +8,7 @@ import { CurrentUserService } from './current-user.service';
 import { TenantContextService } from './tenant-context.service';
 import { OrgService } from './org.service';
 import { ProjectService } from './project.service';
+import { AdminService } from './admin.service';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
@@ -17,11 +18,30 @@ export class TaskService {
   private readonly currentUser = inject(CurrentUserService);
   private readonly tenantContext = inject(TenantContextService);
   private readonly orgService = inject(OrgService);
+  private readonly adminService = inject(AdminService);
   private readonly injector = inject(Injector);
 
-  private readonly _tasks = signal<Task[]>(this.initialTasks());
+  private readonly _tasks = signal<Task[]>([]);
+  private readonly _taskLinks = signal<TaskLink[]>([]);
 
   constructor() {
+    effect(() => {
+      const tid = this.tenantContext.currentTenantId();
+      if (!tid) {
+        this._tasks.set([]);
+        this._taskLinks.set([]);
+        return;
+      }
+      const initialTasks = getInitialTasks(tid);
+      const cachedTasks = this.connectivity.isOnline() ? null : this.snapshot.loadTasks();
+      const tasks = cachedTasks?.length ? cachedTasks.filter((t: Task) => t.tenantId === tid) : initialTasks;
+      this._tasks.set(tasks);
+
+      const cachedLinks = this.snapshot.loadTaskLinks();
+      const links = cachedLinks?.filter((l) => l.tenantId === tid) ?? [];
+      this._taskLinks.set(links);
+    }, { allowSignalWrites: true });
+
     effect(() => {
       const tasks = this._tasks();
       if (this.connectivity.isOnline()) {
@@ -29,18 +49,93 @@ export class TaskService {
         this.connectivity.markSync();
       }
     });
+    effect(() => {
+      const links = this._taskLinks();
+      if (this.connectivity.isOnline()) {
+        this.snapshot.saveTaskLinks(links);
+      }
+    });
   }
 
-  private initialTasks(): Task[] {
-    const tid = this.tenantContext.currentTenantId();
-    if (!tid) return [];
-    const initial = getInitialTasks(tid);
-    if (this.connectivity.isOnline()) {
-      return initial;
+  private getProjectService(): ProjectService {
+    return this.injector.get(ProjectService);
+  }
+
+  /** Primary org unit for a task: task.orgUnitId or project.primaryOrgUnitId */
+  private getPrimaryOrgUnitId(task: Task): string | undefined {
+    if (task.orgUnitId) return task.orgUnitId;
+    if (task.projectId) {
+      const proj = this.getProjectService().getProjectById(task.projectId);
+      return proj?.primaryOrgUnitId;
     }
-    const cached = this.snapshot.loadTasks();
-    const list = cached?.length ? cached : initial;
-    return list.filter((t) => t.tenantId === tid);
+    return undefined;
+  }
+
+  /** Check if child org is compatible with parent's org scope */
+  private isOrgCompatible(parentTask: Task, childOrgUnitId: string | undefined): boolean {
+    const parentOrg = this.getPrimaryOrgUnitId(parentTask);
+    if (!parentOrg) return true;
+    if (!childOrgUnitId) return true;
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return false;
+    const scopeIds = this.orgService.getScopeOrgUnitIds(tid, parentOrg);
+    return scopeIds !== null && scopeIds.includes(childOrgUnitId);
+  }
+
+  /** Get all ancestor task IDs (for cycle detection) */
+  private getAncestorIds(taskId: string): Set<string> {
+    const visited = new Set<string>();
+    let current: Task | undefined = this._tasks().find((t) => t.id === taskId);
+    while (current?.parentTaskId) {
+      if (visited.has(current.parentTaskId)) break;
+      visited.add(current.parentTaskId);
+      current = this._tasks().find((t) => t.id === current!.parentTaskId);
+    }
+    return visited;
+  }
+
+  /** Check if adding fromId BLOCKS toId would create a cycle in BLOCKS graph */
+  private wouldCreateBlocksCycle(fromTaskId: string, toTaskId: string): boolean {
+    const links = this._taskLinks().filter((l) => l.type === 'BLOCKS' && l.tenantId === this.tenantContext.currentTenantId());
+    const blocks = new Map<string, string[]>();
+    for (const l of links) {
+      if (!blocks.has(l.fromTaskId)) blocks.set(l.fromTaskId, []);
+      blocks.get(l.fromTaskId)!.push(l.toTaskId);
+    }
+    const wouldAdd = (a: string, b: string) => {
+      const next = new Map(blocks);
+      const arr = next.get(a) ?? [];
+      if (!arr.includes(b)) next.set(a, [...arr, b]);
+      return next;
+    };
+    const withNew = wouldAdd(fromTaskId, toTaskId);
+    const reachable = (start: string): Set<string> => {
+      const seen = new Set<string>();
+      const stack = [start];
+      while (stack.length) {
+        const id = stack.pop()!;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        for (const t of withNew.get(id) ?? []) stack.push(t);
+      }
+      return seen;
+    };
+    return reachable(toTaskId).has(fromTaskId);
+  }
+
+  private appendHistoryEntry(task: Task, type: Task['history'][0]['type'], details: Task['history'][0]['details']): Task {
+    const entry = this.workflow.createHistoryEntry(type, this.currentUser.id, this.currentUser.name, details);
+    return { ...task, history: [...(task.history ?? []), entry] };
+  }
+
+  private persistTask(updated: Task): void {
+    this._tasks.update((list) => {
+      const idx = list.findIndex((t) => t.id === updated.id);
+      if (idx === -1) return list;
+      const next = [...list];
+      next[idx] = updated;
+      return next;
+    });
   }
 
   private filterByContext(tasks: Task[]): Task[] {
@@ -105,16 +200,31 @@ export class TaskService {
   }
 
   updateTask(id: string, updates: Partial<Task>): void {
+    let updatedTask: Task | null = null;
     this._tasks.update((list) => {
       const idx = list.findIndex((t) => t.id === id);
       if (idx === -1) return list;
       const task = list[idx];
       const updated = { ...task, ...updates };
       updated.riskIndicator = this.workflow.computeRiskIndicator(updated);
+      updatedTask = updated;
       const next = [...list];
       next[idx] = updated;
       return next;
     });
+
+    if (!updatedTask) return;
+    const task: Task = updatedTask;
+    if (task.projectId && (task.assigneeId || (task.subAssigneeIds?.length ?? 0) > 0)) {
+      const projectService = this.injector.get(ProjectService);
+      const getUserName = (userId: string) => this.adminService.getUserById(userId)?.name ?? userId;
+      projectService.addTaskAssigneesAsMembers(
+        task.projectId,
+        task.assigneeId ?? '',
+        task.subAssigneeIds ?? [],
+        getUserName
+      );
+    }
   }
 
   createTask(task: Omit<Task, 'id' | 'history'> & { history?: Task['history'] }): Task {
@@ -138,6 +248,18 @@ export class TaskService {
       history: [entry]
     };
     this._tasks.update((list) => [...list, newTask]);
+
+    if (newTask.projectId && (newTask.assigneeId || (newTask.subAssigneeIds?.length ?? 0) > 0)) {
+      const projectService = this.injector.get(ProjectService);
+      const getUserName = (id: string) => this.adminService.getUserById(id)?.name ?? id;
+      projectService.addTaskAssigneesAsMembers(
+        newTask.projectId,
+        newTask.assigneeId ?? '',
+        newTask.subAssigneeIds ?? [],
+        getUserName
+      );
+    }
+
     return newTask;
   }
 
@@ -248,5 +370,196 @@ export class TaskService {
     });
 
     return updated;
+  }
+
+  // ─── Relations: Hierarchy & Links ─────────────────────────────────────────
+
+  setParentTask(taskId: string, parentTaskId: string | null): void {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) throw new Error('No tenant context');
+    const task = this._tasks().find((t) => t.id === taskId && t.tenantId === tid);
+    if (!task) throw new Error('Task not found');
+    if (parentTaskId === taskId) throw new Error('A task cannot be its own parent');
+    if (parentTaskId) {
+      const parent = this._tasks().find((t) => t.id === parentTaskId && t.tenantId === tid);
+      if (!parent) throw new Error('Parent task not found');
+      if (parent.tenantId !== task.tenantId) throw new Error('Cannot relate tasks from different tenants');
+      const ancestors = this.getAncestorIds(parentTaskId);
+      if (ancestors.has(taskId)) throw new Error('Cannot create cycle: task would be ancestor of its parent');
+      if (!this.isOrgCompatible(parent, task.orgUnitId)) {
+        throw new Error('Child task org unit is not compatible with parent scope');
+      }
+    }
+    const prevParent = task.parentTaskId ?? null;
+    const updated = {
+      ...task,
+      parentTaskId: parentTaskId ?? undefined,
+      orgUnitId: parentTaskId && !task.orgUnitId
+        ? this.getPrimaryOrgUnitId(this._tasks().find((t) => t.id === parentTaskId)!) ?? task.orgUnitId
+        : task.orgUnitId
+    };
+    const withHistory = this.appendHistoryEntry(updated, 'PARENT_CHANGED', {
+      oldValue: prevParent ?? '',
+      newValue: parentTaskId ?? ''
+    });
+    this.persistTask(withHistory);
+  }
+
+  addSubtask(
+    parentTaskId: string,
+    payload: { title: string; dueDate?: Date; priority?: Task['priority']; assigneeId?: string; assignee?: string; orgUnitId?: string }
+  ): Task {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) throw new Error('No tenant context');
+    const parent = this._tasks().find((t) => t.id === parentTaskId && t.tenantId === tid);
+    if (!parent) throw new Error('Parent task not found');
+    const orgUnitId = payload.orgUnitId ?? parent.orgUnitId ?? this.getPrimaryOrgUnitId(parent);
+    if (orgUnitId && !this.isOrgCompatible(parent, orgUnitId)) {
+      throw new Error('Subtask org unit is not compatible with parent scope');
+    }
+    const folio = `TASK-SUB-${String(Date.now()).slice(-6)}`;
+    const dueDate = payload.dueDate ?? parent.dueDate;
+    const newTask = this.createTask({
+      ...payload,
+      tenantId: tid,
+      folio,
+      title: payload.title,
+      dueDate,
+      priority: payload.priority ?? parent.priority,
+      assignee: payload.assignee ?? 'Sin asignar',
+      assigneeId: payload.assigneeId ?? '',
+      status: 'Pendiente',
+      description: '',
+      tags: [],
+      attachmentsCount: 0,
+      commentsCount: 0,
+      createdAt: new Date(),
+      createdBy: this.currentUser.id,
+      createdByName: this.currentUser.name,
+      projectId: parent.projectId,
+      orgUnitId,
+      parentTaskId,
+      riskIndicator: this.workflow.computeRiskIndicator({
+        ...parent,
+        dueDate,
+        status: 'Pendiente',
+        priority: payload.priority ?? parent.priority
+      } as Task)
+    });
+    return newTask;
+  }
+
+  getSubtasks(taskId: string): Task[] {
+    const tid = this.tenantContext.currentTenantId();
+    return this._tasks().filter(
+      (t) => t.tenantId === tid && t.parentTaskId === taskId
+    ).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }
+
+  getParentTask(taskId: string): Task | undefined {
+    const task = this._tasks().find((t) => t.id === taskId);
+    if (!task?.parentTaskId) return undefined;
+    return this._tasks().find((t) => t.id === task.parentTaskId);
+  }
+
+  getTaskTree(taskId: string, depth = 0): TaskTreeNode | undefined {
+    const task = this._tasks().find((t) => t.id === taskId);
+    if (!task) return undefined;
+    const children = this.getSubtasks(taskId)
+      .map((c) => this.getTaskTree(c.id, depth + 1))
+      .filter((n): n is TaskTreeNode => !!n);
+    return { task, children, depth };
+  }
+
+  createTaskLink(fromTaskId: string, toTaskId: string, type: TaskLinkType): TaskLink {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) throw new Error('No tenant context');
+    if (fromTaskId === toTaskId) throw new Error('Cannot link a task to itself');
+    const fromTask = this._tasks().find((t) => t.id === fromTaskId && t.tenantId === tid);
+    const toTask = this._tasks().find((t) => t.id === toTaskId && t.tenantId === tid);
+    if (!fromTask || !toTask) throw new Error('Task not found');
+    if (fromTask.tenantId !== toTask.tenantId) throw new Error('Cannot relate tasks from different tenants');
+    if (!this.isOrgCompatible(fromTask, toTask.orgUnitId)) {
+      throw new Error('Target task org unit is not compatible with source scope');
+    }
+    const links = this._taskLinks();
+    if (links.some((l) => l.fromTaskId === fromTaskId && l.toTaskId === toTaskId && l.type === type)) {
+      throw new Error('Link already exists');
+    }
+    if (type === 'BLOCKS' && this.wouldCreateBlocksCycle(fromTaskId, toTaskId)) {
+      throw new Error('Would create a cycle in BLOCKS dependencies');
+    }
+    const link: TaskLink = {
+      id: `link-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      tenantId: tid,
+      fromTaskId,
+      toTaskId,
+      type,
+      createdAt: new Date().toISOString(),
+      createdByUserId: this.currentUser.id
+    };
+    this._taskLinks.update((list) => [...list, link]);
+    const taskToUpdate = type === 'BLOCKS' ? toTask : fromTask;
+    const withHistory = this.appendHistoryEntry(taskToUpdate, 'LINK_ADDED', {
+      newValue: JSON.stringify({ linkId: link.id, type, fromTaskId, toTaskId })
+    });
+    this.persistTask(withHistory);
+    return link;
+  }
+
+  removeTaskLink(linkId: string): void {
+    const link = this._taskLinks().find((l) => l.id === linkId);
+    if (!link) throw new Error('Link not found');
+    const task = this._tasks().find((t) => t.id === (link.type === 'BLOCKS' ? link.toTaskId : link.fromTaskId));
+    this._taskLinks.update((list) => list.filter((l) => l.id !== linkId));
+    if (task) {
+      const withHistory = this.appendHistoryEntry(task, 'LINK_REMOVED', {
+        oldValue: JSON.stringify({ linkId, type: link.type })
+      });
+      this.persistTask(withHistory);
+    }
+  }
+
+  getLinksForTask(taskId: string): TaskLinksForTask {
+    const tid = this.tenantContext.currentTenantId();
+    const links = this._taskLinks().filter((l) => l.tenantId === tid);
+    const blockedBy = links.filter((l) => l.type === 'BLOCKS' && l.toTaskId === taskId);
+    const blocking = links.filter((l) => l.type === 'BLOCKS' && l.fromTaskId === taskId);
+    const related = links.filter((l) => l.type === 'RELATES' && (l.fromTaskId === taskId || l.toTaskId === taskId));
+    const duplicates = links.filter((l) => l.type === 'DUPLICATES' && (l.fromTaskId === taskId || l.toTaskId === taskId));
+    return { blockedBy, blocking, related, duplicates };
+  }
+
+  /** Tasks that can be linked (same tenant, compatible org, exclude self and descendants) */
+  getLinkableTasks(currentTaskId: string): Task[] {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return [];
+    const current = this._tasks().find((t) => t.id === currentTaskId && t.tenantId === tid);
+    if (!current) return [];
+    const ancestorIds = this.getAncestorIds(currentTaskId);
+    ancestorIds.add(currentTaskId);
+    const descendants = new Set<string>();
+    const collect = (id: string) => {
+      for (const t of this._tasks().filter((x) => x.parentTaskId === id)) {
+        descendants.add(t.id);
+        collect(t.id);
+      }
+    };
+    collect(currentTaskId);
+    return this._tasks().filter((t) => {
+      if (t.tenantId !== tid) return false;
+      if (ancestorIds.has(t.id) || descendants.has(t.id)) return false;
+      return this.isOrgCompatible(current, t.orgUnitId);
+    });
+  }
+
+  /** Whether task has open (non-finished) blockers */
+  isBlocked(taskId: string): boolean {
+    const { blockedBy } = this.getLinksForTask(taskId);
+    const FINAL = ['Completada', 'Liberada', 'Cancelada'];
+    return blockedBy.some((l) => {
+      const t = this._tasks().find((x) => x.id === l.fromTaskId);
+      return t && !FINAL.includes(this.workflow.getEffectiveStatus(t));
+    });
   }
 }

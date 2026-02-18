@@ -1,0 +1,49 @@
+@use 'styles/tokens' as *;
+
+.full-width { width: 100%; }
+
+.transition-cards {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.transition-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='dark'] .transition-card {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.transition-from,
+.transition-to {
+  font-weight: $font-weight-medium;
+}
+
+.transition-arrow {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary, #757575);
+}
+
+.transition-label {
+  flex: 1;
+  min-width: 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+}
+
+.transition-requires {
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+}

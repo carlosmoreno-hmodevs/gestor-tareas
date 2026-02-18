@@ -189,7 +189,20 @@
                 [size]="36"
               />
               <div class="task-card-body">
-                <h4 class="task-title">{{ task.title }}</h4>
+                <div class="task-title-row">
+                  <h4 class="task-title">{{ task.title }}</h4>
+                  <div class="task-relation-indicators">
+                    @if (task.parentTaskId) {
+                      <mat-icon class="rel-icon subtask" matTooltip="Subtarea">subdirectory_arrow_right</mat-icon>
+                    }
+                    @if (taskService.getSubtasks(task.id).length) {
+                      <span class="rel-chip" matTooltip="{{ taskService.getSubtasks(task.id).length }} subtarea(s)">{{ taskService.getSubtasks(task.id).length }} subt.</span>
+                    }
+                    @if (taskService.isBlocked(task.id)) {
+                      <mat-icon class="rel-icon blocked" matTooltip="Bloqueada">block</mat-icon>
+                    }
+                  </div>
+                </div>
                 <p class="task-details">
                   {{ task.folio }} • {{ task.assignee || 'Sin asignar' }} • {{ task.priority }} •
                   {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : task.riskIndicator === 'por-vencer' ? 'Por vencer' : (task.dueDate | date: 'dd/MM/yyyy') }}

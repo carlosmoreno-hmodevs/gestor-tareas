@@ -13,4 +13,26 @@ mat-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-lg;
+  padding-bottom: $spacing-lg;
+
+  button[color='primary'] {
+    margin: $spacing-sm 0;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+mat-card-content {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }

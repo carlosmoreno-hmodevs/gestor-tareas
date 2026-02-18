@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import type { Document } from '../../shared/models';
 import { DataService } from '../../core/services/data.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { DateFormatPipe } from '../../shared/pipes/date-format.pipe';
@@ -35,6 +37,16 @@ import { DateFormatPipe } from '../../shared/pipes/date-format.pipe';
 })
 export class DocumentosComponent {
   private readonly dataService = inject(DataService);
+  private readonly breakpoint = inject(BreakpointObserver);
+
+  isMobile = signal(false);
+  menuDoc = signal<Document | null>(null);
+
+  constructor() {
+    const mq = window.matchMedia('(max-width: 767px)');
+    this.isMobile.set(mq.matches);
+    this.breakpoint.observe('(max-width: 767px)').subscribe((r) => this.isMobile.set(r.matches));
+  }
 
   taskFilter = signal('');
   documents = this.dataService.getDocuments();

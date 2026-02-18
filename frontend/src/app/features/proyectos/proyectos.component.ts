@@ -10,6 +10,7 @@ import { ProjectService } from '../../core/services/project.service';
 import { ConnectivityService } from '../../core/services/connectivity.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-proyectos',
@@ -22,7 +23,8 @@ import { AvatarComponent } from '../../shared/components/avatar/avatar.component
     MatIconModule,
     MatTooltipModule,
     PageHeaderComponent,
-    AvatarComponent
+    AvatarComponent,
+    EmptyStateComponent
   ],
   templateUrl: './proyectos.component.html',
   styleUrl: './proyectos.component.scss'
@@ -32,14 +34,14 @@ export class ProyectosComponent {
   private readonly projectService = inject(ProjectService);
   readonly connectivity = inject(ConnectivityService);
 
-  projects = this.dataService.getProjects();
-  users = this.dataService.getUsers();
+  projects = this.dataService.projectsForCurrentOrg;
+  users = this.dataService.usersForCurrentOrg;
 
   getKpis(projectId: string) {
     return this.projectService.computeKPIs(projectId);
   }
 
   getUserByName(name: string) {
-    return this.users.find((u) => u.name === name);
+    return this.users().find((u) => u.name === name);
   }
 }

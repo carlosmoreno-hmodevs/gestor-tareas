@@ -48,13 +48,19 @@ export class ProjectDetailComponent {
 
   projectId = input.required<string>({ alias: 'id' });
   project = computed(() => this.projectService.getProjectById(this.projectId()));
+  projectsInScope = this.dataService.projectsForCurrentOrg;
+  isProjectInScope = computed(() => {
+    const p = this.project();
+    if (!p) return false;
+    return this.projectsInScope().some((pr) => pr.id === p.id);
+  });
   kpis = computed(() => this.projectService.computeKPIs(this.projectId()));
   projectTasks = computed(() => this.projectService.getProjectTasks(this.projectId()));
 
-  users = this.dataService.getUsers();
+  users = this.dataService.usersForCurrentOrg;
 
   getUserById(id: string) {
-    return this.users.find((u) => u.id === id);
+    return this.users().find((u) => u.id === id);
   }
 
   getMilestoneLabel(status: string): string {

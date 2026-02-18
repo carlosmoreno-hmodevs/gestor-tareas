@@ -5,15 +5,107 @@ mat-card-header {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: $spacing-md;
+  gap: $spacing-lg;
+  padding-bottom: $spacing-lg;
+
+  button[color='primary'] {
+    margin: $spacing-sm 0;
+  }
 
   button mat-icon {
     margin-right: $spacing-xs;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+.btn-label {
+  @media (max-width: 360px) {
+    display: none;
   }
 }
 
 .full-width {
   width: 100%;
+}
+
+.user-cards {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='dark'] .user-card {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-card-main {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.user-card-name {
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-base;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-card-email {
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-card-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.user-card-team {
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+}
+
+.user-card-menu {
+  flex-shrink: 0;
 }
 
 .status-chip {
@@ -27,4 +119,12 @@ mat-card-header {
     background: rgba(0, 0, 0, 0.08);
     color: var(--color-text-secondary, #757575);
   }
+}
+
+.unit-cell {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -15,8 +15,31 @@
   </a>
 </div>
 
+@if (projects().length === 0) {
+  <mat-card class="empty-projects-card">
+    <mat-card-content>
+      <app-empty-state
+        icon="work_outline"
+        title="Aún no hay proyectos"
+        message="Crea tu primer proyecto para organizar tareas, asignar responsables y hacer seguimiento del avance."
+      >
+        <a
+          mat-flat-button
+          color="primary"
+          routerLink="/proyectos/nueva"
+          class="empty-cta"
+          [disabled]="!connectivity.isOnline()"
+          [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+        >
+          <mat-icon>add</mat-icon>
+          Crear primer proyecto
+        </a>
+      </app-empty-state>
+    </mat-card-content>
+  </mat-card>
+} @else {
 <div class="row g-3">
-  @for (p of projects; track p.id) {
+  @for (p of projects(); track p.id) {
     <div class="col-12 col-md-6">
       <mat-card [routerLink]="['/proyectos', p.id]" class="project-card">
         <mat-card-header>
@@ -51,3 +74,4 @@
     </div>
   }
 </div>
+}

@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import type { OrgUnit, OrgUnitType, OrgUnitTreeNode, UserOrgMembership } from '../../shared/models/org.model';
 import { TenantContextService } from './tenant-context.service';
 import {
@@ -22,9 +22,16 @@ export class OrgService {
   readonly types = this._types.asReadonly();
   readonly memberships = this._memberships.asReadonly();
 
-  private readonly _selectedOrgUnitId = signal<string | null>(this.loadStoredOrgUnitId());
+  private readonly _selectedOrgUnitId = signal<string | null>(null);
 
   readonly selectedOrgUnitId = this._selectedOrgUnitId.asReadonly();
+
+  constructor() {
+    effect(() => {
+      const tid = this.tenantContext.currentTenantId();
+      this._selectedOrgUnitId.set(tid ? this.loadStoredOrgUnitIdFor(tid) : null);
+    }, { allowSignalWrites: true });
+  }
 
   readonly currentTenantId = this.tenantContext.currentTenantId;
 
@@ -35,10 +42,8 @@ export class OrgService {
     return this._units().find((u) => u.id === id && u.tenantId === tid) ?? null;
   });
 
-  private loadStoredOrgUnitId(): string | null {
+  private loadStoredOrgUnitIdFor(tid: string): string | null {
     try {
-      const tid = this.tenantContext.currentTenantId();
-      if (!tid) return null;
       const raw = localStorage.getItem(STORAGE_PREFIX + tid + STORAGE_SUFFIX_ORG);
       if (!raw) return null;
       const id = raw.trim();
@@ -174,6 +179,30 @@ export class OrgService {
     return this._memberships().filter(
       (m) => m.tenantId === tenantId && m.orgUnitId === orgUnitId
     );
+  }
+
+  /** IDs de unidades a las que pertenece un usuario en el tenant */
+  getOrgUnitIdsForUser(tenantId: string, userId: string): string[] {
+    return this._memberships()
+      .filter((m) => m.tenantId === tenantId && m.userId === userId)
+      .map((m) => m.orgUnitId);
+  }
+
+  /** Reemplaza las unidades asignadas a un usuario (para guardar desde el form de usuario) */
+  setUserOrgUnits(tenantId: string, userId: string, orgUnitIds: string[]): void {
+    this._memberships.update((list) => {
+      const without = list.filter((m) => !(m.tenantId === tenantId && m.userId === userId));
+      const validIds = (orgUnitIds ?? []).filter(
+        (id) => id && this._units().some((u) => u.id === id && u.tenantId === tenantId)
+      );
+      const toAdd = validIds.map((orgUnitId, i) => ({
+        id: `uom-${Date.now()}-${i}`,
+        tenantId,
+        userId,
+        orgUnitId
+      }));
+      return [...without, ...toAdd];
+    });
   }
 
   /** Persistir cambios en localStorage (mock - para paso posterior si se requiere) */

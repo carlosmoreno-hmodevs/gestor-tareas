@@ -1,79 +1,72 @@
 <mat-sidenav-container class="shell-container">
-  <mat-sidenav
-    #sidenav
-    [mode]="sidenavMode()"
-    [opened]="sidenavOpened()"
-    class="sidenav"
-  >
-    <div class="sidenav-header">
-      <span class="brand">Gestor Tareas</span>
-    </div>
-    <mat-nav-list>
-      @for (item of navItems(); track item.path) {
-        <a
-          mat-list-item
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: item.path === '/tablero' }"
-          (click)="closeSidenavIfOverlay()"
-        >
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
-        </a>
-      }
-    </mat-nav-list>
-  </mat-sidenav>
-
   <mat-sidenav-content>
-    <header class="app-header">
-      <div class="header-left">
-        <button mat-icon-button (click)="toggleSidenav()" aria-label="Menú" class="menu-btn">
-          <mat-icon>menu</mat-icon>
-        </button>
-        <a [routerLink]="['/tablero']" class="brand-link">
-          <mat-icon class="brand-icon">task_alt</mat-icon>
-          <span class="brand-text">Gestor de Tareas</span>
-        </a>
-        <nav class="header-nav" aria-label="Navegación principal">
-          @for (item of navItems(); track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="nav-item-active"
-              [routerLinkActiveOptions]="{ exact: item.path === '/tablero' }"
-              class="nav-item"
-              (click)="closeSidenavIfOverlay()"
-            >
-              <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-              <span class="nav-label">{{ item.label }}</span>
-            </a>
-          }
-        </nav>
-      </div>
-      <div class="header-right">
-        <app-context-selector />
-        <app-tenant-switcher />
-        <button mat-icon-button aria-label="Buscar" class="header-action">
-          <mat-icon>search</mat-icon>
-        </button>
-        <button mat-icon-button aria-label="Notificaciones" class="header-action">
-          <mat-icon>notifications</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          (click)="themeService.toggle()"
-          [attr.aria-label]="themeService.isDark() ? 'Modo claro' : 'Modo oscuro'"
-          class="header-action"
-        >
-          <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-        </button>
-        <div class="user-avatar-wrap">
-          <app-avatar [name]="currentUser().name" [avatarUrl]="currentUser().avatarUrl" [size]="36" />
+    <div class="header-wrapper">
+      <header class="app-header">
+        <div class="header-left">
+          <a [routerLink]="['/tablero']" class="brand-link">
+            <mat-icon class="brand-icon">task_alt</mat-icon>
+            <span class="brand-text">Gestor de Tareas</span>
+          </a>
+          <nav class="header-nav" aria-label="Navegación principal">
+            @for (item of navItems(); track item.path) {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="nav-item-active"
+                [routerLinkActiveOptions]="{ exact: item.path === '/tablero' }"
+                class="nav-item"
+              >
+                <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+                <span class="nav-label">{{ item.label }}</span>
+              </a>
+            }
+          </nav>
         </div>
+        <div class="header-right">
+          <div class="org-selectors org-selectors-desktop">
+            <app-org-context-bar />
+          </div>
+          <button mat-icon-button aria-label="Buscar" class="header-action">
+            <mat-icon>search</mat-icon>
+          </button>
+          <button mat-icon-button aria-label="Notificaciones" class="header-action">
+            <mat-icon>notifications</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            (click)="themeService.toggle()"
+            [attr.aria-label]="themeService.isDark() ? 'Modo claro' : 'Modo oscuro'"
+            class="header-action"
+          >
+            <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
+          <div class="user-avatar-wrap">
+            <app-avatar [name]="currentUser().name" [avatarUrl]="currentUser().avatarUrl" [size]="36" />
+          </div>
+        </div>
+      </header>
+      <div class="org-selectors org-selectors-mobile">
+        <app-org-context-bar />
       </div>
-    </header>
+    </div>
     <app-offline-banner />
-    <main class="app-content">
+    <main class="app-content" [class.has-bottom-nav]="!isDesktop()">
       <router-outlet />
     </main>
+
+    @if (!isDesktop()) {
+      <nav class="bottom-nav" aria-label="Navegación principal">
+        @for (item of navItems(); track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="bottom-nav-active"
+            [routerLinkActiveOptions]="{ exact: item.path === '/tablero' }"
+            class="bottom-nav-item"
+          >
+            <mat-icon class="bottom-nav-icon">{{ item.icon }}</mat-icon>
+            <span class="bottom-nav-label">{{ item.shortLabel }}</span>
+          </a>
+        }
+      </nav>
+    }
   </mat-sidenav-content>
 </mat-sidenav-container>

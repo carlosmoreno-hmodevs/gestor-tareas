@@ -4,6 +4,12 @@
     <h2>Proyecto no encontrado</h2>
     <button mat-button (click)="goBack()">Volver a proyectos</button>
   </div>
+} @else if (!isProjectInScope()) {
+  <div class="project-not-found">
+    <h2>Proyecto fuera del alcance</h2>
+    <p>Este proyecto no pertenece a la organización seleccionada. Cambia la organización o vuelve a la lista.</p>
+    <button mat-button (click)="goBack()">Volver a proyectos</button>
+  </div>
 } @else {
   <nav class="breadcrumb">
     <a [routerLink]="['/proyectos']">Proyectos</a>
