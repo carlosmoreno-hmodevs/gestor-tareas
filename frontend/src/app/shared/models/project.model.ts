@@ -57,8 +57,16 @@ export interface ProjectKpis {
   progressPercent: number;
 }
 
+/** ProjectScope: definido para uso futuro (INCLUDE/EXCLUDE multi-unidad) */
+export interface ProjectScope {
+  projectId: string;
+  orgUnitId: string;
+  mode: 'INCLUDE' | 'EXCLUDE';
+}
+
 export interface Project {
   id: string;
+  tenantId: string;
   name: string;
   description: string;
   owner: string;
@@ -76,6 +84,7 @@ export interface Project {
   filesMeta: ProjectFileMeta[];
   milestones: ProjectMilestone[];
   activity: ProjectActivityEntry[];
+  primaryOrgUnitId?: string;
   createdBy: string;
   createdByName?: string;
   createdAt: Date;

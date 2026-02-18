@@ -1,10 +1,13 @@
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
-import type { Task, TaskStatus, Priority } from '../../shared/models';
-import { TASKS } from '../data/dummy-data';
+import { Injectable, inject, Injector, signal, computed, effect } from '@angular/core';
+import type { Task, TaskStatus } from '../../shared/models';
+import { getInitialTasks } from '../data/dummy-data';
 import { ConnectivityService } from './connectivity.service';
 import { OfflineSnapshotService } from './offline-snapshot.service';
 import { TaskWorkflowService } from './task-workflow.service';
 import { CurrentUserService } from './current-user.service';
+import { TenantContextService } from './tenant-context.service';
+import { OrgService } from './org.service';
+import { ProjectService } from './project.service';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
@@ -12,6 +15,9 @@ export class TaskService {
   private readonly snapshot = inject(OfflineSnapshotService);
   private readonly workflow = inject(TaskWorkflowService);
   private readonly currentUser = inject(CurrentUserService);
+  private readonly tenantContext = inject(TenantContextService);
+  private readonly orgService = inject(OrgService);
+  private readonly injector = inject(Injector);
 
   private readonly _tasks = signal<Task[]>(this.initialTasks());
 
@@ -26,26 +32,48 @@ export class TaskService {
   }
 
   private initialTasks(): Task[] {
-    if (this.connectivity.isOnline()) return [...TASKS];
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return [];
+    const initial = getInitialTasks(tid);
+    if (this.connectivity.isOnline()) {
+      return initial;
+    }
     const cached = this.snapshot.loadTasks();
-    if (cached?.length) return cached;
-    return [...TASKS];
+    const list = cached?.length ? cached : initial;
+    return list.filter((t) => t.tenantId === tid);
   }
 
-  readonly tasks = this._tasks.asReadonly();
+  private filterByContext(tasks: Task[]): Task[] {
+    const tid = this.tenantContext.currentTenantId();
+    const selectedId = this.orgService.selectedOrgUnitId();
+    const scopeIds = tid ? this.orgService.getScopeOrgUnitIds(tid, selectedId) : null;
+    if (!scopeIds) return tasks;
+    const projectService = this.injector.get(ProjectService);
+    return tasks.filter((t) => {
+      const taskOrgId = t.orgUnitId;
+      if (taskOrgId) return scopeIds.includes(taskOrgId);
+      if (t.projectId) {
+        const proj = projectService.getProjectById(t.projectId);
+        return proj?.primaryOrgUnitId ? scopeIds.includes(proj.primaryOrgUnitId) : true;
+      }
+      return true;
+    });
+  }
+
+  readonly tasks = computed(() => this.filterByContext(this._tasks()));
 
   readonly activeCount = computed(() =>
-    this._tasks().filter(
+    this.tasks().filter(
       (t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
     ).length
   );
 
   readonly overdueCount = computed(() =>
-    this._tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida' || t.riskIndicator === 'vencida').length
+    this.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida' || t.riskIndicator === 'vencida').length
   );
 
   readonly dueSoonCount = computed(() =>
-    this._tasks().filter(
+    this.tasks().filter(
       (t) =>
         t.riskIndicator === 'por-vencer' &&
         !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
@@ -53,11 +81,23 @@ export class TaskService {
   );
 
   readonly completedCount = computed(() =>
-    this._tasks().filter((t) => ['Completada', 'Liberada'].includes(t.status)).length
+    this.tasks().filter((t) => ['Completada', 'Liberada'].includes(t.status)).length
   );
 
+  /** Todas las tareas del tenant (sin filtrar por contexto org) - para checks de admin */
+  getAllTasksForTenant(): Task[] {
+    const tid = this.tenantContext.currentTenantId();
+    return tid ? this._tasks().filter((t) => t.tenantId === tid) : [];
+  }
+
+  getTasksByProjectId(projectId: string): Task[] {
+    const tid = this.tenantContext.currentTenantId();
+    return this._tasks().filter((t) => t.projectId === projectId && t.tenantId === tid);
+  }
+
   getById(id: string): Task | undefined {
-    const t = this._tasks().find((task) => task.id === id);
+    const tid = this.tenantContext.currentTenantId();
+    const t = this._tasks().find((task) => task.id === id && task.tenantId === tid);
     if (!t) return undefined;
     const effective = this.workflow.getEffectiveStatus(t);
     if (effective !== t.status) return { ...t, status: effective };
@@ -78,10 +118,19 @@ export class TaskService {
   }
 
   createTask(task: Omit<Task, 'id' | 'history'> & { history?: Task['history'] }): Task {
-    const id = `task-${task.folio}`;
-    const baseTask: Task = { ...task, id, history: [] };
+    const tid = this.tenantContext.currentTenantId();
+    const projectService = this.injector.get(ProjectService);
+    const proj = task.projectId ? projectService.getProjectById(task.projectId) : undefined;
+    const orgUnitId = task.orgUnitId ?? proj?.primaryOrgUnitId;
+    const baseTask: Task = {
+      ...task,
+      id: `task-${task.folio}`,
+      tenantId: task.tenantId ?? tid ?? 'tenant-1',
+      orgUnitId: orgUnitId ?? task.orgUnitId,
+      history: []
+    };
     const entry = this.workflow.createHistoryEntry('CREATED', this.currentUser.id, this.currentUser.name, {
-      newValue: JSON.stringify({ title: task.title, assignee: task.assignee, dueDate: task.dueDate, priority: task.priority })
+      newValue: JSON.stringify({ title: baseTask.title, assignee: baseTask.assignee, dueDate: baseTask.dueDate, priority: baseTask.priority })
     });
     const newTask: Task = {
       ...baseTask,

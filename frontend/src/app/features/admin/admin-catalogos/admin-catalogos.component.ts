@@ -63,7 +63,7 @@ export class AdminCatalogosComponent {
       return;
     }
     if (!confirm(`¿Eliminar la categoría "${c.name}"?`)) return;
-    const inUse = () => this.taskService.tasks().some((t) => t.categoryId === c.id);
+    const inUse = () => this.taskService.getAllTasksForTenant().some((t) => t.categoryId === c.id);
     try {
       this.adminService.deleteCategory(c.id, inUse);
       this.snackBar.open('Categoría eliminada', 'Cerrar', { duration: 2000 });
@@ -95,7 +95,7 @@ export class AdminCatalogosComponent {
     }
     if (!confirm(`¿Eliminar la prioridad "${p.name}"?`)) return;
     const inUse = () =>
-      this.taskService.tasks().some((t) => t.priority === p.value);
+      this.taskService.getAllTasksForTenant().some((t) => t.priority === p.value);
     try {
       this.adminService.deletePriority(p.id, inUse);
       this.snackBar.open('Prioridad eliminada', 'Cerrar', { duration: 2000 });

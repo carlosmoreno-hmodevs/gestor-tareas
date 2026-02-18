@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import type { Task, Priority } from '../../../shared/models';
 import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
+import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 
 export interface TaskFormDialogData {
@@ -46,6 +47,7 @@ export class TaskFormDialogComponent {
   private readonly data = inject<TaskFormDialogData>(MAT_DIALOG_DATA, { optional: true });
   private readonly dataService = inject(DataService);
   private readonly currentUser = inject(CurrentUserService);
+  private readonly tenantContext = inject(TenantContextService);
 
   users = this.dataService.getUsers();
   categories = this.dataService.getCategories();
@@ -131,6 +133,7 @@ export class TaskFormDialogComponent {
     const subNames = subIds.map((id) => this.users.find((u) => u.id === id)?.name ?? '').filter(Boolean);
 
     this.dialogRef.close({
+      tenantId: this.tenantContext.currentTenantId() ?? 'tenant-1',
       folio,
       title: v.title!,
       description: v.description ?? '',

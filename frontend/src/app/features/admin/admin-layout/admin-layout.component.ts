@@ -39,6 +39,7 @@ export class AdminLayoutComponent {
     { path: '/admin/usuarios', label: 'Usuarios', icon: 'people' },
     { path: '/admin/roles', label: 'Roles y permisos', icon: 'admin_panel_settings' },
     { path: '/admin/catalogos', label: 'Catálogos', icon: 'category' },
+    { path: '/admin/organization', label: 'Organización', icon: 'account_tree' },
     { path: '/admin/reglas', label: 'Reglas y notificaciones', icon: 'rule' },
     { path: '/admin/flujos', label: 'Flujos', icon: 'account_tree' },
     { path: '/admin/campos', label: 'Campos personalizados', icon: 'tune' }

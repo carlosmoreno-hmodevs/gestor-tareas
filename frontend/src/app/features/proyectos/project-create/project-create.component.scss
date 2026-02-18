@@ -79,6 +79,7 @@
 
   mat-form-field {
     display: block;
+    min-width: 0;
 
     ::ng-deep .mat-mdc-form-field-subscript-wrapper {
       margin-top: $spacing-xs;
@@ -236,6 +237,51 @@
       color: var(--color-text-secondary, #757575);
     }
   }
+}
+
+.tags-input-wrap {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+}
+.tags-input {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  &:focus {
+    outline: none;
+    border-color: $color-primary;
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
+  }
+}
+.tags-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba($color-primary, 0.12);
+  color: $color-primary;
+  border-radius: 16px;
+  font-size: $font-size-sm;
+}
+.tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.2em;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.8;
+  &:hover { opacity: 1; }
 }
 
 .form-error {

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -17,6 +17,8 @@ import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ProjectCatalogService } from '../../../core/services/project-catalog.service';
 import { ProjectService } from '../../../core/services/project.service';
+import { OrgService } from '../../../core/services/org.service';
+import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -59,13 +61,24 @@ export class ProjectCreateComponent {
   private readonly dataService = inject(DataService);
   private readonly currentUser = inject(CurrentUserService);
   private readonly catalog = inject(ProjectCatalogService);
+  private readonly orgService = inject(OrgService);
+  private readonly tenantContext = inject(TenantContextService);
   private readonly snackBar = inject(MatSnackBar);
   readonly connectivity = inject(ConnectivityService);
 
   users = this.dataService.getUsers();
-  teamUsers = this.users.filter(
-    (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
-  );
+  orgUnits = this.orgService.getOrgUnits(this.tenantContext.currentTenantId() ?? '');
+  teamUsers = computed(() => {
+    const base = this.users.filter(
+      (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
+    );
+    const tid = this.tenantContext.currentTenantId();
+    const scopeOuId = this.orgService.selectedOrgUnitId();
+    if (!tid || !scopeOuId) return base;
+    const userIdsInScope = this.orgService.getUserIdsInScope(tid, scopeOuId);
+    if (userIdsInScope.length === 0) return base;
+    return base.filter((u) => userIdsInScope.includes(u.id));
+  });
   statuses = this.catalog.getStatuses();
   priorities = this.catalog.getPriorities();
 
@@ -86,6 +99,7 @@ export class ProjectCreateComponent {
       startDate: [null as Date | null],
       dueDate: [null as Date | null],
       clientArea: [''],
+      primaryOrgUnitId: [''],
       memberIds: [[] as string[]],
       tags: [[] as string[]],
       priority: [''] as [ProjectPriority | ''],
@@ -95,13 +109,15 @@ export class ProjectCreateComponent {
     { validators: dueDateValidator }
   );
 
-  addTag(event: MatChipInputEvent): void {
-    const value = (event.value ?? '').trim();
+  tagInput = '';
+
+  addTagFromInput(): void {
+    const value = this.tagInput.trim();
     if (value) {
       const tags = [...(this.form.get('tags')?.value ?? []), value];
       this.form.get('tags')?.setValue(tags);
+      this.tagInput = '';
     }
-    event.chipInput.clear();
   }
 
   removeTag(tag: string): void {
@@ -172,6 +188,7 @@ export class ProjectCreateComponent {
       clientArea: v.clientArea || undefined,
       members,
       tags: v.tags ?? [],
+      primaryOrgUnitId: (v as { primaryOrgUnitId?: string }).primaryOrgUnitId || undefined,
       priority: (v.priority || undefined) as ProjectPriority | undefined,
       budget: v.budget ?? undefined,
       observations: v.observations || undefined,

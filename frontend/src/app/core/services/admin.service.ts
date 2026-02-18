@@ -1,5 +1,6 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { ConnectivityService } from './connectivity.service';
+import { TenantContextService } from './tenant-context.service';
 import type {
   AdminUser,
   Role,
@@ -29,8 +30,9 @@ import {
   INITIAL_DUE_DATE_RULES,
   INITIAL_NOTIFICATION_RULES
 } from '../data/admin-initial';
+import { ADMIN_SNAPSHOT_VERSION } from '../../shared/models/admin.model';
 
-const STORAGE_KEY = 'gestor-tareas:snapshot:admin';
+const STORAGE_PREFIX = 'gestor-tareas:snapshot:admin.';
 
 function hydrateDates<T extends { createdAt?: Date }>(obj: T): T {
   if (obj.createdAt && typeof obj.createdAt === 'string') {
@@ -42,6 +44,7 @@ function hydrateDates<T extends { createdAt?: Date }>(obj: T): T {
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly connectivity = inject(ConnectivityService);
+  private readonly tenantContext = inject(TenantContextService);
 
   private readonly _users = signal<AdminUser[]>([]);
   private readonly _roles = signal<Role[]>([]);
@@ -61,9 +64,19 @@ export class AdminService {
     this.loadFromStorage();
   }
 
+  private storageKey(): string {
+    const tid = this.tenantContext.currentTenantId();
+    return tid ? STORAGE_PREFIX + tid : '';
+  }
+
   private loadFromStorage(): void {
+    const key = this.storageKey();
+    if (!key) {
+      this.resetToInitial();
+      return;
+    }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(key);
       if (raw) {
         const snap = JSON.parse(raw) as AdminSnapshot;
         const users = (snap.users ?? []).map((u) => hydrateDates(u) as AdminUser);
@@ -103,8 +116,11 @@ export class AdminService {
 
   private persist(): void {
     if (!this.connectivity.isOnline()) return;
+    const key = this.storageKey();
+    if (!key) return;
     try {
       const snap: AdminSnapshot = {
+        version: ADMIN_SNAPSHOT_VERSION,
         users: this._users().map((u) => ({
           ...u,
           createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : u.createdAt
@@ -121,7 +137,7 @@ export class AdminService {
         notificationRules: this._notificationRules(),
         savedAt: new Date().toISOString()
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snap));
+      localStorage.setItem(key, JSON.stringify(snap));
     } catch (e) {
       console.warn('AdminService: could not persist', e);
     }
@@ -166,10 +182,12 @@ export class AdminService {
   }
 
   getUsers(): Array<{ id: string; name: string; email: string; role: string; team: string }> {
+    const tid = this.tenantContext.currentTenantId();
+    const tenantUserIds = tid ? this.tenantContext.getTenantUsers(tid) : [];
     const roles = this._roles();
     const teams = this._teams();
     return this._users()
-      .filter((u) => u.isActive)
+      .filter((u) => u.isActive && (!tid || tenantUserIds.includes(u.id)))
       .map((u) => {
         const role = roles.find((r) => r.id === u.roleId);
         const team = teams.find((t) => t.id === u.teamId);

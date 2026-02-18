@@ -108,8 +108,11 @@ export interface NotificationRule {
   config?: Record<string, unknown>;
 }
 
-// --- Admin snapshot (persistence) ---
+// --- Admin snapshot (persistence, por tenant) ---
+export const ADMIN_SNAPSHOT_VERSION = 1;
+
 export interface AdminSnapshot {
+  version?: number;
   users: AdminUser[];
   roles: Role[];
   categories: AdminCategory[];

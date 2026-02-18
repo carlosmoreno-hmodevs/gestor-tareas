@@ -13,6 +13,8 @@ import { TaskWorkflowService } from './task-workflow.service';
 import { CurrentUserService } from './current-user.service';
 import { ConnectivityService } from './connectivity.service';
 import { OfflineSnapshotService } from './offline-snapshot.service';
+import { TenantContextService } from './tenant-context.service';
+import { OrgService } from './org.service';
 import type { ProjectKpis } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
@@ -22,6 +24,8 @@ export class ProjectService {
   private readonly currentUser = inject(CurrentUserService);
   private readonly connectivity = inject(ConnectivityService);
   private readonly snapshot = inject(OfflineSnapshotService);
+  private readonly tenantContext = inject(TenantContextService);
+  private readonly orgService = inject(OrgService);
 
   private readonly _projects = signal<Project[]>(this.initialProjects());
 
@@ -35,11 +39,23 @@ export class ProjectService {
   }
 
   private initialProjects(): Project[] {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return [];
+    const initial = getInitialProjects(tid);
     if (this.connectivity.isOnline()) {
-      return getInitialProjects().map((p) => this.hydrateDates(p));
+      return initial.map((p) => this.hydrateDates(p));
     }
     const cached = this.snapshot.loadProjects();
-    return cached?.length ? cached : getInitialProjects().map((p) => this.hydrateDates(p));
+    const list = cached?.length ? cached : initial;
+    return list.filter((p) => p.tenantId === tid).map((p) => this.hydrateDates(p));
+  }
+
+  private filterByContext(projects: Project[]): Project[] {
+    const tid = this.tenantContext.currentTenantId();
+    const selectedId = this.orgService.selectedOrgUnitId();
+    const scopeIds = tid ? this.orgService.getScopeOrgUnitIds(tid, selectedId) : null;
+    if (!scopeIds) return projects;
+    return projects.filter((p) => !p.primaryOrgUnitId || scopeIds.includes(p.primaryOrgUnitId));
   }
 
   private hydrateDates(p: Project): Project {
@@ -67,19 +83,20 @@ export class ProjectService {
     };
   }
 
-  readonly projects = this._projects.asReadonly();
+  readonly projects = computed(() => this.filterByContext(this._projects()));
 
   getProjects(): Project[] {
-    return this._projects().map((p) => this.hydrateDates(p));
+    return this.projects().map((p) => this.hydrateDates(p));
   }
 
   getProjectById(id: string): Project | undefined {
-    const p = this._projects().find((proj) => proj.id === id);
+    const tid = this.tenantContext.currentTenantId();
+    const p = this._projects().find((proj) => proj.id === id && proj.tenantId === tid);
     return p ? this.hydrateDates(p) : undefined;
   }
 
   computeKPIs(projectId: string): ProjectKpis {
-    const tasks = this.taskService.tasks().filter((t) => t.projectId === projectId);
+    const tasks = this.taskService.getTasksByProjectId(projectId);
     const totalTasks = tasks.length;
     let completedTasks = 0;
     let tasksOverdue = 0;
@@ -103,7 +120,7 @@ export class ProjectService {
     };
   }
 
-  createProject(payload: Omit<Project, 'id' | 'activity' | 'createdAt' | 'createdBy' | 'createdByName'>): Project {
+  createProject(payload: Omit<Project, 'id' | 'activity' | 'createdAt' | 'createdBy' | 'createdByName' | 'tenantId'>): Project {
     const id = `proj-${String(Date.now()).slice(-6)}`;
     const entry: ProjectActivityEntry = {
       id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -114,9 +131,11 @@ export class ProjectService {
       details: { name: payload.name }
     };
 
+    const tid = this.tenantContext.currentTenantId();
     const project: Project = {
       ...payload,
       id,
+      tenantId: tid ?? 'tenant-1',
       activity: [entry],
       createdAt: new Date(),
       createdBy: this.currentUser.id,
@@ -201,6 +220,6 @@ export class ProjectService {
   }
 
   getProjectTasks(projectId: string): Task[] {
-    return this.taskService.tasks().filter((t) => t.projectId === projectId);
+    return this.taskService.getTasksByProjectId(projectId);
   }
 }

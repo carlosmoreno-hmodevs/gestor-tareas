@@ -10,6 +10,8 @@ import { DataService } from '../../services/data.service';
 import { AdminService } from '../../services/admin.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
+import { ContextSelectorComponent } from '../../../shared/components/context-selector/context-selector.component';
+import { TenantSwitcherComponent } from '../../../shared/components/tenant-switcher/tenant-switcher.component';
 import { OfflineBannerComponent } from '../../../shared/components/offline-banner/offline-banner.component';
 import { CommonModule } from '@angular/common';
 import type { User } from '../../../shared/models';
@@ -33,6 +35,8 @@ interface NavItem {
     MatIconModule,
     MatListModule,
     AvatarComponent,
+    ContextSelectorComponent,
+    TenantSwitcherComponent,
     OfflineBannerComponent
   ],
   templateUrl: './shell.component.html',

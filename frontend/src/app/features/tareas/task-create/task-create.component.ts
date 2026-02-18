@@ -1,5 +1,5 @@
 import { Component, inject, computed, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -18,6 +18,8 @@ import { CurrentUserService } from '../../../core/services/current-user.service'
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TaskService } from '../../../core/services/task.service';
 import { ProjectService } from '../../../core/services/project.service';
+import { OrgService } from '../../../core/services/org.service';
+import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
@@ -29,7 +31,6 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
     CommonModule,
     RouterLink,
     ReactiveFormsModule,
-    FormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -52,8 +53,10 @@ export class TaskCreateComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly taskService = inject(TaskService);
   private readonly projectService = inject(ProjectService);
+  private readonly orgService = inject(OrgService);
   private readonly dataService = inject(DataService);
   private readonly currentUser = inject(CurrentUserService);
+  private readonly tenantContext = inject(TenantContextService);
   readonly connectivity = inject(ConnectivityService);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -63,12 +66,21 @@ export class TaskCreateComponent implements OnInit {
 
   users = this.dataService.getUsers();
   categories = this.dataService.getCategories();
+  orgUnits = this.orgService.getOrgUnits(this.tenantContext.currentTenantId() ?? '');
   priorities = this.dataService.getPriorities();
   projects = this.dataService.getProjects();
 
-  teamUsers = computed(() =>
-    this.users.filter((u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin')
-  );
+  teamUsers = computed(() => {
+    const base = this.users.filter(
+      (u) => u.team === this.currentUser.team || this.currentUser.role === 'Admin'
+    );
+    const tid = this.tenantContext.currentTenantId();
+    const scopeOuId = this.orgService.selectedOrgUnitId();
+    if (!tid || !scopeOuId) return base;
+    const userIdsInScope = this.orgService.getUserIdsInScope(tid, scopeOuId);
+    if (userIdsInScope.length === 0) return base;
+    return base.filter((u) => userIdsInScope.includes(u.id));
+  });
 
   minDate = new Date();
 
@@ -81,6 +93,7 @@ export class TaskCreateComponent implements OnInit {
     subAssigneeIds: [[]] as [string[]],
     dueDate: [new Date()],
     projectId: [''],
+    orgUnitId: [''],
     tags: ['']
   });
 
@@ -159,6 +172,7 @@ export class TaskCreateComponent implements OnInit {
     const subNames = subIds.map((id) => this.users.find((u) => u.id === id)?.name ?? '').filter(Boolean);
 
     const payload = {
+      tenantId: this.tenantContext.currentTenantId() ?? 'tenant-1',
       folio,
       title: v.title!,
       description: v.description ?? '',
@@ -175,6 +189,7 @@ export class TaskCreateComponent implements OnInit {
       createdBy: this.currentUser.id,
       createdByName: this.currentUser.name,
       projectId: v.projectId || undefined,
+      orgUnitId: (v as { orgUnitId?: string }).orgUnitId || undefined,
       categoryId: v.categoryId || undefined,
       categoryName: category?.name,
       subAssigneeIds: subIds,

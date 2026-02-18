@@ -39,7 +39,7 @@
               <mat-label>Owner / Responsable</mat-label>
               <mat-select formControlName="ownerId">
                 <mat-option value="">Seleccionar</mat-option>
-                @for (u of teamUsers; track u.id) {
+                @for (u of teamUsers(); track u.id) {
                   <mat-option [value]="u.id">{{ u.name }}</mat-option>
                 }
               </mat-select>
@@ -137,6 +137,18 @@
               <input matInput formControlName="clientArea" placeholder="Ej: Operaciones, Logística" />
             </mat-form-field>
           </div>
+          <div class="field-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Scope (Unidad org)</mat-label>
+              <mat-select formControlName="primaryOrgUnitId">
+                <mat-option value="">Todos</mat-option>
+                @for (ou of orgUnits; track ou.id) {
+                  <mat-option [value]="ou.id">{{ ou.name }}{{ ou.code ? ' (' + ou.code + ')' : '' }}</mat-option>
+                }
+              </mat-select>
+              <mat-hint>Opcional: filtra por región/tienda/departamento</mat-hint>
+            </mat-form-field>
+          </div>
         </mat-card-content>
       </mat-card>
 
@@ -150,7 +162,7 @@
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Miembros del equipo</mat-label>
               <mat-select formControlName="memberIds" multiple>
-                @for (u of users; track u.id) {
+                @for (u of teamUsers(); track u.id) {
                   <mat-option [value]="u.id">{{ u.name }}</mat-option>
                 }
               </mat-select>
@@ -169,18 +181,30 @@
         </mat-card-header>
         <mat-card-content>
           <div class="field-group">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Etiquetas</mat-label>
-              <mat-chip-grid #chipGrid>
+            <label class="section-label">Etiquetas</label>
+            <div class="tags-input-wrap">
+              <input
+                type="text"
+                class="tags-input"
+                placeholder="Escribe y pulsa Enter para añadir"
+                [value]="tagInput"
+                (input)="tagInput = $any($event.target).value"
+                (keydown.enter)="addTagFromInput(); $event.preventDefault()"
+              />
+              <button mat-stroked-button type="button" (click)="addTagFromInput()" aria-label="Añadir">
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+            @if ((form.get('tags')?.value ?? []).length) {
+              <div class="tags-chips">
                 @for (tag of form.get('tags')?.value ?? []; track tag) {
-                  <mat-chip-row (removed)="removeTag(tag)">
+                  <span class="tag-chip">
                     {{ tag }}
-                    <button matChipRemove><mat-icon>cancel</mat-icon></button>
-                  </mat-chip-row>
+                    <button type="button" class="tag-remove" (click)="removeTag(tag)" aria-label="Quitar">×</button>
+                  </span>
                 }
-                <input placeholder="Añadir etiqueta..." [matChipInputFor]="chipGrid" [matChipInputSeparatorKeyCodes]="[13, 188]" (matChipInputTokenEnd)="addTag($event)" />
-              </mat-chip-grid>
-            </mat-form-field>
+              </div>
+            }
           </div>
 
           <div class="field-group">

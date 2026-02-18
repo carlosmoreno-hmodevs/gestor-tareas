@@ -53,6 +53,7 @@ export interface TaskAttachment {
 
 export interface Task {
   id: string;
+  tenantId: string;
   folio: string;
   title: string;
   description: string;
@@ -69,6 +70,7 @@ export interface Task {
   createdBy: string;
   createdByName?: string;
   projectId?: string;
+  orgUnitId?: string;
   categoryId?: string;
   categoryName?: string;
   subAssigneeIds?: string[];

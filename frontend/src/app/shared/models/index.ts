@@ -5,3 +5,5 @@ export * from './alert.model';
 export * from './document.model';
 export * from './catalog.model';
 export * from './admin.model';
+export * from './tenant.model';
+export * from './org.model';

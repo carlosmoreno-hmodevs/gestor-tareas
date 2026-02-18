@@ -1,11 +1,17 @@
 import { Routes } from '@angular/router';
 import { ShellComponent } from './core/layout/shell/shell.component';
 import { adminGuard } from './core/guards/admin.guard';
+import { tenantGuard } from './core/guards/tenant.guard';
 
 export const routes: Routes = [
   {
+    path: 'select-tenant',
+    loadComponent: () => import('./features/tenant-select/tenant-select.component').then((m) => m.TenantSelectComponent)
+  },
+  {
     path: '',
     component: ShellComponent,
+    canActivate: [tenantGuard],
     children: [
       { path: '', redirectTo: 'tablero', pathMatch: 'full' },
       { path: 'tablero', loadComponent: () => import('./features/tablero/tablero.component').then((m) => m.TableroComponent) },
@@ -35,6 +41,7 @@ export const routes: Routes = [
               { path: 'catalogos/equipos/nueva', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'equipos' } },
               { path: 'catalogos/equipos/:id/editar', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'equipos' } },
               { path: 'catalogos', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalogos.component').then((m) => m.AdminCatalogosComponent) },
+              { path: 'organization', loadComponent: () => import('./features/admin/admin-organization/admin-organization.component').then((m) => m.AdminOrganizationComponent) },
               { path: 'reglas', loadComponent: () => import('./features/admin/admin-reglas/admin-reglas.component').then((m) => m.AdminReglasComponent) },
               { path: 'flujos', loadComponent: () => import('./features/admin/admin-flujos/admin-flujos.component').then((m) => m.AdminFlujosComponent) },
               { path: 'campos', loadComponent: () => import('./features/admin/admin-campos/admin-campos.component').then((m) => m.AdminCamposComponent) }

@@ -1,25 +1,41 @@
 import { Injectable, inject } from '@angular/core';
 import type { Task } from '../../shared/models';
 import type { Project } from '../../shared/models';
+import { TenantContextService } from './tenant-context.service';
 
-const STORAGE_KEY_TASKS = 'gestor-tareas:snapshot:tasks';
-const STORAGE_KEY_META = 'gestor-tareas:snapshot:meta';
-const STORAGE_KEY_PROJECTS = 'gestor-tareas:snapshot:projects';
-const STORAGE_KEY_PROJECTS_META = 'gestor-tareas:snapshot:projects-meta';
+const SNAPSHOT_VERSION = 1;
+const STORAGE_PREFIX_TASKS = 'gestor-tareas:snapshot:tasks.';
+const STORAGE_PREFIX_PROJECTS = 'gestor-tareas:snapshot:projects.';
 
 export interface SnapshotMeta {
+  version: number;
   savedAt: string;
   tasksCount: number;
 }
 
 export interface ProjectsSnapshotMeta {
+  version: number;
   savedAt: string;
   projectsCount: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class OfflineSnapshotService {
+  private readonly tenantContext = inject(TenantContextService);
+
+  private storageKeyTasks(): string {
+    const tid = this.tenantContext.currentTenantId();
+    return tid ? STORAGE_PREFIX_TASKS + tid : '';
+  }
+
+  private storageKeyProjects(): string {
+    const tid = this.tenantContext.currentTenantId();
+    return tid ? STORAGE_PREFIX_PROJECTS + tid : '';
+  }
+
   saveTasks(tasks: Task[]): void {
+    const key = this.storageKeyTasks();
+    if (!key) return;
     try {
       const serializable = tasks.map((t) => ({
         ...t,
@@ -34,22 +50,25 @@ export class OfflineSnapshotService {
           uploadedAt: a.uploadedAt instanceof Date ? a.uploadedAt.toISOString() : a.uploadedAt
         }))
       }));
-      localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(serializable));
+      localStorage.setItem(key, JSON.stringify(serializable));
       localStorage.setItem(
-        STORAGE_KEY_META,
+        key + ':meta',
         JSON.stringify({
+          version: SNAPSHOT_VERSION,
           savedAt: new Date().toISOString(),
           tasksCount: tasks.length
         } as SnapshotMeta)
       );
     } catch (e) {
-      console.warn('OfflineSnapshot: could not save', e);
+      console.warn('OfflineSnapshot: could not save tasks', e);
     }
   }
 
   loadTasks(): Task[] | null {
+    const key = this.storageKeyTasks();
+    if (!key) return null;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_TASKS);
+      const raw = localStorage.getItem(key);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
       return parsed.map((t) => {
@@ -75,20 +94,28 @@ export class OfflineSnapshotService {
     }
   }
 
-  getMeta(): SnapshotMeta | null {
+  getTasksMeta(): SnapshotMeta | null {
+    const key = this.storageKeyTasks();
+    if (!key) return null;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_META);
+      const raw = localStorage.getItem(key + ':meta');
       return raw ? (JSON.parse(raw) as SnapshotMeta) : null;
     } catch {
       return null;
     }
   }
 
+  getMeta(): SnapshotMeta | null {
+    return this.getTasksMeta();
+  }
+
   hasSnapshot(): boolean {
-    return localStorage.getItem(STORAGE_KEY_TASKS) !== null;
+    return localStorage.getItem(this.storageKeyTasks()) !== null;
   }
 
   saveProjects(projects: Project[]): void {
+    const key = this.storageKeyProjects();
+    if (!key) return;
     try {
       const serializable = projects.map((p) => ({
         ...p,
@@ -109,10 +136,11 @@ export class OfflineSnapshotService {
           dueDate: m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate
         }))
       }));
-      localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(serializable));
+      localStorage.setItem(key, JSON.stringify(serializable));
       localStorage.setItem(
-        STORAGE_KEY_PROJECTS_META,
+        key + ':meta',
         JSON.stringify({
+          version: SNAPSHOT_VERSION,
           savedAt: new Date().toISOString(),
           projectsCount: projects.length
         } as ProjectsSnapshotMeta)
@@ -123,8 +151,10 @@ export class OfflineSnapshotService {
   }
 
   loadProjects(): Project[] | null {
+    const key = this.storageKeyProjects();
+    if (!key) return null;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_PROJECTS);
+      const raw = localStorage.getItem(key);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
       return parsed.map((p) => {
@@ -156,6 +186,6 @@ export class OfflineSnapshotService {
   }
 
   hasProjectsSnapshot(): boolean {
-    return localStorage.getItem(STORAGE_KEY_PROJECTS) !== null;
+    return localStorage.getItem(this.storageKeyProjects()) !== null;
   }
 }

@@ -27,6 +27,7 @@ function createTask(
 
   return {
     id: `task-${folio}`,
+    tenantId: (overrides as { tenantId?: string }).tenantId ?? 'tenant-1',
     folio,
     title,
     description: `Descripción de la tarea: ${title}`,
@@ -81,7 +82,8 @@ function createDemoTask001(): Task {
   return base;
 }
 
-export const TASKS: Task[] = [
+function tasksForTenant1(): Task[] {
+  return [
   createDemoTask001(),
   createTask('TASK-002', 'Actualizar inventario de almacén', 'Carlos López', 'user-2', 'Pendiente', 'Media', addDays(now, 1)),
   createTask('TASK-003', 'Auditoría interna ISO 9001', 'Ana Martínez', 'user-3', 'Completada', 'Alta', addDays(now, -2)),
@@ -115,7 +117,26 @@ export const TASKS: Task[] = [
   createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Pedro Sánchez', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { rejectionComment: 'Faltan evidencias de la última auditoría.' }),
   createTask('TASK-032', 'Revisión de reportes (solo lectura)', 'Eva Torres', 'user-6', 'Pendiente', 'Baja', addDays(now, 5)),
   createTask('TASK-033', 'Auditoría general del sistema', 'Super Admin', 'user-owner', 'En Progreso', 'Alta', addDays(now, 3))
-];
+  ];
+}
+
+function tasksForTenant2(): Task[] {
+  return [
+    createTask('TASK-101', 'Configurar tienda nueva', 'María García', 'user-1', 'En Progreso', 'Alta', addDays(now, 5), { tenantId: 'tenant-2', projectId: 'proj-3', orgUnitId: 'ou-7' }),
+    createTask('TASK-102', 'Contratación personal local', 'Pedro Sánchez', 'user-4', 'Pendiente', 'Media', addDays(now, 10), { tenantId: 'tenant-2', projectId: 'proj-3', orgUnitId: 'ou-6' }),
+    createTask('TASK-103', 'Revisión de inventario inicial', 'Laura Rodríguez', 'user-5', 'Completada', 'Baja', addDays(now, -1), { tenantId: 'tenant-2', projectId: 'proj-3' })
+  ];
+}
+
+/** Tareas iniciales por tenant */
+export function getInitialTasks(tenantId: string): Task[] {
+  if (tenantId === 'tenant-1') return tasksForTenant1();
+  if (tenantId === 'tenant-2') return tasksForTenant2();
+  return [];
+}
+
+/** @deprecated Use getInitialTasks(tenantId) */
+export const TASKS: Task[] = tasksForTenant1();
 
 export const ALERT_RULES: AlertRule[] = [
   {
