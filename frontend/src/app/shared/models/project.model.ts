@@ -93,4 +93,10 @@ export interface Project {
   kpis?: { completadas: number; total: number; vencidas: number };
   filesCount?: number;
   activityCount?: number;
+  /** Modo ferretero: plantilla aplicada al crear. */
+  templateId?: string;
+  templateName?: string;
+  templateAppliedAt?: string;
+  templateAppliedByUserId?: string;
+  templateTasksGenerated?: boolean;
 }

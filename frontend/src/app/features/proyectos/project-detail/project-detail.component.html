@@ -169,6 +169,51 @@
               </div>
             </mat-card-content>
           </mat-card>
+          @if (isFerretero() && p.templateId) {
+            <mat-card class="overview-card template-card">
+              <mat-card-header>
+                <mat-card-title>Plantilla aplicada</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p class="template-name">{{ p.templateName ?? p.templateId }}</p>
+                @if (showGenerateTemplateButton()) {
+                  <button
+                    mat-stroked-button
+                    color="primary"
+                    [disabled]="!connectivity.isOnline()"
+                    (click)="generateTemplateTasks()"
+                  >
+                    Generar tareas del template
+                  </button>
+                } @else {
+                  <p class="template-generated">Tareas generadas: {{ templateTasks().length }} total</p>
+                }
+              </mat-card-content>
+            </mat-card>
+            @if (isFerretero() && p.templateId && templateTasks().length) {
+              <mat-card class="overview-card skeleton-card">
+                <mat-card-header>
+                  <mat-card-title>Esqueleto de tareas</mat-card-title>
+                  <mat-card-subtitle>Total: {{ templateTasks().length }} · Completadas: {{ templateTasksCompletadas() }} · {{ uiCopy.statusLabel('Vencida') }}: {{ templateTasksVencidas() }} · Bloqueadas: {{ templateTasksBloqueadas() }}</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <ul class="template-tasks-list">
+                    @for (t of templateTasks(); track t.id) {
+                      <li class="template-task-item" (click)="goToTask(t.id)">
+                        <div class="task-row">
+                          <span class="task-title">{{ t.title }}</span>
+                          <span class="task-status" [class]="t.status">{{ uiCopy.statusLabel(t.status) }}</span>
+                        </div>
+                        @if (getTaskLinkLabels(t.id).length) {
+                          <div class="task-link-hint">{{ getTaskLinkLabels(t.id).join(' · ') }}</div>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </mat-card-content>
+              </mat-card>
+            }
+          }
           @if (p.milestones.length) {
             <mat-card class="overview-card milestones-card">
               <mat-card-header>

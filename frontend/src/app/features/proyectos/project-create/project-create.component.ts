@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,14 +14,21 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
 import type { ProjectStatus, ProjectPriority } from '../../../shared/models';
 import { DataService } from '../../../core/services/data.service';
+import { minDueDateValidator } from '../../../shared/utils/date.utils';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ProjectCatalogService } from '../../../core/services/project-catalog.service';
 import { ProjectService } from '../../../core/services/project.service';
 import { OrgService } from '../../../core/services/org.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TenantSettingsService } from '../../../core/services/tenant-settings.service';
+import { FERRETERO_PROJECT_TEMPLATES, FERRETERO_TASK_TEMPLATES } from '../../../core/data/ferretero-initial';
+import type { ProjectTemplate } from '../../../shared/models/project-template.model';
+import type { ProjectTemplateBuilderItem } from '../../../shared/models/project-template-builder.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { ProjectTemplateBuilderComponent } from '../project-template-builder/project-template-builder.component';
 
 function dueDateValidator(control: AbstractControl): ValidationErrors | null {
   const group = control as FormGroup;
@@ -48,7 +55,9 @@ function dueDateValidator(control: AbstractControl): ValidationErrors | null {
     MatIconModule,
     MatCardModule,
     MatTooltipModule,
-    PageHeaderComponent
+    MatSlideToggleModule,
+    PageHeaderComponent,
+    ProjectTemplateBuilderComponent
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './project-create.component.html',
@@ -65,6 +74,13 @@ export class ProjectCreateComponent {
   private readonly tenantContext = inject(TenantContextService);
   private readonly snackBar = inject(MatSnackBar);
   readonly connectivity = inject(ConnectivityService);
+  private readonly tenantSettings = inject(TenantSettingsService);
+
+  isFerretero = this.tenantSettings.isFerretero;
+  projectTemplates = FERRETERO_PROJECT_TEMPLATES;
+  taskTemplates = FERRETERO_TASK_TEMPLATES;
+  selectedTemplateId = signal<string>('');
+  builderItems = signal<ProjectTemplateBuilderItem[]>([]);
 
   users = this.dataService.usersForCurrentOrg;
   orgUnits = this.orgService.getOrgUnits(this.tenantContext.currentTenantId() ?? '');
@@ -81,6 +97,9 @@ export class ProjectCreateComponent {
   });
   statuses = this.catalog.getStatuses();
   priorities = this.catalog.getPriorities();
+  get categoriesList() {
+    return this.dataService.getCategories();
+  }
 
   today = new Date();
   minDate = new Date(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
@@ -97,7 +116,7 @@ export class ProjectCreateComponent {
       description: [''],
       status: [''] as [ProjectStatus | ''],
       startDate: [null as Date | null],
-      dueDate: [null as Date | null],
+      dueDate: [null as Date | null, minDueDateValidator()],
       clientArea: [''],
       primaryOrgUnitId: [''],
       memberIds: [[] as string[]],
@@ -176,6 +195,61 @@ export class ProjectCreateComponent {
     this.initialFiles.splice(idx, 1);
   }
 
+  applyProjectTemplate(templateId: string): void {
+    if (!templateId) {
+      this.selectedTemplateId.set('');
+      this.builderItems.set([]);
+      return;
+    }
+    const t = this.projectTemplates.find((x: ProjectTemplate) => x.id === templateId);
+    if (!t) return;
+    this.selectedTemplateId.set(templateId);
+    this.form.patchValue({
+      name: t.nameTemplate,
+      description: t.description ?? ''
+    });
+    const ownerId = this.form.get('ownerId')?.value ?? '';
+    const owner = this.users().find((u) => u.id === ownerId);
+    const dueDate = this.form.get('dueDate')?.value
+      ? new Date((this.form.get('dueDate')?.value as Date))
+      : new Date();
+    const items: ProjectTemplateBuilderItem[] = (t.taskTemplateIds ?? []).map((tplId, i) => {
+      const tt = FERRETERO_TASK_TEMPLATES.find((x) => x.id === tplId);
+      const overrides = t.taskOverrides?.[tplId];
+      const descParts: string[] = [];
+      if (tt?.descriptionText?.trim()) descParts.push(tt.descriptionText!.trim());
+      if (tt?.evidenceHint?.trim()) descParts.push('Evidencia: ' + tt.evidenceHint!.trim());
+      if (tt?.controlNotes?.trim()) descParts.push('Nota: ' + tt.controlNotes!.trim());
+      return {
+        key: `tpl-${Date.now()}-${tplId}-${i}`,
+        taskTemplateId: tplId,
+        included: true,
+        title: overrides?.title ?? tt?.titleTemplate ?? tplId,
+        categoryId: overrides?.categoryId ?? tt?.categoryId ?? '',
+        priority: (overrides?.priority ?? 'Media') as string,
+        assigneeId: ownerId,
+        dueDate,
+        description: descParts.join('\n\n'),
+        checklistItems: [...(tt?.checklistItems ?? [])]
+      };
+    });
+    this.builderItems.set(items);
+  }
+
+  get selectedProjectTemplate(): ProjectTemplate | null {
+    const id = this.selectedTemplateId();
+    return id ? (this.projectTemplates.find((x: ProjectTemplate) => x.id === id) ?? null) : null;
+  }
+
+  get previewTaskTitles(): string[] {
+    const tpl = this.selectedProjectTemplate;
+    if (!tpl?.taskTemplateIds?.length) return [];
+    return tpl.taskTemplateIds.map((id: string) => {
+      const tt = FERRETERO_TASK_TEMPLATES.find((t) => t.id === id);
+      return tt?.name ?? id;
+    });
+  }
+
   cancel(): void {
     this.router.navigate(['/proyectos']);
   }
@@ -221,9 +295,33 @@ export class ProjectCreateComponent {
       milestones: []
     };
 
+    const tplId = this.selectedTemplateId();
+    const tpl = tplId ? this.projectTemplates.find((x: ProjectTemplate) => x.id === tplId) : null;
+    if (this.isFerretero() && tpl) {
+      Object.assign(payload, {
+        templateId: tpl.id,
+        templateName: tpl.name,
+        templateAppliedAt: new Date().toISOString(),
+        templateAppliedByUserId: this.currentUser.id,
+        templateTasksGenerated: false
+      });
+    }
+
     const project = this.projectService.createProject(payload);
+
+    const includedItems = this.builderItems().filter((i: ProjectTemplateBuilderItem) => i.included);
+    if (this.isFerretero() && project.templateId && includedItems.length > 0) {
+      const count = this.projectService.createTasksFromBuilder(project.id, includedItems);
+      if (count > 0) {
+        this.snackBar.open(`Proyecto creado con ${count} tareas`, 'Cerrar', { duration: 4000 });
+      } else {
+        this.snackBar.open('Proyecto creado correctamente', 'Cerrar', { duration: 3000 });
+      }
+    } else {
+      this.snackBar.open('Proyecto creado correctamente', 'Cerrar', { duration: 3000 });
+    }
+
     this.saving = false;
-    this.snackBar.open('Proyecto creado correctamente', 'Cerrar', { duration: 3000 });
     this.router.navigate(['/proyectos', project.id]);
   }
 }

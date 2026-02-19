@@ -44,7 +44,8 @@ export const routes: Routes = [
               { path: 'organization', loadComponent: () => import('./features/admin/admin-organization/admin-organization.component').then((m) => m.AdminOrganizationComponent) },
               { path: 'reglas', loadComponent: () => import('./features/admin/admin-reglas/admin-reglas.component').then((m) => m.AdminReglasComponent) },
               { path: 'flujos', loadComponent: () => import('./features/admin/admin-flujos/admin-flujos.component').then((m) => m.AdminFlujosComponent) },
-              { path: 'campos', loadComponent: () => import('./features/admin/admin-campos/admin-campos.component').then((m) => m.AdminCamposComponent) }
+              { path: 'campos', loadComponent: () => import('./features/admin/admin-campos/admin-campos.component').then((m) => m.AdminCamposComponent) },
+              { path: 'sistema', loadComponent: () => import('./features/admin/admin-sistema/admin-sistema.component').then((m) => m.AdminSistemaComponent) }
             ]
           }
         ]

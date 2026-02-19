@@ -1,4 +1,4 @@
-import { Component, inject, input, computed } from '@angular/core';
+import { Component, inject, input, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,8 @@ import { DataService } from '../../../core/services/data.service';
 import { TaskService } from '../../../core/services/task.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
+import { TenantSettingsService } from '../../../core/services/tenant-settings.service';
+import { UiCopyService } from '../../../core/services/ui-copy.service';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 import { RelativeTimePipe } from '../../../shared/pipes/relative-time.pipe';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
@@ -45,6 +47,8 @@ export class ProjectDetailComponent {
   private readonly currentUser = inject(CurrentUserService);
   private readonly snackBar = inject(MatSnackBar);
   readonly connectivity = inject(ConnectivityService);
+  private readonly tenantSettings = inject(TenantSettingsService);
+  readonly uiCopy = inject(UiCopyService);
 
   projectId = input.required<string>({ alias: 'id' });
   project = computed(() => this.projectService.getProjectById(this.projectId()));
@@ -56,6 +60,22 @@ export class ProjectDetailComponent {
   });
   kpis = computed(() => this.projectService.computeKPIs(this.projectId()));
   projectTasks = computed(() => this.projectService.getProjectTasks(this.projectId()));
+
+  isFerretero = this.tenantSettings.isFerretero;
+  templateTasks = computed(() => {
+    const p = this.project();
+    if (!p?.templateId) return [];
+    return this.projectTasks().filter((t) => t.generatedFromProjectTemplateId === p.templateId);
+  });
+  templateTasksCompletadas = computed(() =>
+    this.templateTasks().filter((t) => ['Completada', 'Liberada'].includes(t.status)).length
+  );
+  templateTasksVencidas = computed(() =>
+    this.templateTasks().filter((t) => t.riskIndicator === 'vencida').length
+  );
+  templateTasksBloqueadas = computed(() =>
+    this.templateTasks().filter((t) => t.status === 'En Espera').length
+  );
 
   users = this.dataService.usersForCurrentOrg;
 
@@ -98,7 +118,37 @@ export class ProjectDetailComponent {
     this.router.navigate(['/tareas', taskId]);
   }
 
+  getTaskLinkLabels(taskId: string): string[] {
+    const links = this.taskService.getLinksForTask(taskId);
+    const labels: string[] = [];
+    for (const l of links.blocking) {
+      const other = this.projectTasks().find((t) => t.id === l.toTaskId);
+      if (other) labels.push('bloquea a: ' + other.title);
+    }
+    for (const l of links.blockedBy) {
+      const other = this.projectTasks().find((t) => t.id === l.fromTaskId);
+      if (other) labels.push('bloqueada por: ' + other.title);
+    }
+    return labels;
+  }
+
   goBack(): void {
     this.router.navigate(['/proyectos']);
+  }
+
+  generateTemplateTasks(): void {
+    if (!this.connectivity.isOnline()) return;
+    const p = this.project();
+    if (!p?.templateId) return;
+    const count = this.projectService.generateTasksFromProjectTemplate(p.id);
+    this.snackBar.open(count > 0 ? `Se crearon ${count} tareas del template` : 'No se pudieron generar tareas', 'Cerrar', {
+      duration: 3000
+    });
+  }
+
+  showGenerateTemplateButton(): boolean {
+    const p = this.project();
+    if (!p?.templateId || !this.isFerretero()) return false;
+    return p.templateTasksGenerated !== true;
   }
 }

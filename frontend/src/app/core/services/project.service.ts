@@ -8,6 +8,8 @@ import type {
 } from '../../shared/models';
 import type { Task } from '../../shared/models';
 import { getInitialProjects } from '../data/projects-initial';
+import { FERRETERO_PROJECT_TEMPLATES } from '../data/ferretero-initial';
+import { FERRETERO_TASK_TEMPLATES } from '../data/ferretero-initial';
 import { TaskService } from './task.service';
 import { TaskWorkflowService } from './task-workflow.service';
 import { CurrentUserService } from './current-user.service';
@@ -15,7 +17,10 @@ import { ConnectivityService } from './connectivity.service';
 import { OfflineSnapshotService } from './offline-snapshot.service';
 import { TenantContextService } from './tenant-context.service';
 import { OrgService } from './org.service';
+import { AdminService } from './admin.service';
 import type { ProjectKpis } from '../../shared/models';
+import type { ProjectTemplateBuilderItem } from '../../shared/models/project-template-builder.model';
+import { normalizeDateToNoonLocal } from '../../shared/utils/date.utils';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
@@ -26,6 +31,7 @@ export class ProjectService {
   private readonly snapshot = inject(OfflineSnapshotService);
   private readonly tenantContext = inject(TenantContextService);
   private readonly orgService = inject(OrgService);
+  private readonly adminService = inject(AdminService);
 
   private readonly _projects = signal<Project[]>([]);
 
@@ -37,7 +43,7 @@ export class ProjectService {
         return;
       }
       const initial = getInitialProjects(tid);
-      const cached = this.connectivity.isOnline() ? null : this.snapshot.loadProjects();
+      const cached = this.snapshot.loadProjects();
       const list = cached?.length ? cached.filter((p: Project) => p.tenantId === tid) : initial;
       const hydrated = list.map((p) => this.hydrateDates(p));
       this._projects.set(hydrated);
@@ -228,6 +234,173 @@ export class ProjectService {
    * Añade los responsables de una tarea como miembros del proyecto si aún no lo son.
    * Se llama cuando una tarea se crea o actualiza con projectId.
    */
+  /**
+   * Genera tareas sugeridas desde una plantilla de proyecto (modo ferretero).
+   * Crea tareas asociadas al proyecto con templateId y generatedFromProjectTemplateId.
+   */
+  generateTasksFromProjectTemplate(projectId: string): number {
+    const project = this.getProjectById(projectId);
+    if (!project?.templateId) return 0;
+    const projTpl = FERRETERO_PROJECT_TEMPLATES.find((t) => t.id === project.templateId);
+    if (!projTpl?.taskTemplateIds?.length) return 0;
+
+    const tid = this.tenantContext.currentTenantId();
+    const owner = project.ownerId;
+    const ownerName = project.owner;
+    const dueDate = normalizeDateToNoonLocal(project.dueDate) ?? new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 12, 0, 0, 0);
+    const orgUnitId = project.primaryOrgUnitId;
+    const createdIds: string[] = [];
+
+    for (let i = 0; i < projTpl.taskTemplateIds.length; i++) {
+      const tplId = projTpl.taskTemplateIds[i];
+      const taskTpl = FERRETERO_TASK_TEMPLATES.find((t) => t.id === tplId);
+      if (!taskTpl) continue;
+
+      const overrides = projTpl.taskOverrides?.[tplId];
+      const title = overrides?.title ?? taskTpl.titleTemplate;
+      const categoryId = overrides?.categoryId ?? taskTpl.categoryId;
+      const priority = (overrides?.priority ?? 'Media') as 'Alta' | 'Media' | 'Baja';
+      const descParts: string[] = [];
+      if (taskTpl.descriptionText?.trim()) descParts.push(taskTpl.descriptionText.trim());
+      if (taskTpl.evidenceHint?.trim()) descParts.push('Evidencia: ' + taskTpl.evidenceHint.trim());
+      if (taskTpl.controlNotes?.trim()) descParts.push('Nota: ' + taskTpl.controlNotes.trim());
+      const desc = descParts.join('\n\n');
+      const checklistItems = (taskTpl.checklistItems ?? []).map((text, j) => ({
+        id: `chk-${Date.now()}-${i}-${j}`,
+        text,
+        isDone: false
+      }));
+
+      const folio = `TASK-${Date.now()}-${i}`;
+      const payload = {
+        tenantId: tid ?? 'tenant-1',
+        folio,
+        title,
+        description: desc,
+        checklist: checklistItems.length ? checklistItems : undefined,
+        assignee: ownerName,
+        assigneeId: owner,
+        status: 'Pendiente' as const,
+        priority,
+        dueDate,
+        riskIndicator: 'ok' as const,
+        tags: [] as string[],
+        attachmentsCount: 0,
+        commentsCount: 0,
+        createdAt: new Date(),
+        createdBy: this.currentUser.id,
+        createdByName: this.currentUser.name,
+        projectId,
+        orgUnitId,
+        categoryId,
+        subAssigneeIds: [] as string[],
+        subAssignees: [] as string[],
+        history: [] as Task['history'],
+        templateId: tplId,
+        generatedFromProjectTemplateId: project.templateId
+      };
+
+      const task = this.taskService.createTask(payload);
+      createdIds.push(task.id);
+      this.addActivity(projectId, {
+        type: 'TASK_ADDED',
+        timestamp: new Date(),
+        userId: this.currentUser.id,
+        userName: this.currentUser.name,
+        details: { taskTitle: title, fromTemplate: true }
+      });
+    }
+
+    for (let j = 0; j < createdIds.length - 1; j++) {
+      try {
+        this.taskService.createTaskLink(createdIds[j], createdIds[j + 1], 'BLOCKS');
+      } catch {
+        // ignore cycle or duplicate
+      }
+    }
+
+    this.updateProject({
+      id: projectId,
+      templateTasksGenerated: true
+    });
+    return createdIds.length;
+  }
+
+  /**
+   * Crea tareas desde el Project Template Builder y enlaza con BLOCKS secuencial.
+   */
+  createTasksFromBuilder(projectId: string, items: ProjectTemplateBuilderItem[]): number {
+    const project = this.getProjectById(projectId);
+    if (!project?.templateId) return 0;
+
+    const tid = this.tenantContext.currentTenantId();
+    const orgUnitId = project.primaryOrgUnitId;
+    const defaultDueDate = project.dueDate ? new Date(project.dueDate) : new Date();
+    const createdIds: string[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const assigneeName = this.adminService.getUserById(item.assigneeId)?.name ?? item.assigneeId;
+      const folio = `TASK-${Date.now()}-${i}`;
+      const checklist = (item.checklistItems ?? [])
+        .filter((t) => t?.trim())
+        .map((text, j) => ({
+          id: `chk-${Date.now()}-${i}-${j}`,
+          text: text.trim(),
+          isDone: false
+        }));
+
+      const payload = {
+        tenantId: tid ?? 'tenant-1',
+        folio,
+        title: item.title || 'Sin título',
+        description: item.description ?? '',
+        checklist: checklist.length ? checklist : undefined,
+        assignee: assigneeName,
+        assigneeId: item.assigneeId || project.ownerId,
+        status: 'Pendiente' as const,
+        priority: (item.priority || 'Media') as 'Alta' | 'Media' | 'Baja',
+        dueDate: normalizeDateToNoonLocal(item.dueDate) ?? defaultDueDate,
+        riskIndicator: 'ok' as const,
+        tags: [] as string[],
+        attachmentsCount: 0,
+        commentsCount: 0,
+        createdAt: new Date(),
+        createdBy: this.currentUser.id,
+        createdByName: this.currentUser.name,
+        projectId,
+        orgUnitId,
+        categoryId: item.categoryId || undefined,
+        subAssigneeIds: [] as string[],
+        subAssignees: [] as string[],
+        history: [] as Task['history'],
+        templateId: item.taskTemplateId,
+        generatedFromProjectTemplateId: project.templateId
+      };
+
+      const task = this.taskService.createTask(payload);
+      createdIds.push(task.id);
+      this.addActivity(projectId, {
+        type: 'TASK_ADDED',
+        timestamp: new Date(),
+        userId: this.currentUser.id,
+        userName: this.currentUser.name,
+        details: { taskTitle: task.title, fromTemplate: true }
+      });
+    }
+
+    for (let j = 0; j < createdIds.length - 1; j++) {
+      try {
+        this.taskService.createTaskLink(createdIds[j], createdIds[j + 1], 'BLOCKS');
+      } catch {
+        // ignore cycle or duplicate
+      }
+    }
+
+    this.updateProject({ id: projectId, templateTasksGenerated: true });
+    return createdIds.length;
+  }
+
   addTaskAssigneesAsMembers(
     projectId: string,
     assigneeId: string,

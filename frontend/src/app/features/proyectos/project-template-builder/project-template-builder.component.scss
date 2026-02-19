@@ -1,0 +1,107 @@
+.builder-card {
+  margin-top: 1rem;
+}
+
+.builder-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  .add-from-template {
+    min-width: 200px;
+  }
+}
+
+.builder-table-wrap {
+  overflow-x: auto;
+}
+
+.builder-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  td {
+    padding: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .col-include { width: 48px; }
+  .col-title { min-width: 140px; }
+  .col-cat { min-width: 100px; }
+  .col-prio { min-width: 80px; }
+  .col-assignee { min-width: 120px; }
+  .col-due { min-width: 110px; }
+  .col-actions { width: 90px; }
+}
+
+.builder-row {
+  &.included {
+    background: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.inline-input,
+.inline-select {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+
+  &.date-input {
+    min-width: 110px;
+  }
+}
+
+.builder-detail-row td {
+  padding: 0;
+  background: #fafafa;
+  border-top: none;
+}
+
+.detail-panel {
+  padding: 1rem 0.5rem 1rem 3rem;
+
+  .detail-field {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary, #757575);
+      margin-bottom: 0.25rem;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 8px;
+      font-size: 0.875rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  }
+
+  .checklist-field .checklist-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+
+    .checklist-input {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 0.875rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  }
+}

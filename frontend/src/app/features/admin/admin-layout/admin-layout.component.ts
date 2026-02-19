@@ -43,7 +43,8 @@ export class AdminLayoutComponent {
     { path: '/admin/organization', label: 'Organización', shortLabel: 'Org.', icon: 'account_tree' },
     { path: '/admin/reglas', label: 'Reglas y notificaciones', shortLabel: 'Reglas', icon: 'rule' },
     { path: '/admin/flujos', label: 'Flujos', shortLabel: 'Flujos', icon: 'account_tree' },
-    { path: '/admin/campos', label: 'Campos personalizados', shortLabel: 'Campos', icon: 'tune' }
+    { path: '/admin/campos', label: 'Campos personalizados', shortLabel: 'Campos', icon: 'tune' },
+    { path: '/admin/sistema', label: 'Sistema', shortLabel: 'Sistema', icon: 'settings_applications' }
   ];
 
   constructor() {

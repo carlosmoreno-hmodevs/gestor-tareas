@@ -1,0 +1,37 @@
+<app-page-header
+  title="Configuración del sistema"
+  subtitle="Modo de operación del tenant: normal o ferretero"
+  icon="settings"
+/>
+
+<mat-card class="sistema-card">
+  <mat-card-header>
+    <mat-card-title>Modo de sistema</mat-card-title>
+    <mat-card-subtitle>Define la experiencia de uso y los presets para este tenant</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="mode-options">
+      <mat-radio-group [value]="selectedMode()" (change)="onModeChange($event.value)">
+        <mat-radio-button value="normal">Normal</mat-radio-button>
+        <mat-radio-button value="ferretero">Ferretero</mat-radio-button>
+      </mat-radio-group>
+    </div>
+    <div class="mode-help">
+      @if (selectedMode() === 'normal') {
+        <p><strong>Normal:</strong> Experiencia genérica. Tareas, proyectos, catálogos y tablero estándar.</p>
+      } @else {
+        <p><strong>Ferretero:</strong> Perfil ferretero: vocabulario, catálogos, plantillas y KPIs listos para operación ferretera; configuración de catálogos bloqueada para mantener estándar.</p>
+      }
+    </div>
+    <div class="apply-actions">
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="applyMode()"
+        [disabled]="selectedMode() === currentMode || !connectivity.isOnline()"
+      >
+        Aplicar modo
+      </button>
+    </div>
+  </mat-card-content>
+</mat-card>

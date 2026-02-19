@@ -39,6 +39,10 @@
           (saveChanges)="onSaveChanges($event)"
           (cancelEdit)="onCancelEdit()"
         />
+        <app-task-checklist-section
+          [task]="t"
+          [isOnline]="connectivity.isOnline()"
+        />
       </div>
 
       <!-- Col 2: EVIDENCIA (35-40%) -->

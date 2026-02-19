@@ -8,6 +8,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { BaseChartDirective } from 'ng2-charts';
 import { TaskService } from '../../core/services/task.service';
 import { DataService } from '../../core/services/data.service';
+import { UiCopyService } from '../../core/services/ui-copy.service';
+import { TenantSettingsService } from '../../core/services/tenant-settings.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import type { ChartConfiguration } from 'chart.js';
 
@@ -30,6 +32,8 @@ import type { ChartConfiguration } from 'chart.js';
 export class TableroComponent {
   private readonly taskService = inject(TaskService);
   private readonly dataService = inject(DataService);
+  readonly uiCopy = inject(UiCopyService);
+  private readonly tenantSettings = inject(TenantSettingsService);
 
   selectedPeriod = signal('7');
   users = this.dataService.usersForCurrentOrg;
@@ -53,6 +57,13 @@ export class TableroComponent {
       .tasks()
       .filter((t) => t.riskIndicator === 'vencida' && t.priority === 'Alta').length
   );
+
+  /** Tareas en estado En Espera (Bloqueadas en ferretero). */
+  blockedCount = computed(() =>
+    this.taskService.tasks().filter((t) => t.status === 'En Espera').length
+  );
+
+  isFerretero = this.tenantSettings.isFerretero;
 
   loadByAssignee = computed(() => {
     const tasks = this.taskService.tasks();
@@ -114,7 +125,7 @@ export class TableroComponent {
   });
 
   doughnutChartData = computed<ChartConfiguration<'doughnut'>['data']>(() => ({
-    labels: ['Pendientes', 'Por vencer', 'Vencidas', 'Completadas'],
+    labels: ['Pendientes', 'Por vencer', this.uiCopy.statusLabel('Vencida'), 'Completadas'],
     datasets: [
       {
         data: [

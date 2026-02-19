@@ -11,9 +11,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
 import type { Task, Priority } from '../../../shared/models';
+import { normalizeDateToNoonLocal, minDueDateValidator } from '../../../shared/utils/date.utils';
 import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
+import { UiCopyService } from '../../../core/services/ui-copy.service';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 
 export interface TaskFormDialogData {
@@ -46,6 +48,7 @@ export class TaskFormDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<TaskFormDialogComponent>);
   private readonly data = inject<TaskFormDialogData>(MAT_DIALOG_DATA, { optional: true });
   private readonly dataService = inject(DataService);
+  readonly uiCopy = inject(UiCopyService);
   private readonly currentUser = inject(CurrentUserService);
   private readonly tenantContext = inject(TenantContextService);
 
@@ -63,7 +66,8 @@ export class TaskFormDialogComponent {
     return this.users().filter((u) => u.id !== assigneeId);
   }
 
-  minDate = new Date();
+  private readonly today = new Date();
+  minDate = new Date(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
 
   form = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
@@ -72,7 +76,7 @@ export class TaskFormDialogComponent {
     priority: ['Media' as Priority, Validators.required],
     assigneeId: ['', Validators.required],
     subAssigneeIds: [[]] as [string[]],
-    dueDate: [new Date(), Validators.required],
+    dueDate: [new Date(), [Validators.required, minDueDateValidator()]],
     projectId: [this.data?.projectId ?? ''],
     tags: [''],
     observations: ['']
@@ -157,7 +161,7 @@ export class TaskFormDialogComponent {
       assigneeId,
       status: 'Pendiente' as const,
       priority: v.priority!,
-      dueDate: v.dueDate!,
+      dueDate: normalizeDateToNoonLocal(v.dueDate) ?? new Date(),
       riskIndicator: 'ok' as const,
       tags: this.tagsList,
       attachmentsCount: this.selectedFiles.length,

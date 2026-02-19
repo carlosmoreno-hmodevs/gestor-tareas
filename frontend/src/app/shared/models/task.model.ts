@@ -44,6 +44,10 @@ export interface TaskHistoryEntry {
   };
 }
 
+import type { TaskChecklistItem } from './task-checklist.model';
+
+export type { TaskChecklistItem };
+
 export interface TaskAttachment {
   id: string;
   name: string;
@@ -84,6 +88,18 @@ export interface Task {
   attachments?: TaskAttachment[];
   rejectionComment?: string;
   history: TaskHistoryEntry[];
+  /** Checklist tildable (guía/seguimiento). No se incluye en descripción. */
+  checklist?: TaskChecklistItem[];
+  /** Modo ferretero: motivo de bloqueo (En espera). */
+  blockedReason?: string;
+  /** Modo ferretero: motivo de corrección (no liberada). */
+  correctedReason?: string;
+  /** Fecha en que pasó a Liberada/Validada (para tiempo de ciclo). */
+  liberatedAt?: string;
+  /** Modo ferretero: ID del TaskTemplate usado para generar esta tarea. */
+  templateId?: string;
+  /** ID del ProjectTemplate que generó esta tarea (para filtrar esqueleto). */
+  generatedFromProjectTemplateId?: string;
 }
 
 /** Task link type for dependencies (graph) */

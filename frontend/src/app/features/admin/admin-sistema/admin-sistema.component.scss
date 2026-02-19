@@ -1,0 +1,58 @@
+@use 'styles/tokens' as *;
+
+.sistema-card {
+  margin-bottom: $spacing-xl;
+  border-radius: $radius-lg !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+
+  mat-card-header {
+    margin-bottom: $spacing-md;
+  }
+
+  mat-card-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+  }
+
+  mat-card-subtitle {
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  mat-card-content {
+    padding-top: 0;
+  }
+}
+
+.mode-options {
+  margin-bottom: $spacing-lg;
+
+  mat-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+
+    mat-radio-button {
+      margin-right: $spacing-md;
+    }
+  }
+}
+
+.mode-help {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: $radius-md;
+
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #616161);
+    line-height: 1.5;
+  }
+}
+
+.apply-actions {
+  margin-top: $spacing-md;
+}

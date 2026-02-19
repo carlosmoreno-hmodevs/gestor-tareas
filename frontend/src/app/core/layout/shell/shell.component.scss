@@ -184,6 +184,20 @@
   flex-shrink: 0;
 }
 
+.mode-badge {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #757575);
+  padding: 2px 8px;
+  border-radius: $radius-md;
+  background: rgba(0, 0, 0, 0.05);
+  margin-right: $spacing-sm;
+  white-space: nowrap;
+}
+
+[data-theme='dark'] .mode-badge {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .org-selectors {
   display: flex;
   align-items: center;

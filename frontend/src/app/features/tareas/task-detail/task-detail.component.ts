@@ -18,6 +18,7 @@ import { TaskEvidencePanelComponent } from '../task-evidence-panel/task-evidence
 import { TaskTimelineComponent } from '../task-timeline/task-timeline.component';
 import { TaskWorkflowActionsComponent } from '../task-workflow-actions/task-workflow-actions.component';
 import { TaskRelationsPanelComponent } from '../task-relations-panel/task-relations-panel.component';
+import { TaskChecklistSectionComponent } from '../task-checklist-section/task-checklist-section.component';
 import { RejectDialogComponent } from '../reject-dialog/reject-dialog.component';
 import { RescheduleDialogComponent } from '../reschedule-dialog/reschedule-dialog.component';
 import type { Task, TaskStatus } from '../../../shared/models';
@@ -34,6 +35,7 @@ import type { Transition } from '../../../core/services/task-workflow.service';
     PageHeaderComponent,
     TaskDetailHeaderComponent,
     TaskRelationsPanelComponent,
+    TaskChecklistSectionComponent,
     TaskDetailFormComponent,
     TaskEvidencePanelComponent,
     TaskTimelineComponent,

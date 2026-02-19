@@ -32,6 +32,32 @@
   <div class="form-layout">
     <!-- Columna principal -->
     <div class="form-main">
+      @if (isFerretero()) {
+        <mat-card class="form-section">
+          <mat-card-header>
+            <mat-card-title>Plantilla (opcional)</mat-card-title>
+            <mat-card-subtitle>Elige una plantilla para prellenar título, categoría y checklist</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Template</mat-label>
+              <mat-select [value]="selectedTemplateId()" (selectionChange)="applyTemplate($event.value)">
+                <mat-option value="">Ninguna</mat-option>
+                @for (t of taskTemplates; track t.id) {
+                  <mat-option [value]="t.id">{{ t.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            @if (selectedTemplateId() && checklistItems().length) {
+              <div class="field-group">
+                <mat-slide-toggle [checked]="includeChecklist()" (change)="includeChecklist.set($event.checked)">
+                  Incluir checklist ({{ checklistItems().length }} items)
+                </mat-slide-toggle>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
       <mat-card class="form-section">
         <mat-card-header>
           <mat-card-title>Información básica</mat-card-title>
@@ -56,8 +82,23 @@
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Descripción</mat-label>
               <textarea matInput formControlName="description" rows="4" placeholder="Descripción detallada de la tarea"></textarea>
+              <mat-hint>Instrucciones y evidencia esperada. El checklist va aparte.</mat-hint>
             </mat-form-field>
           </div>
+
+          @if (isFerretero() && includeChecklist() && checklistItems().length) {
+            <div class="field-group checklist-group">
+              <label class="section-label">Checklist ({{ checklistItems().length }} items)</label>
+              <ul class="checklist-preview">
+                @for (item of checklistItems(); track item.id) {
+                  <li class="checklist-preview-item">
+                    <mat-icon class="check-icon">check_box_outline_blank</mat-icon>
+                    <span>{{ item.text }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
 
           <div class="field-row">
             <div class="field-group">
@@ -73,7 +114,7 @@
             </div>
             <div class="field-group">
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Prioridad</mat-label>
+                <mat-label>{{ uiCopy.label('priority') }}</mat-label>
                 <mat-select formControlName="priority">
                   @for (p of priorities; track p.id) {
                     <mat-option [value]="p.value">{{ p.name }}</mat-option>
@@ -112,7 +153,7 @@
       <mat-card class="form-section">
         <mat-card-header>
           <mat-card-title>Asignación y fechas</mat-card-title>
-          <mat-card-subtitle>Responsables y fecha límite</mat-card-subtitle>
+          <mat-card-subtitle>{{ uiCopy.label('sectionResponsibles') }}</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <div class="field-group">
@@ -129,7 +170,7 @@
                 }
               </mat-select>
               @if (form.get('assigneeId')?.hasError('required') && form.get('assigneeId')?.touched) {
-                <mat-error>Responsable obligatorio</mat-error>
+                <mat-error>{{ uiCopy.label('assigneeRequired') }}</mat-error>
               }
             </mat-form-field>
           </div>
@@ -150,9 +191,12 @@
           <div class="field-group">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Fecha límite</mat-label>
-              <input matInput [matDatepicker]="picker" formControlName="dueDate" />
+              <input matInput [matDatepicker]="picker" formControlName="dueDate" [min]="minDate" />
               <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
               <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
+              @if (form.get('dueDate')?.hasError('minDueDate') && form.get('dueDate')?.touched) {
+                <mat-error>La fecha límite debe ser hoy o posterior</mat-error>
+              }
             </mat-form-field>
           </div>
         </mat-card-content>

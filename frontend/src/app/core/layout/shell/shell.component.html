@@ -25,6 +25,9 @@
           <div class="org-selectors org-selectors-desktop">
             <app-org-context-bar />
           </div>
+          <span class="mode-badge" [attr.aria-label]="'Modo: ' + (tenantSettings.isFerretero() ? 'Ferretero' : 'Normal')">
+            Modo: {{ tenantSettings.isFerretero() ? 'Ferretero' : 'Normal' }}
+          </span>
           <button mat-icon-button aria-label="Buscar" class="header-action">
             <mat-icon>search</mat-icon>
           </button>

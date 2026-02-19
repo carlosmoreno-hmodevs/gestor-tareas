@@ -19,8 +19,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { DataService } from '../../../core/services/data.service';
+import { UiCopyService } from '../../../core/services/ui-copy.service';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 import type { Task, Priority } from '../../../shared/models';
+import { normalizeDateToNoonLocal, minDueDateValidator } from '../../../shared/utils/date.utils';
 
 @Component({
   selector: 'app-task-detail-form',
@@ -45,6 +47,7 @@ import type { Task, Priority } from '../../../shared/models';
 export class TaskDetailFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly dataService = inject(DataService);
+  readonly uiCopy = inject(UiCopyService);
 
   task = input.required<Task | null>();
   isOnline = input(true);
@@ -69,7 +72,7 @@ export class TaskDetailFormComponent {
     assigneeId: [''],
     priority: ['Media' as Priority, Validators.required],
     categoryId: [''],
-    dueDate: [new Date(), Validators.required],
+    dueDate: [new Date(), [Validators.required, minDueDateValidator()]],
     projectId: [''],
     subAssigneeIds: [[] as string[]],
     tags: [[] as string[]]
@@ -166,7 +169,7 @@ export class TaskDetailFormComponent {
       priority: (v.priority as Priority) ?? t.priority,
       categoryId: v.categoryId ?? t.categoryId,
       categoryName: this.categories.find((c) => c.id === v.categoryId)?.name,
-      dueDate: v.dueDate ? new Date(v.dueDate) : t.dueDate,
+      dueDate: v.dueDate ? (normalizeDateToNoonLocal(v.dueDate) ?? t.dueDate) : t.dueDate,
       projectId: v.projectId ?? t.projectId,
       subAssigneeIds,
       tags: v.tags ?? []

@@ -41,6 +41,26 @@
   gap: $spacing-xl;
 }
 
+.template-preview {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: $radius-md;
+
+  .preview-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: var(--color-text-secondary, #616161);
+  }
+
+  ul {
+    margin: $spacing-sm 0 0;
+    padding-left: $spacing-lg;
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
 .form-section {
   border-radius: $radius-xl !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;

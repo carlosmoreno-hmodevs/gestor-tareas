@@ -1,0 +1,111 @@
+<mat-card class="builder-card">
+  <mat-card-header>
+    <mat-card-title>Constructor de plantilla de proyecto</mat-card-title>
+    <mat-card-subtitle>Elige y edita las tareas a crear ({{ includedCount() }} seleccionadas)</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="builder-actions">
+      <button mat-stroked-button (click)="addFreeTask()">
+        <mat-icon>add</mat-icon>
+        Tarea libre
+      </button>
+      <button mat-stroked-button [matMenuTriggerFor]="addFromTemplateMenu">
+        <mat-icon>add</mat-icon>
+        Desde plantilla
+      </button>
+      <mat-menu #addFromTemplateMenu="matMenu">
+        @for (tt of taskTemplates(); track tt.id) {
+          <button mat-menu-item (click)="addFromTaskTemplate(tt.id)">{{ tt.name }}</button>
+        }
+      </mat-menu>
+    </div>
+
+    <div class="builder-table-wrap">
+      <table class="builder-table">
+        <thead>
+          <tr>
+            <th class="col-include">Incluir</th>
+            <th class="col-title">Título</th>
+            <th class="col-cat">Categoría</th>
+            <th class="col-prio">Urgencia</th>
+            <th class="col-assignee">Responsable</th>
+            <th class="col-due">Fecha límite</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.key) {
+            <tr class="builder-row" [class.included]="item.included">
+              <td class="col-include">
+                <mat-checkbox [checked]="item.included" (change)="toggleInclude(item.key)"></mat-checkbox>
+              </td>
+              <td class="col-title">
+                <input type="text" [ngModel]="item.title" (ngModelChange)="updateItem(item.key, { title: $event })" class="inline-input" placeholder="Título" />
+              </td>
+              <td class="col-cat">
+                <select [(ngModel)]="item.categoryId" (ngModelChange)="updateItem(item.key, { categoryId: $event })" class="inline-select">
+                  <option value="">—</option>
+                  @for (c of categories(); track c.id) {
+                    <option [value]="c.id">{{ c.name }}</option>
+                  }
+                </select>
+              </td>
+              <td class="col-prio">
+                <select [ngModel]="item.priority" (ngModelChange)="updateItem(item.key, { priority: $event })" class="inline-select">
+                  @for (p of priorities(); track p.id) {
+                    <option [value]="p.value">{{ p.name }}</option>
+                  }
+                </select>
+              </td>
+              <td class="col-assignee">
+                <select [(ngModel)]="item.assigneeId" (ngModelChange)="updateItem(item.key, { assigneeId: $event })" class="inline-select">
+                  @for (u of users(); track u.id) {
+                    <option [value]="u.id">{{ u.name }}</option>
+                  }
+                </select>
+              </td>
+              <td class="col-due">
+                <input type="date" [ngModel]="item.dueDate ? (item.dueDate | dateFormat: 'dateOnly') : ''" (ngModelChange)="onDueDateChange(item.key, $event)" [min]="minDueDateStr" class="inline-input date-input" />
+              </td>
+              <td class="col-actions">
+                <button mat-icon-button (click)="toggleExpand(item.key)" [matTooltip]="expandedKey() === item.key ? 'Ocultar' : 'Expandir'">
+                  <mat-icon>{{ expandedKey() === item.key ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="removeItem(item.key)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+            @if (expandedKey() === item.key) {
+              <tr class="builder-detail-row">
+                <td colspan="7">
+                  <div class="detail-panel">
+                    <div class="detail-field">
+                      <label>Descripción</label>
+                      <textarea [(ngModel)]="item.description" (ngModelChange)="updateItem(item.key, { description: $event })" rows="2" placeholder="Descripción narrativa"></textarea>
+                    </div>
+                    <div class="detail-field checklist-field">
+                      <label>Checklist</label>
+                      @for (chk of item.checklistItems; track $index) {
+                        <div class="checklist-row">
+                          <input type="text" [ngModel]="chk" (ngModelChange)="updateChecklistItem(item.key, $index, $event)" class="checklist-input" placeholder="Item" />
+                          <button mat-icon-button (click)="removeChecklistItem(item.key, $index)">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      }
+                      <button mat-stroked-button (click)="addChecklistItem(item.key)">
+                        <mat-icon>add</mat-icon>
+                        Añadir item
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </mat-card-content>
+</mat-card>

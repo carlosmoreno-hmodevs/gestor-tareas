@@ -38,7 +38,7 @@ export interface RescheduleDialogResult {
       <p class="hint">La tarea está vencida. Indica una nueva fecha límite y justificación.</p>
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Nueva fecha límite</mat-label>
-        <input matInput [matDatepicker]="picker" [(ngModel)]="newDueDate" required />
+        <input matInput [matDatepicker]="picker" [(ngModel)]="newDueDate" [min]="minDate" required />
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
       </mat-form-field>

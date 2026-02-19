@@ -6,6 +6,7 @@ export class DateFormatPipe implements PipeTransform {
     if (value == null) return '';
     const d = typeof value === 'string' ? new Date(value) : value;
     if (isNaN(d.getTime())) return '';
+    if (format === 'dateOnly') return d.toISOString().slice(0, 10);
     if (format === 'short') return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     return d.toLocaleString('es-ES', {
       day: '2-digit',

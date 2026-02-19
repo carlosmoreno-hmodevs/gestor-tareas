@@ -21,7 +21,7 @@
           [class.cancelada]="effectiveStatus() === 'Cancelada'"
           [class.en-espera]="effectiveStatus() === 'En Espera'"
         >
-          {{ effectiveStatus() | uppercase }}
+          {{ statusDisplayLabel() }}
         </span>
       </div>
       <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Más acciones">
@@ -47,7 +47,7 @@
       <div class="meta-text">
         <span class="folio">{{ t.folio }}</span>
         <span class="separator">•</span>
-        <span>Responsable: {{ assigneeName() }}</span>
+        <span>{{ uiCopy.label('assignee') }}: {{ assigneeName() }}</span>
         <span class="separator">•</span>
         <span class="due-date" [class.overdue]="hasOverdueBadge()">
           {{ hasOverdueBadge() ? 'Venció' : (t.dueDate | dateFormat: 'short') }}

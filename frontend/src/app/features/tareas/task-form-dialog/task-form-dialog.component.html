@@ -34,7 +34,7 @@
         }
       </mat-form-field>
       <mat-form-field appearance="outline" class="half-width">
-        <mat-label>Prioridad</mat-label>
+        <mat-label>{{ uiCopy.label('priority') }}</mat-label>
         <mat-select formControlName="priority">
           @for (p of priorities; track p.id) {
             <mat-option [value]="p.value">{{ p.name }}</mat-option>
@@ -44,7 +44,7 @@
     </div>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Responsable principal</mat-label>
+      <mat-label>{{ uiCopy.label('assignee') }} principal</mat-label>
       <mat-select formControlName="assigneeId">
         <mat-option value="">
           <span class="assignee-option"><app-avatar name="Sin asignar" [size]="28" /><span>Sin asignar</span></span>
@@ -73,11 +73,14 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Fecha límite</mat-label>
-      <input matInput [matDatepicker]="picker" formControlName="dueDate" />
+      <input matInput [matDatepicker]="picker" formControlName="dueDate" [min]="minDate" />
       <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
       <mat-datepicker #picker [startAt]="minDate"></mat-datepicker>
       @if (form.get('dueDate')?.hasError('required') && form.get('dueDate')?.touched) {
-        <mat-error>Due date is required</mat-error>
+        <mat-error>Fecha límite requerida</mat-error>
+      }
+      @if (form.get('dueDate')?.hasError('minDueDate') && form.get('dueDate')?.touched) {
+        <mat-error>La fecha límite debe ser hoy o posterior</mat-error>
       }
     </mat-form-field>
 

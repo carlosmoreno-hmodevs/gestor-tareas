@@ -34,11 +34,21 @@
   <mat-card class="kpi-card kpi-vencidas">
     <mat-card-content>
       <span class="kpi-value">{{ overdueCount() }}</span>
-      <span class="kpi-label">Vencidas</span>
-      <span class="kpi-sublabel">Alta prioridad: {{ overdueAltaCount() }}</span>
+      <span class="kpi-label">{{ uiCopy.statusLabel('Vencida') }}</span>
+      <span class="kpi-sublabel">Alta {{ uiCopy.label('priority').toLowerCase() }}: {{ overdueAltaCount() }}</span>
     </mat-card-content>
     <a mat-button [routerLink]="['/tareas']" [queryParams]="{ filtro: 'vencidas' }">Ver</a>
   </mat-card>
+  @if (isFerretero()) {
+    <mat-card class="kpi-card kpi-bloqueadas">
+      <mat-card-content>
+        <span class="kpi-value">{{ blockedCount() }}</span>
+        <span class="kpi-label">{{ uiCopy.statusLabel('En Espera') }}</span>
+        <span class="kpi-sublabel">Proveedor / autorización / factura</span>
+      </mat-card-content>
+      <a mat-button [routerLink]="['/tareas']">Ver</a>
+    </mat-card>
+  }
   <mat-card class="kpi-card kpi-completadas">
     <mat-card-content>
       <span class="kpi-value">{{ completedCount() }}</span>
@@ -111,7 +121,7 @@
 
   <mat-card class="chart-card chart-polar">
     <mat-card-header>
-      <mat-card-title>Prioridad (área polar)</mat-card-title>
+      <mat-card-title>{{ uiCopy.label('priority') }} (área polar)</mat-card-title>
       <mat-card-subtitle>Visualización por prioridad</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>

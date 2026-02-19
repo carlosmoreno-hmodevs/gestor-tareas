@@ -327,8 +327,54 @@
   }
 }
 
-.overview-card.milestones-card {
+.overview-card.milestones-card,
+.overview-card.template-card,
+.overview-card.skeleton-card {
   grid-column: 1 / -1;
+}
+
+.template-card {
+  .template-name {
+    margin: 0 0 $spacing-md;
+    font-weight: $font-weight-medium;
+  }
+  .template-generated {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.skeleton-card {
+  .template-tasks-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .template-task-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover {
+      background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+    }
+    .task-title {
+      font-size: $font-size-sm;
+    }
+    .task-status {
+      font-size: $font-size-xs;
+      color: var(--color-text-secondary, #757575);
+    }
+    .task-link-hint {
+      font-size: $font-size-xs;
+      color: var(--color-text-secondary, #757575);
+      font-style: italic;
+    }
+  }
 }
 
 .description-text {

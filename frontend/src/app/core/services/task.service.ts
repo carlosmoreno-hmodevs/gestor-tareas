@@ -33,7 +33,7 @@ export class TaskService {
         return;
       }
       const initialTasks = getInitialTasks(tid);
-      const cachedTasks = this.connectivity.isOnline() ? null : this.snapshot.loadTasks();
+      const cachedTasks = this.snapshot.loadTasks();
       const tasks = cachedTasks?.length ? cachedTasks.filter((t: Task) => t.tenantId === tid) : initialTasks;
       this._tasks.set(tasks);
 

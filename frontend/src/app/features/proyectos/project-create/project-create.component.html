@@ -14,6 +14,40 @@
   <div class="form-layout">
     <!-- Columna principal -->
     <div class="form-main">
+      @if (isFerretero()) {
+        <mat-card class="form-section">
+          <mat-card-header>
+            <mat-card-title>Plantilla (opcional)</mat-card-title>
+            <mat-card-subtitle>Prellena el proyecto y puede generar tareas sugeridas</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Plantilla de proyecto</mat-label>
+                <mat-select [value]="selectedTemplateId()" (selectionChange)="applyProjectTemplate($event.value)">
+                  <mat-option value="">Ninguna</mat-option>
+                  @for (t of projectTemplates; track t.id) {
+                    <mat-option [value]="t.id">{{ t.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+            @if (selectedTemplateId() && selectedProjectTemplate) {
+              <app-project-template-builder
+                [items]="builderItems()"
+                [projectTemplate]="selectedProjectTemplate"
+                [taskTemplates]="taskTemplates"
+                [users]="teamUsers()"
+                [categories]="categoriesList"
+                [priorities]="priorities"
+                [defaultOwnerId]="form.get('ownerId')?.value ?? ''"
+                [defaultDueDate]="form.get('dueDate')?.value ?? null"
+                (itemsChange)="builderItems.set($event)"
+              />
+            }
+          </mat-card-content>
+        </mat-card>
+      }
       <mat-card class="form-section">
         <mat-card-header>
           <mat-card-title>Información básica</mat-card-title>
@@ -121,9 +155,12 @@
             <div class="field-group">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Fecha objetivo</mat-label>
-                <input matInput [matDatepicker]="duePicker" formControlName="dueDate" />
+                <input matInput [matDatepicker]="duePicker" formControlName="dueDate" [min]="minDate" />
                 <mat-datepicker-toggle matSuffix [for]="duePicker"></mat-datepicker-toggle>
                 <mat-datepicker #duePicker [startAt]="minDate"></mat-datepicker>
+                @if (form.get('dueDate')?.hasError('minDueDate') && form.get('dueDate')?.touched) {
+                  <mat-error>La fecha objetivo debe ser hoy o posterior</mat-error>
+                }
               </mat-form-field>
             </div>
           </div>

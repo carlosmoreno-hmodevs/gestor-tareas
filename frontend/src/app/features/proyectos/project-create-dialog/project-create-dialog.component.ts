@@ -13,6 +13,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
 import type { Project, ProjectStatus, ProjectPriority } from '../../../shared/models';
 import { DataService } from '../../../core/services/data.service';
+import { minDueDateValidator } from '../../../shared/utils/date.utils';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ProjectCatalogService } from '../../../core/services/project-catalog.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
@@ -77,7 +78,7 @@ export class ProjectCreateDialogComponent {
       description: [''],
       status: [''] as [ProjectStatus | ''],
       startDate: [null as Date | null],
-      dueDate: [null as Date | null],
+      dueDate: [null as Date | null, minDueDateValidator()],
       clientArea: [''],
       memberIds: [[] as string[]],
       tags: [[] as string[]],

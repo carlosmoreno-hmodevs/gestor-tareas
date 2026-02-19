@@ -1,4 +1,4 @@
-import { Component, inject, computed, OnInit } from '@angular/core';
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,9 +10,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
-import type { Task, Priority } from '../../../shared/models';
+import type { Task, Priority, TaskChecklistItem } from '../../../shared/models';
 import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -21,8 +22,13 @@ import { ProjectService } from '../../../core/services/project.service';
 import { OrgService } from '../../../core/services/org.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
+import { UiCopyService } from '../../../core/services/ui-copy.service';
+import { TenantSettingsService } from '../../../core/services/tenant-settings.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
+import { FERRETERO_TASK_TEMPLATES } from '../../../core/data/ferretero-initial';
+import type { TaskTemplate } from '../../../shared/models/task-template.model';
+import { normalizeDateToNoonLocal, minDueDateValidator } from '../../../shared/utils/date.utils';
 
 @Component({
   selector: 'app-task-create',
@@ -40,6 +46,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
     MatIconModule,
     MatCardModule,
     MatTooltipModule,
+    MatSlideToggleModule,
     PageHeaderComponent,
     AvatarComponent
   ],
@@ -59,6 +66,8 @@ export class TaskCreateComponent implements OnInit {
   private readonly tenantContext = inject(TenantContextService);
   readonly connectivity = inject(ConnectivityService);
   private readonly snackBar = inject(MatSnackBar);
+  readonly uiCopy = inject(UiCopyService);
+  private readonly tenantSettings = inject(TenantSettingsService);
 
   /** Si se viene desde un proyecto, el ID está fijado y no se puede cambiar */
   fixedProjectId: string | null = null;
@@ -82,7 +91,8 @@ export class TaskCreateComponent implements OnInit {
     return base.filter((u) => userIdsInScope.includes(u.id));
   });
 
-  minDate = new Date();
+  private readonly todayForMin = new Date();
+  minDate = new Date(this.todayForMin.getFullYear(), this.todayForMin.getMonth(), this.todayForMin.getDate());
 
   form = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
@@ -91,7 +101,7 @@ export class TaskCreateComponent implements OnInit {
     priority: ['Media' as Priority],
     assigneeId: ['', Validators.required],
     subAssigneeIds: [[]] as [string[]],
-    dueDate: [new Date()],
+    dueDate: [new Date(), minDueDateValidator()],
     projectId: [''],
     orgUnitId: [''],
     tags: ['']
@@ -100,6 +110,12 @@ export class TaskCreateComponent implements OnInit {
   tagInput = '';
   selectedFiles: { name: string; size: number }[] = [];
   saving = false;
+
+  isFerretero = this.tenantSettings.isFerretero;
+  taskTemplates = FERRETERO_TASK_TEMPLATES;
+  selectedTemplateId = signal<string>('');
+  includeChecklist = signal(true);
+  checklistItems = signal<TaskChecklistItem[]>([]);
 
   get usersForSubAssignees() {
     const assigneeId = this.form.get('assigneeId')?.value;
@@ -163,6 +179,35 @@ export class TaskCreateComponent implements OnInit {
     this.selectedFiles.splice(idx, 1);
   }
 
+  applyTemplate(templateId: string): void {
+    if (!templateId) {
+      this.selectedTemplateId.set('');
+      this.checklistItems.set([]);
+      this.includeChecklist.set(true);
+      return;
+    }
+    const t = this.taskTemplates.find((x: TaskTemplate) => x.id === templateId);
+    if (!t) return;
+    this.selectedTemplateId.set(templateId);
+    const descParts: string[] = [];
+    if (t.descriptionText?.trim()) descParts.push(t.descriptionText.trim());
+    if (t.evidenceHint?.trim()) descParts.push('Evidencia: ' + t.evidenceHint.trim());
+    if (t.controlNotes?.trim()) descParts.push('Nota: ' + t.controlNotes.trim());
+    const desc = descParts.join('\n\n');
+    const items: TaskChecklistItem[] = (t.checklistItems ?? []).map((text, i) => ({
+      id: `chk-${Date.now()}-${i}`,
+      text,
+      isDone: false
+    }));
+    this.checklistItems.set(items);
+    this.includeChecklist.set(items.length > 0);
+    this.form.patchValue({
+      title: t.titleTemplate,
+      description: desc,
+      categoryId: t.categoryId ?? ''
+    });
+  }
+
   cancel(): void {
     this.router.navigate(['/tareas']);
   }
@@ -184,16 +229,21 @@ export class TaskCreateComponent implements OnInit {
     const subIds = (v.subAssigneeIds ?? []).filter((id) => id && id !== assigneeId);
     const subNames = subIds.map((id) => this.users().find((u) => u.id === id)?.name ?? '').filter(Boolean);
 
+    const checklist = this.includeChecklist() && this.checklistItems().length
+      ? this.checklistItems()
+      : undefined;
+    const dueDate = normalizeDateToNoonLocal(v.dueDate) ?? new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 12, 0, 0, 0);
     const payload = {
       tenantId: this.tenantContext.currentTenantId() ?? 'tenant-1',
       folio,
       title: v.title!,
       description: v.description ?? '',
+      checklist,
       assignee: assignee?.name ?? 'Sin asignar',
       assigneeId,
       status: 'Pendiente' as const,
       priority: (v.priority ?? 'Media') as Priority,
-      dueDate: v.dueDate ? new Date(v.dueDate) : new Date(),
+      dueDate,
       riskIndicator: 'ok' as const,
       tags: this.tagsList,
       attachmentsCount: this.selectedFiles.length,

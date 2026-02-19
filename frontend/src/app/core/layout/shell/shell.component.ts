@@ -8,6 +8,7 @@ import { ThemeService } from '../../services/theme.service';
 import { DataService } from '../../services/data.service';
 import { AdminService } from '../../services/admin.service';
 import { CurrentUserService } from '../../services/current-user.service';
+import { TenantSettingsService } from '../../services/tenant-settings.service';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { OrgContextBarComponent } from '../../../shared/components/org-context-bar/org-context-bar.component';
 import { OfflineBannerComponent } from '../../../shared/components/offline-banner/offline-banner.component';
@@ -45,6 +46,7 @@ export class ShellComponent {
   private readonly adminService = inject(AdminService);
   private readonly currentUserService = inject(CurrentUserService);
   readonly themeService = inject(ThemeService);
+  readonly tenantSettings = inject(TenantSettingsService);
 
   isMobile = signal(true);
 

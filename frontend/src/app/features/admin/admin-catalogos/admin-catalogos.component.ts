@@ -10,7 +10,9 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AdminService } from '../../../core/services/admin.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
+import { TenantSettingsService } from '../../../core/services/tenant-settings.service';
 import { TaskService } from '../../../core/services/task.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import type { AdminCategory, AdminPriority, AdminTeam } from '../../../shared/models/admin.model';
 
@@ -25,6 +27,7 @@ import type { AdminCategory, AdminPriority, AdminTeam } from '../../../shared/mo
     MatIconModule,
     MatTableModule,
     MatMenuModule,
+    MatTooltipModule,
     PageHeaderComponent
   ],
   templateUrl: './admin-catalogos.component.html',
@@ -36,6 +39,10 @@ export class AdminCatalogosComponent {
   private readonly taskService = inject(TaskService);
   readonly adminService = inject(AdminService);
   readonly connectivity = inject(ConnectivityService);
+  readonly tenantSettings = inject(TenantSettingsService);
+
+  /** En modo ferretero los catálogos base están bloqueados (solo lectura). */
+  catalogLocked = this.tenantSettings.isFerretero;
 
   categories = this.adminService.categories;
   priorities = this.adminService.priorities;
@@ -58,6 +65,7 @@ export class AdminCatalogosComponent {
   }
 
   deleteCategory(c: AdminCategory): void {
+    if (this.catalogLocked()) return;
     if (!this.connectivity.isOnline()) {
       this.snackBar.open('Requiere conexión', 'Cerrar', { duration: 2000 });
       return;
@@ -81,6 +89,7 @@ export class AdminCatalogosComponent {
   }
 
   editPriority(p: AdminPriority): void {
+    if (this.catalogLocked()) return;
     if (!this.connectivity.isOnline()) {
       this.snackBar.open('Requiere conexión', 'Cerrar', { duration: 2000 });
       return;
@@ -105,6 +114,7 @@ export class AdminCatalogosComponent {
   }
 
   addTeam(): void {
+    if (this.catalogLocked()) return;
     if (!this.connectivity.isOnline()) {
       this.snackBar.open('Requiere conexión', 'Cerrar', { duration: 2000 });
       return;
@@ -121,6 +131,7 @@ export class AdminCatalogosComponent {
   }
 
   deleteTeam(t: AdminTeam): void {
+    if (this.catalogLocked()) return;
     if (!this.connectivity.isOnline()) {
       this.snackBar.open('Requiere conexión', 'Cerrar', { duration: 2000 });
       return;

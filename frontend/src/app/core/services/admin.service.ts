@@ -31,6 +31,7 @@ import {
   INITIAL_NOTIFICATION_RULES
 } from '../data/admin-initial';
 import { ADMIN_SNAPSHOT_VERSION } from '../../shared/models/admin.model';
+import { FERRETERO_CATEGORIES } from '../data/ferretero-initial';
 
 const STORAGE_PREFIX = 'gestor-tareas:snapshot:admin.';
 
@@ -140,6 +141,28 @@ export class AdminService {
       localStorage.setItem(key, JSON.stringify(snap));
     } catch (e) {
       console.warn('AdminService: could not persist', e);
+    }
+  }
+
+  /**
+   * Asegura que los presets ferreteros (categorías/áreas) estén en el snapshot del tenant actual.
+   * Solo debe llamarse cuando el modo pasa a ferretero.
+   */
+  ensureFerreteroPresets(): void {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return;
+    const current = this._categories();
+    const existingIds = new Set(current.map((c) => c.id));
+    const next = [...current];
+    for (const cat of FERRETERO_CATEGORIES) {
+      if (!existingIds.has(cat.id)) {
+        existingIds.add(cat.id);
+        next.push({ ...cat });
+      }
+    }
+    if (next.length > current.length) {
+      this._categories.set(next);
+      this.persist();
     }
   }
 
