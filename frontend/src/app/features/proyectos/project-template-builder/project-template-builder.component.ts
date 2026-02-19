@@ -92,7 +92,7 @@ export class ProjectTemplateBuilderComponent {
       categoryId: tt.categoryId ?? '',
       priority: 'Media',
       assigneeId: ownerId,
-      dueDate: this.defaultDueDate() ?? undefined,
+      dueDate: this.defaultDueDate() ? normalizeDateToNoonLocal(this.defaultDueDate()!) : undefined,
       description: [tt.descriptionText, tt.evidenceHint ? 'Evidencia: ' + tt.evidenceHint : '', tt.controlNotes ? 'Nota: ' + tt.controlNotes : ''].filter(Boolean).join('\n\n'),
       checklistItems: [...(tt.checklistItems ?? [])]
     };
@@ -109,7 +109,7 @@ export class ProjectTemplateBuilderComponent {
       categoryId: '',
       priority: 'Media',
       assigneeId: ownerId,
-      dueDate: this.defaultDueDate() ?? undefined,
+      dueDate: this.defaultDueDate() ? normalizeDateToNoonLocal(this.defaultDueDate()!) : undefined,
       checklistItems: []
     };
     this.itemsChange.emit([...this.items(), newItem]);

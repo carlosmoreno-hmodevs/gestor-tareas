@@ -14,7 +14,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
 import type { ProjectStatus, ProjectPriority } from '../../../shared/models';
 import { DataService } from '../../../core/services/data.service';
-import { minDueDateValidator } from '../../../shared/utils/date.utils';
+import { minDueDateValidator, normalizeDateToNoonLocal } from '../../../shared/utils/date.utils';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ProjectCatalogService } from '../../../core/services/project-catalog.service';
 import { ProjectService } from '../../../core/services/project.service';
@@ -210,9 +210,10 @@ export class ProjectCreateComponent {
     });
     const ownerId = this.form.get('ownerId')?.value ?? '';
     const owner = this.users().find((u) => u.id === ownerId);
-    const dueDate = this.form.get('dueDate')?.value
-      ? new Date((this.form.get('dueDate')?.value as Date))
-      : new Date();
+    const rawDue = this.form.get('dueDate')?.value;
+    const dueDate = rawDue
+      ? (normalizeDateToNoonLocal(rawDue as Date) ?? new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 12, 0, 0, 0))
+      : new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 12, 0, 0, 0);
     const items: ProjectTemplateBuilderItem[] = (t.taskTemplateIds ?? []).map((tplId, i) => {
       const tt = FERRETERO_TASK_TEMPLATES.find((x) => x.id === tplId);
       const overrides = t.taskOverrides?.[tplId];
