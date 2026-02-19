@@ -31,9 +31,12 @@ import {
   INITIAL_NOTIFICATION_RULES
 } from '../data/admin-initial';
 import { ADMIN_SNAPSHOT_VERSION } from '../../shared/models/admin.model';
-import { FERRETERO_CATEGORIES } from '../data/ferretero-initial';
+import { FERRETERO_CATEGORIES, FERRETERO_REASON_CATALOG_BLOCKED, FERRETERO_REASON_CATALOG_REJECTED } from '../data/ferretero-initial';
+import type { ReasonCatalogItem } from '../../shared/models/reason-catalog.model';
 
 const STORAGE_PREFIX = 'gestor-tareas:snapshot:admin.';
+const REASONS_STORAGE_PREFIX = 'gestor-tareas:snapshot:reasons.';
+const SETTINGS_STORAGE_PREFIX = 'gestor-tareas:snapshot:settings.';
 
 function hydrateDates<T extends { createdAt?: Date }>(obj: T): T {
   if (obj.createdAt && typeof obj.createdAt === 'string') {
@@ -142,6 +145,82 @@ export class AdminService {
     } catch (e) {
       console.warn('AdminService: could not persist', e);
     }
+  }
+
+  private reasonsStorageKey(tenantId: string): string {
+    return REASONS_STORAGE_PREFIX + tenantId;
+  }
+
+  /** Lee si el tenant está en modo ferretero desde localStorage (evita dependencia circular con TenantSettingsService). */
+  private isTenantFerretero(tenantId: string): boolean {
+    try {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_PREFIX + tenantId);
+      if (!raw) return false;
+      const settings = JSON.parse(raw) as { systemMode?: string };
+      return settings?.systemMode === 'ferretero';
+    } catch {
+      return false;
+    }
+  }
+
+  /** Solo lee el catálogo desde localStorage (sin seed). Evita recursión con ensureFerreteroReasonPresets. */
+  private getReasonCatalogFromStorage(tenantId: string): ReasonCatalogItem[] {
+    const key = this.reasonsStorageKey(tenantId);
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ReasonCatalogItem[];
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch {
+      /* ignore */
+    }
+    return [];
+  }
+
+  /**
+   * Obtiene el catálogo de motivos (bloqueo/rechazo) para un tenant.
+   * Si está vacío y el tenant es ferretero, hace seed con presets.
+   */
+  getReasonCatalog(tenantId: string): ReasonCatalogItem[] {
+    let items = this.getReasonCatalogFromStorage(tenantId);
+    if (items.length === 0 && this.tenantContext.currentTenantId() === tenantId && this.isTenantFerretero(tenantId)) {
+      this.ensureFerreteroReasonPresets(tenantId);
+      items = this.getReasonCatalogFromStorage(tenantId);
+    }
+    return items;
+  }
+
+  /**
+   * Guarda o actualiza ítems del catálogo de motivos para un tenant.
+   */
+  upsertReasonCatalogItems(tenantId: string, items: ReasonCatalogItem[]): void {
+    const key = this.reasonsStorageKey(tenantId);
+    const existing = this.getReasonCatalogFromStorage(tenantId);
+    const byId = new Map(existing.map((i) => [i.id, i]));
+    for (const item of items) {
+      byId.set(item.id, { ...item });
+    }
+    const next = Array.from(byId.values()).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch (e) {
+      console.warn('AdminService: could not persist reason catalog', e);
+    }
+  }
+
+  /**
+   * Si el catálogo de motivos del tenant está vacío y el modo es ferretero, inserta los presets.
+   * Usa lectura directa de storage para no reentrar en getReasonCatalog.
+   */
+  ensureFerreteroReasonPresets(tenantId: string): void {
+    const current = this.getReasonCatalogFromStorage(tenantId);
+    if (current.length > 0) return;
+    const preset = [
+      ...FERRETERO_REASON_CATALOG_BLOCKED.map((i) => ({ ...i })),
+      ...FERRETERO_REASON_CATALOG_REJECTED.map((i) => ({ ...i }))
+    ];
+    this.upsertReasonCatalogItems(tenantId, preset);
   }
 
   /**

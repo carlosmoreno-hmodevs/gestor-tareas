@@ -1,6 +1,7 @@
 import type { AdminCategory, AdminPriority, AdminStatus } from '../../shared/models/admin.model';
 import type { TaskTemplate } from '../../shared/models/task-template.model';
 import type { ProjectTemplate } from '../../shared/models/project-template.model';
+import type { ReasonCatalogItem } from '../../shared/models/reason-catalog.model';
 
 /** Áreas/categorías operativas por defecto en modo ferretero. */
 export const FERRETERO_CATEGORIES: AdminCategory[] = [
@@ -50,6 +51,44 @@ export const FERRETERO_MOTIVOS_CANCELACION = [
   'No procede',
   'Cambio de prioridad operativa',
   'Resuelta por otro canal'
+];
+
+/** IDs de categorías ferreteras (para appliesTo). */
+const fcat = {
+  bodega: 'fcat-bodega',
+  compras: 'fcat-compras',
+  entregas: 'fcat-entregas',
+  garantias: 'fcat-garantias',
+  mostrador: 'fcat-mostrador',
+  exhibicion: 'fcat-exhibicion',
+  mantenimiento: 'fcat-mantenimiento',
+  admin: 'fcat-admin'
+};
+
+/** Catálogo de motivos de bloqueo (ferretero). Presets para seed por tenant. */
+export const FERRETERO_REASON_CATALOG_BLOCKED: ReasonCatalogItem[] = [
+  { id: 'rcb-1', code: 'SUPPLIER_CONFIRMATION', label: 'Falta confirmación de proveedor', kind: 'blocked', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.compras] }, order: 1 },
+  { id: 'rcb-2', code: 'INVOICE_CLARIFICATION', label: 'Error o aclaración de factura', kind: 'blocked', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.compras, fcat.bodega] }, order: 2 },
+  { id: 'rcb-3', code: 'MISSING_IN_DELIVERY', label: 'Faltante en entrega', kind: 'blocked', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.entregas, fcat.bodega] }, order: 3 },
+  { id: 'rcb-4', code: 'MANAGER_APPROVAL', label: 'Autorización de gerencia', kind: 'blocked', systemMode: 'ferretero', order: 4 },
+  { id: 'rcb-5', code: 'CUSTOMER_PENDING_WARRANTY', label: 'Pendiente de cliente (garantías)', kind: 'blocked', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.garantias] }, order: 5 },
+  { id: 'rcb-6', code: 'NO_STOCK_REPLENISH', label: 'Sin stock / reposición pendiente', kind: 'blocked', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.bodega, fcat.mostrador] }, order: 6 },
+  { id: 'rcb-7', code: 'WAITING_ROUTE', label: 'Esperando transporte / ruta', kind: 'blocked', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.entregas] }, order: 7 },
+  { id: 'rcb-8', code: 'WAITING_SUPERVISOR', label: 'Esperando validación supervisor', kind: 'blocked', systemMode: 'ferretero', order: 8 },
+  { id: 'rcb-9', code: 'OTHER_BLOCKED', label: 'Otro (personalizado)', kind: 'blocked', systemMode: 'ferretero', isOther: true, order: 99 }
+];
+
+/** Catálogo de motivos de rechazo (ferretero). Presets para seed por tenant. */
+export const FERRETERO_REASON_CATALOG_REJECTED: ReasonCatalogItem[] = [
+  { id: 'rcr-1', code: 'MISSING_EVIDENCE', label: 'Falta evidencia (foto/comprobante)', kind: 'rejected', systemMode: 'ferretero', order: 1 },
+  { id: 'rcr-2', code: 'CHECKLIST_INCOMPLETE', label: 'Checklist incompleto', kind: 'rejected', systemMode: 'ferretero', order: 2 },
+  { id: 'rcr-3', code: 'COUNT_INCONSISTENT', label: 'Conteo inconsistente', kind: 'rejected', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.bodega] }, order: 3 },
+  { id: 'rcr-4', code: 'UNJUSTIFIED_DIFFERENCE', label: 'Diferencias no justificadas en conteo', kind: 'rejected', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.bodega] }, order: 4 },
+  { id: 'rcr-5', code: 'INCOMPLETE_DATA', label: 'Datos incompletos (proveedor/SKU)', kind: 'rejected', systemMode: 'ferretero', order: 5 },
+  { id: 'rcr-6', code: 'WRONG_ATTACHMENTS', label: 'Adjuntos incorrectos', kind: 'rejected', systemMode: 'ferretero', order: 6 },
+  { id: 'rcr-7', code: 'NOT_STANDARD', label: 'No cumple estándar / procedimiento', kind: 'rejected', systemMode: 'ferretero', order: 7 },
+  { id: 'rcr-8', code: 'PRICE_LABEL_WRONG', label: 'Precio/etiqueta incorrecta', kind: 'rejected', systemMode: 'ferretero', appliesTo: { categoryIds: [fcat.mostrador] }, order: 8 },
+  { id: 'rcr-9', code: 'OTHER_REJECTED', label: 'Otro (personalizado)', kind: 'rejected', systemMode: 'ferretero', isOther: true, order: 99 }
 ];
 
 /** Prioridades y estados no se reemplazan; se usan los del tenant. Solo referencias para UI. */

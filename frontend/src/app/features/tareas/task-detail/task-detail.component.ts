@@ -20,6 +20,7 @@ import { TaskWorkflowActionsComponent } from '../task-workflow-actions/task-work
 import { TaskRelationsPanelComponent } from '../task-relations-panel/task-relations-panel.component';
 import { TaskChecklistSectionComponent } from '../task-checklist-section/task-checklist-section.component';
 import { RejectDialogComponent } from '../reject-dialog/reject-dialog.component';
+import { ReasonDialogComponent } from '../reason-dialog/reason-dialog.component';
 import { RescheduleDialogComponent } from '../reschedule-dialog/reschedule-dialog.component';
 import type { Task, TaskStatus } from '../../../shared/models';
 import type { Transition } from '../../../core/services/task-workflow.service';
@@ -134,24 +135,49 @@ export class TaskDetailComponent {
     if (!t || !this.connectivity.isOnline()) return;
 
     if (transition.to === 'Rechazada') {
-      const ref = this.dialog.open(RejectDialogComponent, {
+      const ref = this.dialog.open(ReasonDialogComponent, {
         data: {
-          taskTitle: t.title,
+          kind: 'rejected',
+          task: t,
           dialogTitle: 'Rechazar tarea',
-          label: 'Motivo / Comentario (opcional)',
-          confirmLabel: 'Rechazar',
-          optionalComment: true
+          confirmLabel: 'Rechazar'
         },
         width: '90vw',
         maxWidth: '440px'
       });
       ref.afterClosed().subscribe((result) => {
-        if (result !== null) {
+        if (result != null) {
           try {
             this.taskService.applyTransition(t.id, 'Rechazada', {
-              comment: result?.comment ?? ''
+              rejectedReason: result.rejectedReason
             });
             this.snackBar.open('Tarea rechazada', 'Cerrar', { duration: 2000 });
+          } catch (e) {
+            this.snackBar.open((e as Error).message || 'Error', 'Cerrar', { duration: 3000 });
+          }
+        }
+      });
+      return;
+    }
+
+    if (transition.to === 'En Espera') {
+      const ref = this.dialog.open(ReasonDialogComponent, {
+        data: {
+          kind: 'blocked',
+          task: t,
+          dialogTitle: 'Bloquear tarea',
+          confirmLabel: 'Bloquear'
+        },
+        width: '90vw',
+        maxWidth: '440px'
+      });
+      ref.afterClosed().subscribe((result) => {
+        if (result != null) {
+          try {
+            this.taskService.applyTransition(t.id, 'En Espera', {
+              blockedReason: result.blockedReason
+            });
+            this.snackBar.open('Tarea bloqueada', 'Cerrar', { duration: 2000 });
           } catch (e) {
             this.snackBar.open((e as Error).message || 'Error', 'Cerrar', { duration: 3000 });
           }

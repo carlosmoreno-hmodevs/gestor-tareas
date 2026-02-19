@@ -58,10 +58,22 @@
       </div>
     </div>
 
-    @if (effectiveStatus() === 'Rechazada' && t.rejectionComment) {
+    @if (effectiveStatus() === 'Rechazada' && rejectedReasonText(t)) {
       <div class="rejection-block">
-        <strong>Motivo de rechazo:</strong>
-        <p>{{ t.rejectionComment }}</p>
+        <strong>Motivo de rechazo / corrección:</strong>
+        <p>{{ rejectedReasonText(t) }}</p>
+        @if (rejectedReasonDetail(t)) {
+          <p class="reason-detail">Detalle: {{ rejectedReasonDetail(t) }}</p>
+        }
+      </div>
+    }
+    @if (effectiveStatus() === 'En Espera' && blockedReasonText(t)) {
+      <div class="rejection-block blocked-reason">
+        <strong>Motivo de bloqueo:</strong>
+        <p>{{ blockedReasonText(t) }}</p>
+        @if (blockedReasonDetail(t)) {
+          <p class="reason-detail">Detalle: {{ blockedReasonDetail(t) }}</p>
+        }
       </div>
     }
   </header>

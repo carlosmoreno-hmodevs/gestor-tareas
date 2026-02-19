@@ -130,4 +130,9 @@
 
   strong { font-size: $font-size-sm; }
   p { margin: $spacing-xs 0 0; font-size: $font-size-sm; }
+
+  &.blocked-reason {
+    background: rgba(156, 39, 176, 0.08);
+    border-left-color: #7b1fa2;
+  }
 }

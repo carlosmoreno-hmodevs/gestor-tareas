@@ -120,6 +120,33 @@
   .kpi-label { color: #1b5e20; font-weight: $font-weight-semibold; }
 }
 
+.kpi-bloqueadas {
+  background: linear-gradient(135deg, #fff 0%, rgba(156, 39, 176, 0.06) 100%) !important;
+
+  .kpi-value { color: #7b1fa2; }
+  .kpi-label { color: #6a1b9a; font-weight: $font-weight-semibold; }
+}
+
+.kpi-liberadas {
+  background: linear-gradient(135deg, #fff 0%, rgba(0, 150, 136, 0.06) 100%) !important;
+
+  .kpi-value { color: #00897b; }
+  .kpi-label { color: #00695c; font-weight: $font-weight-semibold; }
+}
+
+.kpi-proyectos {
+  background: linear-gradient(135deg, #fff 0%, rgba(69, 90, 100, 0.06) 100%) !important;
+
+  .kpi-value { color: #455a64; }
+  .kpi-label { color: #37474f; font-weight: $font-weight-semibold; }
+}
+
+.kpi-row {
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -157,4 +184,156 @@
   position: relative;
   min-height: 240px;
   width: 100%;
+}
+
+.chart-container--backlog {
+  width: 100%;
+  height: 220px;
+  min-height: 220px;
+}
+
+.chart-stacked-category {
+  @media (min-width: 600px) {
+    grid-column: span 2;
+  }
+  .chart-container {
+    min-height: 260px;
+    max-height: 340px;
+  }
+}
+
+// ——— Dashboard Ferretero (3 secciones) ———
+.ferretero-section {
+  margin-bottom: $spacing-xl;
+
+  .section-title {
+    margin: 0 0 $spacing-md;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: var(--color-text-primary, #212121);
+  }
+}
+
+.ferretero-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+.ferretero-kpi-card {
+  position: relative;
+
+  &.kpi-warning .kpi-value { color: #ed6c02; }
+  &.kpi-danger .kpi-value { color: #d32f2f; }
+}
+
+.kpi-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.kpi-info-icon {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary, #757575);
+  cursor: help;
+}
+
+.ferretero-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 1000px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.chart-card--wide {
+  @media (min-width: 600px) {
+    grid-column: span 2;
+  }
+}
+
+.chart-container--small {
+  width: 100%;
+  height: 260px;
+  min-height: 260px;
+}
+
+.chart-container--trend {
+  width: 100%;
+  height: 280px;
+  min-height: 280px;
+}
+
+.ferretero-calidad-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.ferretero-tables-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-md;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.table-card {
+  mat-card-title {
+    font-size: $font-size-base !important;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+.mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  th, td {
+    padding: $spacing-xs $spacing-sm;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  th {
+    font-weight: $font-weight-semibold;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.no-data {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
 }

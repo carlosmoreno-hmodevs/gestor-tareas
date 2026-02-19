@@ -1,5 +1,13 @@
 import { Injectable } from '@angular/core';
 import type { Task, TaskStatus, TaskHistoryEntry } from '../../shared/models';
+import type { TaskBlockedReason, TaskRejectedReason } from '../../shared/models/reason-catalog.model';
+
+export interface TransitionPayload {
+  comment?: string;
+  newDueDate?: Date;
+  blockedReason?: TaskBlockedReason;
+  rejectedReason?: TaskRejectedReason;
+}
 
 export interface Transition {
   from: TaskStatus;
@@ -86,7 +94,7 @@ export class TaskWorkflowService {
   applyTransition(
     task: Task,
     toStatus: TaskStatus,
-    payload: { comment?: string; newDueDate?: Date },
+    payload: TransitionPayload,
     userId: string,
     userName: string
   ): Task {
@@ -112,12 +120,27 @@ export class TaskWorkflowService {
     if (transition.requiresNewDueDate && payload.newDueDate) {
       updated.dueDate = new Date(payload.newDueDate);
     }
+    if (toStatus === 'En Espera' && payload.blockedReason) {
+      updated.blockedReason = payload.blockedReason;
+      updated.blockedAt = new Date().toISOString();
+    }
+    if (toStatus === 'Rechazada') {
+      if (payload.rejectedReason) {
+        updated.rejectedReason = payload.rejectedReason;
+        updated.correctedReason = payload.rejectedReason.label || payload.rejectedReason.customText || undefined;
+      }
+      if (payload.comment) updated.rejectionComment = payload.comment;
+    }
     updated.riskIndicator = this.computeRiskIndicator({ ...updated, status: toStatus });
 
     const history = [...(task.history || [])];
-    if (toStatus === 'Rechazada' && payload.comment) {
-      updated.rejectionComment = payload.comment;
-      history.push(this.createHistoryEntry('REJECTED', userId, userName, { comment: payload.comment, fromStatus: prevStatus, toStatus }));
+    if (toStatus === 'Rechazada') {
+      const comment = payload.rejectedReason?.detail || payload.rejectedReason?.customText || payload.rejectedReason?.label || payload.comment;
+      if (comment) {
+        history.push(this.createHistoryEntry('REJECTED', userId, userName, { comment, fromStatus: prevStatus, toStatus }));
+      } else {
+        history.push(this.createHistoryEntry('REJECTED', userId, userName, { fromStatus: prevStatus, toStatus }));
+      }
     } else if (prevStatus === 'Vencida' && toStatus === 'Pendiente') {
       history.push(
         this.createHistoryEntry('RESCHEDULED', userId, userName, {

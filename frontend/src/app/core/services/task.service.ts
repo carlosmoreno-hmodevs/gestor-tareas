@@ -6,6 +6,7 @@ import { OfflineSnapshotService } from './offline-snapshot.service';
 import { TaskWorkflowService } from './task-workflow.service';
 import { CurrentUserService } from './current-user.service';
 import { TenantContextService } from './tenant-context.service';
+import { TenantSettingsService } from './tenant-settings.service';
 import { OrgService } from './org.service';
 import { ProjectService } from './project.service';
 import { AdminService } from './admin.service';
@@ -17,6 +18,7 @@ export class TaskService {
   private readonly workflow = inject(TaskWorkflowService);
   private readonly currentUser = inject(CurrentUserService);
   private readonly tenantContext = inject(TenantContextService);
+  private readonly tenantSettings = inject(TenantSettingsService);
   private readonly orgService = inject(OrgService);
   private readonly adminService = inject(AdminService);
   private readonly injector = inject(Injector);
@@ -27,12 +29,13 @@ export class TaskService {
   constructor() {
     effect(() => {
       const tid = this.tenantContext.currentTenantId();
+      const mode = this.tenantSettings.systemMode();
       if (!tid) {
         this._tasks.set([]);
         this._taskLinks.set([]);
         return;
       }
-      const initialTasks = getInitialTasks(tid);
+      const initialTasks = getInitialTasks(tid, mode);
       const cachedTasks = this.snapshot.loadTasks();
       const tasks = cachedTasks?.length ? cachedTasks.filter((t: Task) => t.tenantId === tid) : initialTasks;
       this._tasks.set(tasks);
@@ -348,7 +351,7 @@ export class TaskService {
   applyTransition(
     taskId: string,
     toStatus: TaskStatus,
-    payload: { comment?: string; newDueDate?: Date }
+    payload: import('./task-workflow.service').TransitionPayload
   ): Task {
     const task = this._tasks().find((t) => t.id === taskId);
     if (!task) throw new Error('Task not found');

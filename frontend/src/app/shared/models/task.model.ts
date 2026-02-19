@@ -45,8 +45,10 @@ export interface TaskHistoryEntry {
 }
 
 import type { TaskChecklistItem } from './task-checklist.model';
+import type { TaskBlockedReason, TaskRejectedReason } from './reason-catalog.model';
 
 export type { TaskChecklistItem };
+export type { TaskBlockedReason, TaskRejectedReason };
 
 export interface TaskAttachment {
   id: string;
@@ -90,10 +92,16 @@ export interface Task {
   history: TaskHistoryEntry[];
   /** Checklist tildable (guía/seguimiento). No se incluye en descripción. */
   checklist?: TaskChecklistItem[];
-  /** Modo ferretero: motivo de bloqueo (En espera). */
-  blockedReason?: string;
-  /** Modo ferretero: motivo de corrección (no liberada). */
+  /** Motivo de bloqueo (En espera). Objeto catalog/custom o legacy string. */
+  blockedReason?: string | TaskBlockedReason;
+  /** Modo ferretero: fecha en que pasó a En espera (ISO). Para KPI tiempo promedio bloqueada. */
+  blockedAt?: string;
+  /** Modo ferretero: fecha en que se desbloqueó (ISO). Si falta, se usa “ahora” para tareas aún bloqueadas. */
+  unblockedAt?: string;
+  /** [Legacy] Motivo de corrección/rechazo como texto libre. Se usa si no existe rejectedReason. */
   correctedReason?: string;
+  /** Motivo de rechazo (no liberada). Catalog/custom; si falta, se usa correctedReason. */
+  rejectedReason?: TaskRejectedReason;
   /** Fecha en que pasó a Liberada/Validada (para tiempo de ciclo). */
   liberatedAt?: string;
   /** Modo ferretero: ID del TaskTemplate usado para generar esta tarea. */

@@ -1,9 +1,17 @@
 <div class="tablero-header">
-  <app-page-header
-    title="Tablero operativo"
-    subtitle="Supervisión: estado general, vencidas, carga, prioridades"
-    icon="dashboard"
-  />
+  @if (isFerretero()) {
+    <app-page-header
+      title="Tablero ferretero"
+      subtitle="KPIs por categoría operativa, unidad y estado (Mostrador, Bodega, Compras, etc.)"
+      icon="store"
+    />
+  } @else {
+    <app-page-header
+      title="Tablero operativo"
+      subtitle="Supervisión: estado general, vencidas, carga, prioridades"
+      icon="dashboard"
+    />
+  }
   <mat-form-field appearance="outline" class="period-filter">
     <mat-label>Período</mat-label>
     <mat-select [value]="selectedPeriod()" (selectionChange)="selectedPeriod.set($event.value)">
@@ -14,120 +22,290 @@
   </mat-form-field>
 </div>
 
-<div class="kpi-row animate-stagger">
-  <mat-card class="kpi-card kpi-pendientes">
-    <mat-card-content>
-      <span class="kpi-value">{{ activeCount() }}</span>
-      <span class="kpi-label">Pendientes</span>
-      <span class="kpi-sublabel">Asignadas: {{ activeCount() }}</span>
-    </mat-card-content>
-    <a mat-button [routerLink]="['/tareas']">Ver</a>
-  </mat-card>
-  <mat-card class="kpi-card kpi-por-vencer">
-    <mat-card-content>
-      <span class="kpi-value">{{ dueSoonCount() }}</span>
-      <span class="kpi-label">Por vencer</span>
-      <span class="kpi-sublabel">Esta semana</span>
-    </mat-card-content>
-    <a mat-button [routerLink]="['/tareas']">Ver</a>
-  </mat-card>
-  <mat-card class="kpi-card kpi-vencidas">
-    <mat-card-content>
-      <span class="kpi-value">{{ overdueCount() }}</span>
-      <span class="kpi-label">{{ uiCopy.statusLabel('Vencida') }}</span>
-      <span class="kpi-sublabel">Alta {{ uiCopy.label('priority').toLowerCase() }}: {{ overdueAltaCount() }}</span>
-    </mat-card-content>
-    <a mat-button [routerLink]="['/tareas']" [queryParams]="{ filtro: 'vencidas' }">Ver</a>
-  </mat-card>
-  @if (isFerretero()) {
-    <mat-card class="kpi-card kpi-bloqueadas">
+@if (isFerretero()) {
+  <!-- Dashboard Ferretero: 3 secciones basadas en FerreteroKpiService -->
+  @let kpi = ferreteroKpi();
+
+  <section class="ferretero-section hoy-riesgo animate-stagger">
+    <h2 class="section-title">Hoy / Riesgo</h2>
+    <div class="kpi-row ferretero-kpi-row">
+      @for (card of ferreteroKpiService.riskSummaryCards(); track card.id) {
+        <a [routerLink]="['/tareas']" [queryParams]="getFiltroForCard(card.id)" class="kpi-card-link">
+          <mat-card class="kpi-card ferretero-kpi-card" [class.kpi-warning]="card.variant === 'warning'" [class.kpi-danger]="card.variant === 'danger'">
+            <mat-card-content>
+              <span class="kpi-value">{{ card.value }}{{ card.valueSuffix ?? '' }}</span>
+              <span class="kpi-label">{{ card.label }}</span>
+              <span class="kpi-sublabel">{{ card.sublabel }}</span>
+              @if (getTooltipForCard(card.id); as tip) {
+                <mat-icon matTooltip="{{ tip }}" class="kpi-info-icon">info</mat-icon>
+              }
+            </mat-card-content>
+          </mat-card>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="ferretero-section carga-area animate-stagger">
+    <h2 class="section-title">Carga por área</h2>
+    <mat-card class="chart-card chart-bar-h">
+      <mat-card-header>
+        <mat-card-title>Backlog activo por categoría</mat-card-title>
+        <mat-card-subtitle>Top 5 áreas (pendientes + vencidas)</mat-card-subtitle>
+      </mat-card-header>
       <mat-card-content>
-        <span class="kpi-value">{{ blockedCount() }}</span>
-        <span class="kpi-label">{{ uiCopy.statusLabel('En Espera') }}</span>
-        <span class="kpi-sublabel">Proveedor / autorización / factura</span>
+        <div class="chart-container chart-container--backlog">
+          <canvas baseChart [data]="backlogByAreaChartData()" [options]="backlogByAreaChartOptions" [type]="'bar'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <section class="ferretero-section graficos animate-stagger">
+    <h2 class="section-title">Visualizaciones</h2>
+    <div class="ferretero-charts-grid">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Distribución por estado</mat-card-title>
+          <mat-card-subtitle>Conteo por estado (scope + período)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container chart-container--small">
+            <canvas baseChart [data]="statusDonutChartData()" [options]="statusDonutChartOptions" [type]="'doughnut'"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Riesgo por vencimiento</mat-card-title>
+          <mat-card-subtitle>Fuera de plazo · 0–24h · 24–48h · 48–72h · &gt;72h</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container chart-container--small">
+            <canvas baseChart [data]="riskBucketsChartData()" [options]="riskBucketsChartOptions" [type]="'bar'"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card chart-card--wide">
+        <mat-card-header>
+          <mat-card-title>Tendencia (últimos 7 días)</mat-card-title>
+          <mat-card-subtitle>Liberadas/completadas y vencidas por día</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container chart-container--trend">
+            <canvas baseChart [data]="trendLineChartData()" [options]="trendLineChartOptions" [type]="'line'"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Rechazadas por categoría</mat-card-title>
+          <mat-card-subtitle>Top 5 áreas (no liberadas)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container chart-container--small">
+            @if (ferreteroKpi().chartsData.rejectedByArea.length) {
+              <canvas baseChart [data]="rejectedByAreaChartData()" [options]="rejectedByAreaChartOptions" [type]="'bar'"></canvas>
+            } @else {
+              <p class="no-data">Sin tareas rechazadas en el período</p>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Motivos de bloqueo</mat-card-title>
+          <mat-card-subtitle>Top motivos (En espera)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container chart-container--small">
+            @if (ferreteroKpi().topBlockedReasons.length) {
+              <canvas baseChart [data]="blockedReasonsDonutChartData()" [options]="blockedReasonsDonutChartOptions" [type]="'doughnut'"></canvas>
+            } @else {
+              <p class="no-data">Sin tareas bloqueadas</p>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+
+  <section class="ferretero-section calidad-preventivos animate-stagger">
+    <h2 class="section-title">Calidad / Preventivos / Rutinas</h2>
+    <div class="ferretero-calidad-grid">
+      <a [routerLink]="['/tareas']" [queryParams]="getFiltroForCard('preventive')" class="kpi-card-link">
+        <mat-card class="kpi-card ferretero-kpi-card">
+          <mat-card-content>
+            <span class="kpi-value">{{ kpi.preventiveDone }} / {{ kpi.preventiveTotal }}</span>
+            <span class="kpi-label">Preventivos (Mantenimiento)</span>
+            <span class="kpi-sublabel">Liberadas vs total · Vencidas: {{ kpi.preventiveOverdue }}</span>
+            <mat-icon matTooltip="{{ getTooltipForCard('preventive') }}" class="kpi-info-icon">info</mat-icon>
+          </mat-card-content>
+        </mat-card>
+      </a>
+      <mat-card class="kpi-card ferretero-kpi-card">
+        <mat-card-content>
+          <span class="kpi-value">{{ kpi.hasAnyChecklist ? (kpi.checklistCompletionPct | number:'1.1-1') + '%' : '—' }}</span>
+          <span class="kpi-label">Cumplimiento checklists</span>
+          <span class="kpi-sublabel">{{ kpi.hasAnyChecklist ? kpi.checklistItemsDone + ' / ' + kpi.checklistItemsTotal + ' ítems' : 'Sin checklists aún' }}</span>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card ferretero-kpi-card bloqueadas-avg">
+        <mat-card-content>
+          <span class="kpi-value">{{ kpi.avgBlockedTimeHours != null ? (kpi.avgBlockedTimeHours | number:'1.1-1') + ' h' : 'N/A' }}</span>
+          <span class="kpi-label">Tiempo promedio bloqueada</span>
+          <span class="kpi-sublabel">Por tarea (cuando exista blockedAt/unblockedAt)</span>
+        </mat-card-content>
+      </mat-card>
+    </div>
+    <div class="ferretero-tables-row">
+      <mat-card class="table-card">
+        <mat-card-header>
+          <mat-card-title>Top motivos Bloqueada</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (kpi.topBlockedReasons.length) {
+            <table class="mini-table">
+              <thead><tr><th>Motivo</th><th>Cant.</th></tr></thead>
+              <tbody>
+                @for (r of kpi.topBlockedReasons; track r.reason) {
+                  <tr><td>{{ r.reason }}</td><td>{{ r.count }}</td></tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="no-data">Sin tareas bloqueadas</p>
+          }
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="table-card">
+        <mat-card-header>
+          <mat-card-title>Top motivos Rechazada</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (kpi.topRejectedReasons.length) {
+            <table class="mini-table">
+              <thead><tr><th>Motivo</th><th>Cant.</th></tr></thead>
+              <tbody>
+                @for (r of kpi.topRejectedReasons; track r.reason) {
+                  <tr><td>{{ r.reason }}</td><td>{{ r.count }}</td></tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="no-data">Sin tareas rechazadas</p>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+} @else {
+  <!-- Modo Normal: dashboard actual sin cambios -->
+  <div class="kpi-row animate-stagger">
+    <mat-card class="kpi-card kpi-pendientes">
+      <mat-card-content>
+        <span class="kpi-value">{{ activeCount() }}</span>
+        <span class="kpi-label">Pendientes</span>
+        <span class="kpi-sublabel">Asignadas: {{ activeCount() }}</span>
       </mat-card-content>
       <a mat-button [routerLink]="['/tareas']">Ver</a>
     </mat-card>
-  }
-  <mat-card class="kpi-card kpi-completadas">
-    <mat-card-content>
-      <span class="kpi-value">{{ completedCount() }}</span>
-      <span class="kpi-label">Completadas</span>
-      <span class="kpi-sublabel">Esta semana</span>
-    </mat-card-content>
-  </mat-card>
-</div>
+    <mat-card class="kpi-card kpi-por-vencer">
+      <mat-card-content>
+        <span class="kpi-value">{{ dueSoonCount() }}</span>
+        <span class="kpi-label">Por vencer</span>
+        <span class="kpi-sublabel">Esta semana</span>
+      </mat-card-content>
+      <a mat-button [routerLink]="['/tareas']">Ver</a>
+    </mat-card>
+    <mat-card class="kpi-card kpi-vencidas">
+      <mat-card-content>
+        <span class="kpi-value">{{ overdueCount() }}</span>
+        <span class="kpi-label">{{ uiCopy.statusLabel('Vencida') }}</span>
+        <span class="kpi-sublabel">Alta {{ uiCopy.label('priority').toLowerCase() }}: {{ overdueAltaCount() }}</span>
+      </mat-card-content>
+      <a mat-button [routerLink]="['/tareas']" [queryParams]="{ filtro: 'vencidas' }">Ver</a>
+    </mat-card>
+    <mat-card class="kpi-card kpi-completadas">
+      <mat-card-content>
+        <span class="kpi-value">{{ completedCount() }}</span>
+        <span class="kpi-label">Completadas</span>
+        <span class="kpi-sublabel">Esta semana</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
 
-<div class="charts-grid animate-stagger">
-  <mat-card class="chart-card chart-doughnut">
-    <mat-card-header>
-      <mat-card-title>Estado de las tareas</mat-card-title>
-      <mat-card-subtitle>Distribución por estado ({{ totalTasks() }} total)</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-container">
-        <canvas baseChart [data]="doughnutChartData()" [options]="doughnutChartOptions" [type]="'doughnut'"></canvas>
-      </div>
-    </mat-card-content>
-  </mat-card>
+  <div class="charts-grid animate-stagger">
+    <mat-card class="chart-card chart-doughnut">
+      <mat-card-header>
+        <mat-card-title>Estado de las tareas</mat-card-title>
+        <mat-card-subtitle>Distribución por estado ({{ totalTasks() }} total)</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart [data]="doughnutChartData()" [options]="doughnutChartOptions" [type]="'doughnut'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="chart-card chart-line">
-    <mat-card-header>
-      <mat-card-title>Tendencia por día</mat-card-title>
-      <mat-card-subtitle>Tareas por vencimiento (últimos 7 días)</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-container">
-        <canvas baseChart [data]="lineTrendChartData()" [options]="lineTrendChartOptions" [type]="'line'"></canvas>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card class="chart-card chart-line">
+      <mat-card-header>
+        <mat-card-title>Tendencia por día</mat-card-title>
+        <mat-card-subtitle>Tareas por vencimiento (últimos 7 días)</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart [data]="lineTrendChartData()" [options]="lineTrendChartOptions" [type]="'line'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="chart-card chart-bar-h">
-    <mat-card-header>
-      <mat-card-title>Carga por responsable</mat-card-title>
-      <mat-card-subtitle>Tareas activas asignadas</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-container">
-        <canvas baseChart [data]="barAssigneeChartData()" [options]="barAssigneeChartOptions" [type]="'bar'"></canvas>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card class="chart-card chart-bar-h">
+      <mat-card-header>
+        <mat-card-title>Carga por responsable</mat-card-title>
+        <mat-card-subtitle>Tareas activas asignadas</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart [data]="barAssigneeChartData()" [options]="barAssigneeChartOptions" [type]="'bar'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="chart-card chart-bar">
-    <mat-card-header>
-      <mat-card-title>Carga por prioridad</mat-card-title>
-      <mat-card-subtitle>Distribución Alta / Media / Baja</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-container">
-        <canvas baseChart [data]="barPriorityChartData()" [options]="barPriorityChartOptions" [type]="'bar'"></canvas>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card class="chart-card chart-bar">
+      <mat-card-header>
+        <mat-card-title>Carga por prioridad</mat-card-title>
+        <mat-card-subtitle>Distribución Alta / Media / Baja</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart [data]="barPriorityChartData()" [options]="barPriorityChartOptions" [type]="'bar'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="chart-card chart-radar">
-    <mat-card-header>
-      <mat-card-title>Balance por responsable</mat-card-title>
-      <mat-card-subtitle>Comparativa de carga (gráfico radar)</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-container">
-        <canvas baseChart [data]="radarChartData()" [options]="radarChartOptions" [type]="'radar'"></canvas>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card class="chart-card chart-radar">
+      <mat-card-header>
+        <mat-card-title>Balance por responsable</mat-card-title>
+        <mat-card-subtitle>Comparativa de carga (gráfico radar)</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart [data]="radarChartData()" [options]="radarChartOptions" [type]="'radar'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <mat-card class="chart-card chart-polar">
-    <mat-card-header>
-      <mat-card-title>{{ uiCopy.label('priority') }} (área polar)</mat-card-title>
-      <mat-card-subtitle>Visualización por prioridad</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-container">
-        <canvas baseChart [data]="polarAreaChartData()" [options]="polarAreaChartOptions" [type]="'polarArea'"></canvas>
-      </div>
-    </mat-card-content>
-  </mat-card>
-</div>
+    <mat-card class="chart-card chart-polar">
+      <mat-card-header>
+        <mat-card-title>{{ uiCopy.label('priority') }} (área polar)</mat-card-title>
+        <mat-card-subtitle>Visualización por prioridad</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart [data]="polarAreaChartData()" [options]="polarAreaChartOptions" [type]="'polarArea'"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

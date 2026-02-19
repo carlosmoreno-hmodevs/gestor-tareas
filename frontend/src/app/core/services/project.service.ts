@@ -16,6 +16,7 @@ import { CurrentUserService } from './current-user.service';
 import { ConnectivityService } from './connectivity.service';
 import { OfflineSnapshotService } from './offline-snapshot.service';
 import { TenantContextService } from './tenant-context.service';
+import { TenantSettingsService } from './tenant-settings.service';
 import { OrgService } from './org.service';
 import { AdminService } from './admin.service';
 import type { ProjectKpis } from '../../shared/models';
@@ -30,6 +31,7 @@ export class ProjectService {
   private readonly connectivity = inject(ConnectivityService);
   private readonly snapshot = inject(OfflineSnapshotService);
   private readonly tenantContext = inject(TenantContextService);
+  private readonly tenantSettings = inject(TenantSettingsService);
   private readonly orgService = inject(OrgService);
   private readonly adminService = inject(AdminService);
 
@@ -38,11 +40,12 @@ export class ProjectService {
   constructor() {
     effect(() => {
       const tid = this.tenantContext.currentTenantId();
+      const mode = this.tenantSettings.systemMode();
       if (!tid) {
         this._projects.set([]);
         return;
       }
-      const initial = getInitialProjects(tid);
+      const initial = getInitialProjects(tid, mode);
       const cached = this.snapshot.loadProjects();
       const list = cached?.length ? cached.filter((p: Project) => p.tenantId === tid) : initial;
       const hydrated = list.map((p) => this.hydrateDates(p));

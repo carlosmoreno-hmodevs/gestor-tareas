@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import type { Task, TaskLink } from '../../shared/models';
 import type { Project } from '../../shared/models';
 import { TenantContextService } from './tenant-context.service';
+import { TenantSettingsService } from './tenant-settings.service';
 
 const SNAPSHOT_VERSION = 1;
 const STORAGE_PREFIX_TASKS = 'gestor-tareas:snapshot:tasks.';
@@ -23,15 +24,18 @@ export interface ProjectsSnapshotMeta {
 @Injectable({ providedIn: 'root' })
 export class OfflineSnapshotService {
   private readonly tenantContext = inject(TenantContextService);
+  private readonly tenantSettings = inject(TenantSettingsService);
 
   private storageKeyTasks(): string {
     const tid = this.tenantContext.currentTenantId();
-    return tid ? STORAGE_PREFIX_TASKS + tid : '';
+    const mode = this.tenantSettings.systemMode();
+    return tid ? `${STORAGE_PREFIX_TASKS}${tid}.${mode}` : '';
   }
 
   private storageKeyProjects(): string {
     const tid = this.tenantContext.currentTenantId();
-    return tid ? STORAGE_PREFIX_PROJECTS + tid : '';
+    const mode = this.tenantSettings.systemMode();
+    return tid ? `${STORAGE_PREFIX_PROJECTS}${tid}.${mode}` : '';
   }
 
   saveTasks(tasks: Task[]): void {
@@ -192,7 +196,8 @@ export class OfflineSnapshotService {
 
   private storageKeyTaskLinks(): string {
     const tid = this.tenantContext.currentTenantId();
-    return tid ? STORAGE_PREFIX_TASK_LINKS + tid : '';
+    const mode = this.tenantSettings.systemMode();
+    return tid ? `${STORAGE_PREFIX_TASK_LINKS}${tid}.${mode}` : '';
   }
 
   saveTaskLinks(links: TaskLink[]): void {

@@ -1,4 +1,6 @@
 import type { Project } from '../../shared/models';
+import { FERRETERO_PROJECT_TEMPLATES } from './ferretero-initial';
+import type { SystemMode } from '../../shared/models/tenant-settings.model';
 
 const now = new Date();
 const addDays = (d: Date, days: number) => new Date(d.getTime() + days * 86400000);
@@ -19,7 +21,124 @@ function createActivityEntry(
   };
 }
 
-export function getInitialProjects(tenantId: string): Project[] {
+/** Proyectos dummy modo ferretero: usan plantillas ferreteras. */
+function ferreteroProjectsForTenant(tenantId: string): Project[] {
+  const primaryOu = tenantId === 'tenant-1' ? 'ou-2' : 'ou-7';
+  const base = {
+    tenantId,
+    primaryOrgUnitId: primaryOu,
+    owner: 'María García',
+    ownerId: 'user-1',
+    members: [{ userId: 'user-1', role: 'Líder' }, { userId: 'user-2', role: 'Miembro' }],
+    tags: [] as string[],
+    filesMeta: [],
+    activity: [
+      { id: 'act-f1', type: 'CREATED' as const, timestamp: now, userId: 'user-1', userName: 'María García', details: {} }
+    ],
+    createdBy: 'user-1',
+    createdByName: 'María García',
+    createdAt: addDays(now, -14),
+    lastUpdatedAt: now,
+    filesCount: 0,
+    activityCount: 1
+  };
+  const tpls = FERRETERO_PROJECT_TEMPLATES;
+  return [
+    {
+      ...base,
+      id: 'fproj-1',
+      name: 'Recepción y acomodo – Tienda Centro',
+      description: tpls[0].description ?? '',
+      status: 'Activo',
+      priority: 'Alta',
+      startDate: addDays(now, -7),
+      dueDate: addDays(now, 14),
+      clientArea: 'Bodega',
+      milestones: [],
+      templateId: tpls[0].id,
+      templateTasksGenerated: true,
+      kpis: { completadas: 2, total: 4, vencidas: 0 }
+    },
+    {
+      ...base,
+      id: 'fproj-2',
+      name: 'Reabasto – Ferretería Norte',
+      description: tpls[1].description ?? '',
+      status: 'Activo',
+      priority: 'Media',
+      startDate: addDays(now, -3),
+      dueDate: addDays(now, 10),
+      clientArea: 'Compras',
+      milestones: [],
+      templateId: tpls[1].id,
+      templateTasksGenerated: true,
+      kpis: { completadas: 1, total: 3, vencidas: 0 }
+    },
+    {
+      ...base,
+      id: 'fproj-3',
+      name: 'Inventario y 5S – Semana 7',
+      description: tpls[2].description ?? '',
+      status: 'En curso',
+      priority: 'Media',
+      startDate: addDays(now, -2),
+      dueDate: addDays(now, 5),
+      clientArea: 'Bodega',
+      milestones: [],
+      templateId: tpls[2].id,
+      templateTasksGenerated: true,
+      kpis: { completadas: 0, total: 4, vencidas: 1 }
+    },
+    {
+      ...base,
+      id: 'fproj-4',
+      name: 'Garantías – Cliente 4452',
+      description: tpls[3].description ?? '',
+      status: 'Activo',
+      priority: 'Alta',
+      startDate: addDays(now, -5),
+      dueDate: addDays(now, 2),
+      clientArea: 'Garantías',
+      milestones: [],
+      templateId: tpls[3].id,
+      templateTasksGenerated: true,
+      kpis: { completadas: 1, total: 3, vencidas: 0 }
+    },
+    {
+      ...base,
+      id: 'fproj-5',
+      name: 'Cambio de promoción – Zona entrada',
+      description: tpls[4].description ?? '',
+      status: 'Activo',
+      priority: 'Baja',
+      startDate: addDays(now, -1),
+      dueDate: addDays(now, 3),
+      clientArea: 'Exhibición',
+      milestones: [],
+      templateId: tpls[4].id,
+      templateTasksGenerated: true,
+      kpis: { completadas: 1, total: 2, vencidas: 0 }
+    },
+    {
+      ...base,
+      id: 'fproj-6',
+      name: 'Mantenimiento mensual – Febrero',
+      description: tpls[5].description ?? '',
+      status: 'En curso',
+      priority: 'Alta',
+      startDate: addDays(now, -1),
+      dueDate: addDays(now, 7),
+      clientArea: 'Mantenimiento',
+      milestones: [],
+      templateId: tpls[5].id,
+      templateTasksGenerated: true,
+      kpis: { completadas: 0, total: 1, vencidas: 0 }
+    }
+  ];
+}
+
+export function getInitialProjects(tenantId: string, mode?: SystemMode): Project[] {
+  if (mode === 'ferretero') return ferreteroProjectsForTenant(tenantId);
   const byTenant: Record<string, Project[]> = {
     'tenant-1': [
       {
