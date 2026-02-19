@@ -41,6 +41,10 @@ export interface TaskHistoryEntry {
     newDueDate?: Date;
     fileName?: string;
     fileNames?: string[];
+    /** Creada por automatización */
+    createdByAutomation?: boolean;
+    automationId?: string;
+    automationName?: string;
   };
 }
 

@@ -1,0 +1,147 @@
+<app-page-header
+  [title]="isEdit() ? 'Editar automatización' : 'Nueva automatización'"
+  subtitle="Configura la tarea recurrente y la periodicidad"
+  icon="schedule"
+/>
+
+<mat-card class="form-card">
+  <mat-card-content>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <h3 class="section-title">Datos generales</h3>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="name" placeholder="Ej. Revisión semanal" />
+        @if (form.get('name')?.hasError('required')) {
+          <mat-error>El nombre es obligatorio</mat-error>
+        }
+      </mat-form-field>
+      <div class="toggle-row">
+        <mat-slide-toggle formControlName="active" color="primary">Activa</mat-slide-toggle>
+      </div>
+
+      <h3 class="section-title">Fuente</h3>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tipo</mat-label>
+        <mat-select formControlName="type">
+          <mat-option value="task_template">Tarea desde plantilla</mat-option>
+          <mat-option value="project_linked">Recurrente desde proyecto</mat-option>
+        </mat-select>
+      </mat-form-field>
+      @if (form.get('type')?.value === 'project_linked') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Proyecto</mat-label>
+          <mat-select formControlName="projectId">
+            @for (p of projects(); track p.id) {
+              <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <h3 class="section-title">Contenido de la tarea</h3>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Título de la tarea</mat-label>
+        <input matInput formControlName="title" placeholder="Ej. Revisión de inventario" />
+        @if (form.get('title')?.hasError('required')) {
+          <mat-error>El título es obligatorio</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Descripción (opcional)</mat-label>
+        <textarea matInput formControlName="description" rows="2"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Categoría</mat-label>
+        <mat-select formControlName="categoryId">
+          <mat-option value="">—</mat-option>
+          @for (c of categories; track c.id) {
+            <mat-option [value]="c.id">{{ c.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Responsable</mat-label>
+        <mat-select formControlName="assigneeId">
+          <mat-option value="">Sin asignar</mat-option>
+          @for (u of users; track u.id) {
+            <mat-option [value]="u.id">{{ u.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tags (separados por coma)</mat-label>
+        <input matInput formControlName="tags" placeholder="Ej. inventario, semanal" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Vence en (días desde creación)</mat-label>
+        <input matInput type="number" formControlName="dueInDays" min="1" max="365" />
+        <mat-hint>Días hasta la fecha límite de la tarea creada</mat-hint>
+      </mat-form-field>
+
+      <h3 class="section-title">Recurrencia</h3>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Frecuencia</mat-label>
+        <mat-select formControlName="frequency">
+          <mat-option value="daily">Diaria</mat-option>
+          <mat-option value="weekly">Semanal</mat-option>
+          <mat-option value="monthly">Mensual</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Cada cuántos</mat-label>
+        <input matInput type="number" formControlName="interval" min="1" max="99" />
+        <mat-hint>Ej. 2 = cada 2 días/semanas/meses</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Hora (HH:mm)</mat-label>
+        <input matInput formControlName="timeOfDay" placeholder="09:00" />
+        @if (form.get('timeOfDay')?.hasError('pattern')) {
+          <mat-error>Formato: HH:mm</mat-error>
+        }
+      </mat-form-field>
+      @if (form.get('frequency')?.value === 'weekly') {
+        <div class="weekly-days">
+          <span class="label">Días de la semana</span>
+          @for (opt of weekdayOptions; track opt.value) {
+            <mat-checkbox [checked]="hasWeekday(opt.value)" (change)="toggleWeekday(opt.value)">
+              {{ opt.label }}
+            </mat-checkbox>
+          }
+        </div>
+      }
+      @if (form.get('frequency')?.value === 'monthly') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Día del mes (1-31)</mat-label>
+          <input matInput type="number" formControlName="monthlyDay" min="1" max="31" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Si el mes no tiene ese día</mat-label>
+          <mat-select formControlName="monthEndRule">
+            <mat-option value="skip">Omitir</mat-option>
+            <mat-option value="last_day">Usar último día del mes</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <h3 class="section-title">Rango de fechas</h3>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Fecha inicio</mat-label>
+        <input matInput type="date" formControlName="startDate" />
+        @if (form.get('startDate')?.hasError('required')) {
+          <mat-error>La fecha de inicio es obligatoria</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Fecha fin (opcional)</mat-label>
+        <input matInput type="date" formControlName="endDate" />
+      </mat-form-field>
+
+      <div class="form-actions">
+        <a mat-button routerLink="/admin/automatizaciones">Cancelar</a>
+        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || saving()">
+          {{ isEdit() ? 'Guardar' : 'Crear' }}
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

@@ -1,0 +1,60 @@
+<app-page-header
+  title="Automatizaciones"
+  subtitle="Tareas recurrentes que se crean automáticamente según periodicidad y rango de fechas"
+  icon="schedule"
+/>
+
+<mat-card class="automatizaciones-card">
+  <mat-card-header>
+    <mat-card-title>Lista de automatizaciones</mat-card-title>
+    <mat-card-subtitle>Activa, pausa o ejecuta manualmente</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="toolbar">
+      <a mat-flat-button color="primary" routerLink="/admin/automatizaciones/nueva">
+        <mat-icon>add</mat-icon>
+        Nueva automatización
+      </a>
+    </div>
+
+    @if (automations().length === 0) {
+      <p class="empty">No hay automatizaciones. Crea una para que el sistema genere tareas de forma recurrente.</p>
+    } @else {
+      <div class="automation-list">
+        @for (a of automations(); track a.id) {
+          <div class="automation-item">
+            <div class="automation-main">
+              <span class="name">{{ a.name }}</span>
+              <mat-slide-toggle
+                [checked]="a.active"
+                (change)="toggleActive(a)"
+                matTooltip="{{ a.active ? 'Pausar' : 'Activar' }}"
+              ></mat-slide-toggle>
+            </div>
+            <div class="automation-meta">
+              <span>{{ freqLabel(a.frequency) }} {{ a.interval > 1 ? '(cada ' + a.interval + ')' : '' }}</span>
+              <span>Rango: {{ a.startDate | date:'shortDate' }} — {{ a.endDate ? (a.endDate | date:'shortDate') : 'sin fin' }}</span>
+              <span>Próxima: {{ formatDate(a.nextRunAt) }}</span>
+              <span>Última: {{ formatDate(a.lastRunAt) }}</span>
+              <span>Ejecuciones: {{ a.runCount }}</span>
+            </div>
+            <div class="automation-actions">
+              <a mat-button [routerLink]="['/admin/automatizaciones', a.id, 'editar']">
+                <mat-icon>edit</mat-icon>
+                Editar
+              </a>
+              <button mat-button (click)="runNow(a)" matTooltip="Crear una tarea ahora (simulación)">
+                <mat-icon>play_arrow</mat-icon>
+                Ejecutar ahora
+              </button>
+              <button mat-button color="warn" (click)="remove(a)">
+                <mat-icon>delete</mat-icon>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

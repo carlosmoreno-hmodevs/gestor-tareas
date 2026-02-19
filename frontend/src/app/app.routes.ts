@@ -45,6 +45,9 @@ export const routes: Routes = [
               { path: 'reglas', loadComponent: () => import('./features/admin/admin-reglas/admin-reglas.component').then((m) => m.AdminReglasComponent) },
               { path: 'flujos', loadComponent: () => import('./features/admin/admin-flujos/admin-flujos.component').then((m) => m.AdminFlujosComponent) },
               { path: 'campos', loadComponent: () => import('./features/admin/admin-campos/admin-campos.component').then((m) => m.AdminCamposComponent) },
+              { path: 'automatizaciones', loadComponent: () => import('./features/admin/admin-automatizaciones/admin-automatizaciones.component').then((m) => m.AdminAutomatizacionesComponent) },
+              { path: 'automatizaciones/nueva', loadComponent: () => import('./features/admin/admin-automatizacion-form/admin-automatizacion-form.component').then((m) => m.AdminAutomatizacionFormComponent) },
+              { path: 'automatizaciones/:id/editar', loadComponent: () => import('./features/admin/admin-automatizacion-form/admin-automatizacion-form.component').then((m) => m.AdminAutomatizacionFormComponent) },
               { path: 'sistema', loadComponent: () => import('./features/admin/admin-sistema/admin-sistema.component').then((m) => m.AdminSistemaComponent) }
             ]
           }

@@ -44,6 +44,7 @@ export class AdminLayoutComponent {
     { path: '/admin/reglas', label: 'Reglas y notificaciones', shortLabel: 'Reglas', icon: 'rule' },
     { path: '/admin/flujos', label: 'Flujos', shortLabel: 'Flujos', icon: 'account_tree' },
     { path: '/admin/campos', label: 'Campos personalizados', shortLabel: 'Campos', icon: 'tune' },
+    { path: '/admin/automatizaciones', label: 'Automatizaciones', shortLabel: 'Automatiz.', icon: 'schedule' },
     { path: '/admin/sistema', label: 'Sistema', shortLabel: 'Sistema', icon: 'settings_applications' }
   ];
 

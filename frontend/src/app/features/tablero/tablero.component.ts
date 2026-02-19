@@ -15,6 +15,7 @@ import { TenantContextService } from '../../core/services/tenant-context.service
 import { OrgService } from '../../core/services/org.service';
 import { ProjectService } from '../../core/services/project.service';
 import { FerreteroKpiService } from '../../core/services/ferretero-kpi.service';
+import { AutomationService } from '../../core/services/automation.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { FERRETERO_CATEGORIES } from '../../core/data/ferretero-initial';
 import { Chart } from 'chart.js';
@@ -75,9 +76,15 @@ export class TableroComponent {
   private readonly orgService = inject(OrgService);
   private readonly projectService = inject(ProjectService);
   readonly ferreteroKpiService = inject(FerreteroKpiService);
+  private readonly automationService = inject(AutomationService);
 
   /** Estado de KPIs ferretero (solo tiene datos cuando isFerretero). */
   ferreteroKpi = this.ferreteroKpiService.kpiState;
+
+  ngOnInit(): void {
+    const tid = this.tenantContext.currentTenantId();
+    if (tid) this.automationService.runEngine(tid);
+  }
 
   /** Gráfico de backlog por área (modo ferretero). */
   backlogByAreaChartData = computed<ChartConfiguration<'bar'>['data']>(() => {

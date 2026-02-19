@@ -12,3 +12,4 @@ export * from './tenant.model';
 export * from './tenant-settings.model';
 export * from './org.model';
 export * from './reason-catalog.model';
+export * from './automation.model';

@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,8 @@ import { TaskService } from '../../../core/services/task.service';
 import { DataService } from '../../../core/services/data.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { TaskWorkflowService } from '../../../core/services/task-workflow.service';
+import { AutomationService } from '../../../core/services/automation.service';
+import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { TaskCardComponent } from '../../../shared/components/task-card/task-card.component';
 import { StatusChipComponent } from '../../../shared/components/status-chip/status-chip.component';
@@ -46,14 +48,21 @@ import type { TaskStatus, Priority } from '../../../shared/models';
   templateUrl: './task-list.component.html',
   styleUrl: './task-list.component.scss'
 })
-export class TaskListComponent {
+export class TaskListComponent implements OnInit {
   readonly taskService = inject(TaskService);
   private readonly dataService = inject(DataService);
   readonly connectivity = inject(ConnectivityService);
   readonly workflow = inject(TaskWorkflowService);
   private readonly router = inject(Router);
+  private readonly automationService = inject(AutomationService);
+  private readonly tenantContext = inject(TenantContextService);
 
   searchText = signal('');
+
+  ngOnInit(): void {
+    const tid = this.tenantContext.currentTenantId();
+    if (tid) this.automationService.runEngine(tid);
+  }
   quickFilter = signal<'all' | 'hoy' | 'vencidas' | 'alta' | 'sin-asignar'>('all');
   statusFilter = signal<TaskStatus | ''>('');
   priorityFilter = signal<Priority | ''>('');
