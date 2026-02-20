@@ -10,6 +10,7 @@
         <mat-icon>filter_list</mat-icon>
         Filtros rápidos
       </h3>
+      <p class="filters-hint">Distintos a las tarjetas: por fecha y asignación.</p>
       <button
         class="filter-item"
         [class.active]="quickFilter() === 'all'"
@@ -22,7 +23,7 @@
       <button
         class="filter-item"
         [class.active]="quickFilter() === 'hoy'"
-        (click)="quickFilter.set('hoy')"
+        (click)="setQuickFilter('hoy')"
       >
         <span class="filter-icon hoy"></span>
         <span class="filter-text">Hoy</span>
@@ -30,17 +31,26 @@
       </button>
       <button
         class="filter-item"
-        [class.active]="quickFilter() === 'vencidas'"
-        (click)="quickFilter.set('vencidas')"
+        [class.active]="quickFilter() === 'por-vencer'"
+        (click)="setQuickFilter('por-vencer')"
       >
-        <span class="filter-icon vencidas"></span>
-        <span class="filter-text">Vencidas</span>
-        <span class="filter-badge">{{ vencidasCount() }}</span>
+        <span class="filter-icon por-vencer"></span>
+        <span class="filter-text">Por vencer</span>
+        <span class="filter-badge">{{ dueSoonCount() }}</span>
+      </button>
+      <button
+        class="filter-item"
+        [class.active]="quickFilter() === 'esta-semana'"
+        (click)="setQuickFilter('esta-semana')"
+      >
+        <span class="filter-icon esta-semana"></span>
+        <span class="filter-text">Esta semana</span>
+        <span class="filter-badge">{{ estaSemanaCount() }}</span>
       </button>
       <button
         class="filter-item"
         [class.active]="quickFilter() === 'alta'"
-        (click)="quickFilter.set('alta')"
+        (click)="setQuickFilter('alta')"
       >
         <span class="filter-icon alta"></span>
         <span class="filter-text">Alta prioridad</span>
@@ -49,7 +59,7 @@
       <button
         class="filter-item"
         [class.active]="quickFilter() === 'sin-asignar'"
-        (click)="quickFilter.set('sin-asignar')"
+        (click)="setQuickFilter('sin-asignar')"
       >
         <span class="filter-icon sin-asignar"></span>
         <span class="filter-text">Sin asignar</span>
@@ -58,38 +68,36 @@
     </div>
     <div class="filters-section">
       <h3>Estado</h3>
-      <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="status" [checked]="statusFilter() === ''" (change)="statusFilter.set('')" />
-          <span>Todos</span>
-        </label>
-        @for (s of statuses; track s.id) {
-          <label class="radio-item">
+      <p class="filters-hint">Selecciona varios para combinar (OR).</p>
+      @if (statusFilter().length) {
+        <button type="button" class="clear-filters" (click)="clearStatusFilter()">Limpiar estado</button>
+      }
+      <div class="checkbox-group">
+        @for (opt of statusFilterOptions; track opt.value) {
+          <label class="checkbox-item">
             <input
-              type="radio"
-              name="status"
-              [checked]="statusFilter() === s.value"
-              (change)="statusFilter.set(s.value)"
+              type="checkbox"
+              [checked]="isStatusChecked(opt.value)"
+              (change)="toggleStatus(opt.value)"
             />
-            <span>{{ s.name }}</span>
+            <span>{{ opt.label }}</span>
           </label>
         }
       </div>
     </div>
     <div class="filters-section">
       <h3>Prioridad</h3>
-      <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="priority" [checked]="priorityFilter() === ''" (change)="priorityFilter.set('')" />
-          <span>Todas</span>
-        </label>
+      <p class="filters-hint">Selecciona varias para combinar (OR).</p>
+      @if (priorityFilter().length) {
+        <button type="button" class="clear-filters" (click)="clearPriorityFilter()">Limpiar prioridad</button>
+      }
+      <div class="checkbox-group">
         @for (p of priorities; track p.id) {
-          <label class="radio-item">
+          <label class="checkbox-item">
             <input
-              type="radio"
-              name="priority"
-              [checked]="priorityFilter() === p.value"
-              (change)="priorityFilter.set(p.value)"
+              type="checkbox"
+              [checked]="isPriorityChecked(p.value)"
+              (change)="togglePriority(p.value)"
             />
             <span>{{ p.name }}</span>
           </label>
@@ -134,33 +142,44 @@
       </div>
     </div>
 
-    <div class="kpi-mini animate-stagger">
-      <div class="kpi-mini-item">
-        <span class="kpi-mini-label">Asignadas</span>
-        <span class="kpi-mini-value">{{ activeCount() }}</span>
-      </div>
-      <div class="kpi-mini-item por-vencer">
-        <span class="kpi-mini-label">Por vencer</span>
-        <span class="kpi-mini-value">{{ dueSoonCount() }}</span>
-      </div>
-      <div class="kpi-mini-item vencidas">
-        <span class="kpi-mini-label">Vencidas</span>
-        <span class="kpi-mini-value">{{ overdueCount() }}</span>
-      </div>
+    <div class="kpi-strip animate-stagger">
+      <button type="button" class="kpi-card kpi-card-clickable kpi-pending" [class.active]="isStatusFilterActive('Pendiente')" (click)="applyStatusFilter('Pendiente')">
+        <span class="kpi-value">{{ pendingCount() }}</span>
+        <span class="kpi-label">Pendientes</span>
+      </button>
+      <button type="button" class="kpi-card kpi-card-clickable kpi-inprogress" [class.active]="isStatusFilterActive('En Progreso')" (click)="applyStatusFilter('En Progreso')">
+        <span class="kpi-value">{{ inProgressCount() }}</span>
+        <span class="kpi-label">En progreso</span>
+      </button>
+      <button type="button" class="kpi-card kpi-card-clickable kpi-waiting" [class.active]="isStatusFilterActive('En Espera')" (click)="applyStatusFilter('En Espera')">
+        <span class="kpi-value">{{ enEsperaCount() }}</span>
+        <span class="kpi-label">En espera</span>
+      </button>
+      <button type="button" class="kpi-card kpi-card-clickable kpi-danger" [class.active]="isStatusFilterActive('Vencida')" (click)="applyStatusFilter('Vencida')">
+        <span class="kpi-value">{{ overdueCount() }}</span>
+        <span class="kpi-label">Vencidas</span>
+      </button>
+      <button type="button" class="kpi-card kpi-card-clickable kpi-success" [class.active]="isStatusFilterActive('completadas')" (click)="applyStatusFilter('completadas')">
+        <span class="kpi-value">{{ completedCount() }}</span>
+        <span class="kpi-label">Completadas</span>
+      </button>
     </div>
 
     <div class="results-header">
-      <span class="results-count">Resultados ({{ filteredTasks().length }})</span>
+      <span class="results-count">Resultados ({{ displayedTasks().length }})</span>
       <mat-form-field appearance="outline" class="sort-field">
         <mat-label>Orden</mat-label>
-        <mat-select value="vencimiento">
-          <mat-option value="vencimiento">Vencimiento</mat-option>
-          <mat-option value="prioridad">Prioridad</mat-option>
+        <mat-select [value]="sortOrder()" (valueChange)="sortOrder.set($event)">
+          <mat-option value="default">Por defecto</mat-option>
+          <mat-option value="vencidas-primero">Vencidas primero</mat-option>
+          <mat-option value="fecha">Por fecha vencimiento</mat-option>
+          <mat-option value="estado">Por estado</mat-option>
+          <mat-option value="prioridad">Por prioridad</mat-option>
         </mat-select>
       </mat-form-field>
     </div>
 
-    @if (filteredTasks().length === 0) {
+    @if (displayedTasks().length === 0) {
       <app-empty-state
         icon="search_off"
         title="Sin resultados"
@@ -168,17 +187,17 @@
       />
     } @else if (viewMode() === 'board') {
       <app-kanban-board
-        [tasks]="filteredTasks()"
+        [tasks]="displayedTasks()"
         [draggable]="true"
         class="animate-stagger"
       />
     } @else {
       <div class="task-cards-list animate-stagger">
-        @for (task of filteredTasks(); track task.id) {
+        @for (task of displayedTasks(); track task.id) {
           <a class="task-card-link" [routerLink]="['/tareas', task.id]">
             <div
               class="task-card-v2"
-              [class.vencida]="getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida'"
+              [class.vencida]="getEffectiveStatus(task) === 'Vencida'"
               [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
             >
               <span class="task-card-prio-dot" [attr.data-prio]="task.priority"></span>
@@ -205,7 +224,7 @@
                 </div>
                 <p class="task-details">
                   {{ task.folio }} • {{ task.assignee || 'Sin asignar' }} • {{ task.priority }} •
-                  {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : task.riskIndicator === 'por-vencer' ? 'Por vencer' : (task.dueDate | date: 'dd/MM/yyyy') }}
+                  {{ getEffectiveStatus(task) === 'Vencida' ? 'Venció' : task.riskIndicator === 'por-vencer' ? 'Por vencer' : (task.dueDate | date: 'dd/MM/yyyy') }}
                 </p>
                 <div class="task-card-footer">
                   <span
@@ -223,7 +242,7 @@
                   </span>
                   <div class="task-card-right">
                     <span class="task-due-label">
-                      {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
+                      {{ getEffectiveStatus(task) === 'Vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
                     </span>
                     <div class="task-actions">
                       <button mat-icon-button type="button" (click)="$event.preventDefault(); $event.stopPropagation()" tabindex="-1">
@@ -245,7 +264,7 @@
       </div>
 
       <div class="pagination">
-        <span class="pagination-info">1-{{ filteredTasks().length }} de {{ filteredTasks().length }}</span>
+        <span class="pagination-info">1-{{ displayedTasks().length }} de {{ displayedTasks().length }}</span>
         <div class="pagination-controls">
           <button mat-icon-button disabled><mat-icon>chevron_left</mat-icon></button>
           <span class="page-num">1</span>

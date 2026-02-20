@@ -51,6 +51,8 @@ export interface ProjectMilestone {
 }
 
 export interface ProjectKpis {
+  tasksPending: number;
+  tasksEnEspera: number;
   tasksInProgress: number;
   tasksOverdue: number;
   completedTasks: number;
@@ -100,4 +102,6 @@ export interface Project {
   templateAppliedAt?: string;
   templateAppliedByUserId?: string;
   templateTasksGenerated?: boolean;
+  /** ID de iniciativa estratégica (ej. I-01, I-02) cuando el proyecto proviene del BSC. */
+  initiativeId?: string;
 }

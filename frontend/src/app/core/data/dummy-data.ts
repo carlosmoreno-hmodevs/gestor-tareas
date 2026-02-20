@@ -131,6 +131,218 @@ function tasksForTenant2(): Task[] {
   ];
 }
 
+/** IDs de proyectos BSC Iniciativas (ver projects-initial). */
+const BSC_PROJECT_IDS = ['bsc-i-01', 'bsc-i-02', 'bsc-i-03', 'bsc-i-04', 'bsc-i-05'] as const;
+
+/** Genera tareas para un proyecto BSC con total, completadas y vencidas alineados al dashboard. */
+function bscProjectTasks(
+  tenantId: string,
+  projectId: string,
+  projectIndex: number,
+  total: number,
+  completed: number,
+  overdue: number,
+  ownerId: string,
+  ownerName: string,
+  titleTemplates: { done: string[]; overdue: string[]; rest: string[] }
+): Task[] {
+  const rest = total - completed - overdue;
+  const users = [
+    { id: 'user-1', name: 'María García' },
+    { id: 'user-2', name: 'Carlos López' },
+    { id: 'user-3', name: 'Ana Martínez' },
+    { id: 'user-4', name: 'Pedro Sánchez' },
+    { id: 'user-5', name: 'Laura Rodríguez' }
+  ];
+  const pickUser = (i: number) => users[i % users.length];
+  const past = (d: number) => addDays(now, -d);
+  const future = (d: number) => addDays(now, d);
+  const tasks: Task[] = [];
+  let idx = 0;
+  const pref = `BSC${String(projectIndex + 1).padStart(2, '0')}`;
+  const t = (status: Task['status'], due: Date, title: string, assignee = ownerName, assigneeId = ownerId) => {
+    const folio = `${pref}-${String(++idx).padStart(3, '0')}`;
+    tasks.push(
+      createTask(folio, title, assignee, assigneeId, status, status === 'Vencida' ? 'Alta' : 'Media', due, {
+        tenantId,
+        projectId,
+        orgUnitId: tenantId === 'tenant-1' ? 'ou-1' : 'ou-6'
+      })
+    );
+  };
+  const doneStatuses: Task['status'][] = ['Completada', 'Liberada'];
+  for (let i = 0; i < completed; i++) {
+    const title = titleTemplates.done[i % titleTemplates.done.length].replace('{n}', String(i + 1));
+    t(doneStatuses[i % 2], past(2 + (i % 14)), title);
+  }
+  for (let i = 0; i < overdue; i++) {
+    const title = titleTemplates.overdue[i % titleTemplates.overdue.length].replace('{n}', String(i + 1));
+    t('Vencida', past(1 + (i % 30)), title);
+  }
+  const restStatuses: Task['status'][] = ['Pendiente', 'En Progreso', 'En Espera'];
+  for (let i = 0; i < rest; i++) {
+    const title = titleTemplates.rest[i % titleTemplates.rest.length].replace('{n}', String(i + 1));
+    const u = pickUser(i);
+    t(restStatuses[i % 3], future(1 + (i % 21)), title, u.name, u.id);
+  }
+  return tasks.map((task) => ({ ...task, id: `task-${task.folio}` }));
+}
+
+/** Tareas BSC4 · Iniciativas Estratégicas (alineadas con ORKesta/DIAGRAMA28). */
+function tasksBscIniciativasForTenant(tenantId: string): Task[] {
+  const T = (done: string[], overdue: string[], rest: string[]) => ({ done, overdue, rest });
+  const configs = [
+    {
+      projectId: BSC_PROJECT_IDS[0],
+      total: 120,
+      completed: 74,
+      overdue: 2,
+      ownerId: 'user-1',
+      ownerName: 'María García',
+      titles: T(
+        [
+          'Revisión punto de reorden SKU {n}',
+          'Ajuste stock de seguridad por sucursal',
+          'Cálculo demanda diaria – familia {n}',
+          'Surtido/transferencia por ubicación',
+          'Validación existencia vs ERP',
+          'Conteo cíclico zona {n}',
+          'Regla reposición automática – piloto'
+        ],
+        ['Revisión quiebre pendiente {n}', 'Surtido vencido – bodega a piso'],
+        [
+          'Punto de reorden – SKU crítico {n}',
+          'Reposición automática – lote {n}',
+          'Validación lead time proveedor',
+          'Exactitud inventario – ubicación {n}',
+          'Fill rate por sucursal – reporte'
+        ]
+      )
+    },
+    {
+      projectId: BSC_PROJECT_IDS[1],
+      total: 80,
+      completed: 35,
+      overdue: 11,
+      ownerId: 'user-2',
+      ownerName: 'Carlos López',
+      titles: T(
+        [
+          'Top 200 – actualización sucursal {n}',
+          'Lista priorizada quiebres resueltos',
+          'Verificación en tienda – SKU crítico {n}',
+          'Traspaso bodega → piso programado',
+          'Evidencia cero quiebre – día {n}'
+        ],
+        [
+          'Quiebre crítico sin resolver {n}',
+          'Surtido Top 200 vencido – tienda',
+          'Revisión lista priorizada atrasada'
+        ],
+        [
+          'Top 200 SKU – sucursal {n}',
+          'Resolución quiebre – SKU {n}',
+          'Disponibilidad diaria – validación',
+          'Tarea piso/bodega – cero quiebres'
+        ]
+      )
+    },
+    {
+      projectId: BSC_PROJECT_IDS[2],
+      total: 60,
+      completed: 42,
+      overdue: 0,
+      ownerId: 'user-3',
+      ownerName: 'Ana Martínez',
+      titles: T(
+        [
+          'Auditoría descuentos – periodo {n}',
+          'Excepción precio – revisión y trazabilidad',
+          'Impacto margen – excepción {n}',
+          'Cumplimiento política descuentos – reporte',
+          'Ticket promedio – análisis por sucursal'
+        ],
+        [],
+        [
+          'Revisión override caja – autorización',
+          'Política descuentos – actualización',
+          'Alerta margen bajo – excepción {n}',
+          'Validación precio lista vs vendido'
+        ]
+      )
+    },
+    {
+      projectId: BSC_PROJECT_IDS[3],
+      total: 90,
+      completed: 46,
+      overdue: 6,
+      ownerId: 'user-4',
+      ownerName: 'Pedro Sánchez',
+      titles: T(
+        [
+          'DOH por familia – reporte {n}',
+          'Inventario lento – identificación',
+          'Exceso vs cobertura objetivo – SKU {n}',
+          'Propuesta traslado/liquidación',
+          'Kárdex sin movimiento – revisión'
+        ],
+        [
+          'Lento/obsoleto – acción vencida {n}',
+          'Liquidación controlada – pendiente',
+          'Devolución a proveedor – trámite vencido'
+        ],
+        [
+          'Racionalización inventario – lote {n}',
+          'Cobertura objetivo – ajuste',
+          'CCC – días inventario revisión',
+          'Exceso inventario – acción {n}'
+        ]
+      )
+    },
+    {
+      projectId: BSC_PROJECT_IDS[4],
+      total: 70,
+      completed: 25,
+      overdue: 14,
+      ownerId: 'user-5',
+      ownerName: 'Laura Rodríguez',
+      titles: T(
+        [
+          '3-way match – OC {n}',
+          'Recepción vs factura – validación',
+          'Diferencias cantidad/precio – aclaración',
+          'Bloqueo pago – evidencia'
+        ],
+        [
+          'Match 3-way vencido – factura {n}',
+          'Recepción contra factura – pendiente',
+          'CxP – diferencia sin resolver',
+          'Aclaración proveedor vencida'
+        ],
+        [
+          'Cruze OC – recepción – factura {n}',
+          'Cumplimiento recepción vs factura',
+          'CCC – pago a tiempo',
+          'Validación precio factura vs OC'
+        ]
+      )
+    }
+  ];
+  return configs.flatMap((c, i) =>
+    bscProjectTasks(
+      tenantId,
+      c.projectId,
+      i,
+      c.total,
+      c.completed,
+      c.overdue,
+      c.ownerId,
+      c.ownerName,
+      c.titles
+    )
+  );
+}
+
 /** IDs de proyectos dummy ferreteros (ver projects-initial) */
 const FERRETERO_PROJECT_IDS = ['fproj-1', 'fproj-2', 'fproj-3', 'fproj-4', 'fproj-5', 'fproj-6'] as const;
 
@@ -532,12 +744,15 @@ function tasksFerreteroForTenant(tenantId: string): Task[] {
   ].map((task) => ({ ...task, id: `task-${task.folio}` }));
 }
 
-/** Tareas iniciales por tenant y modo: normal (solo datos genéricos) o ferretero (solo datos ferreteros). */
+/** Tareas iniciales por tenant y modo: normal (genéricos + BSC) o ferretero (solo BSC iniciativas del demo). */
 export function getInitialTasks(tenantId: string, mode?: SystemMode): Task[] {
-  if (mode === 'ferretero') return tasksFerreteroForTenant(tenantId);
-  if (tenantId === 'tenant-1') return tasksForTenant1();
-  if (tenantId === 'tenant-2') return tasksForTenant2();
-  return [];
+  if (mode === 'ferretero') {
+    return tasksBscIniciativasForTenant(tenantId);
+  }
+  const bsc = tasksBscIniciativasForTenant(tenantId);
+  if (tenantId === 'tenant-1') return [...tasksForTenant1(), ...bsc];
+  if (tenantId === 'tenant-2') return [...tasksForTenant2(), ...bsc];
+  return bsc;
 }
 
 /** @deprecated Use getInitialTasks(tenantId) */

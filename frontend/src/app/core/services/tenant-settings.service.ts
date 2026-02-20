@@ -46,8 +46,7 @@ export class TenantSettingsService {
   }
 
   /**
-   * Obtiene la configuración del tenant. Si no existe, devuelve default (systemMode: 'normal').
-   * Nunca asume ferretero por defecto.
+   * Obtiene la configuración del tenant. Si no existe, devuelve default (systemMode por defecto: ferretero).
    */
   getSettings(tenantId: string): TenantSettings {
     const stored = this._settingsByTenant()[tenantId];

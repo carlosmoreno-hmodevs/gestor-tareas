@@ -25,9 +25,9 @@
         {{ task().dueDate | date: 'dd/MM/yyyy' }}
       </span>
     </div>
-    @if (task().riskIndicator === 'por-vencer' || task().riskIndicator === 'vencida') {
-      <span class="risk-badge" [class.vencida]="task().riskIndicator === 'vencida'">
-        {{ task().riskIndicator === 'vencida' ? 'Vencida' : 'Por vencer' }}
+    @if (effectiveStatus(task()) === 'Vencida' || (task().riskIndicator === 'por-vencer' && effectiveStatus(task()) !== 'Vencida')) {
+      <span class="risk-badge" [class.vencida]="effectiveStatus(task()) === 'Vencida'">
+        {{ effectiveStatus(task()) === 'Vencida' ? 'Vencida' : 'Por vencer' }}
       </span>
     }
     @if (task().commentsCount || task().attachmentsCount) {

@@ -66,7 +66,7 @@ export class ShellComponent implements OnInit {
   navItems = computed<NavItem[]>(() => [
     { path: '/tablero', label: 'Tablero', shortLabel: 'Inicio', icon: 'dashboard' },
     { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
-    { path: '/proyectos', label: 'Proyectos', shortLabel: 'Proyectos', icon: 'work' },
+    { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
     { path: '/documentos', label: 'Documentos', shortLabel: 'Docs', icon: 'folder' },
     { path: '/admin', label: 'Administración', shortLabel: 'Admin', icon: 'settings' },
     { path: '/ia', label: 'Asistente IA', shortLabel: 'IA', icon: 'auto_awesome' }

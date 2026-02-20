@@ -25,7 +25,7 @@
             <div
               class="kanban-card"
               cdkDragHandle
-              [class.vencida]="getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida'"
+              [class.vencida]="getEffectiveStatus(task) === 'Vencida'"
               [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
               [class.prio-alta]="task.priority === 'Alta'"
               [class.prio-media]="task.priority === 'Media'"
@@ -51,7 +51,7 @@
               <div class="kanban-card-footer">
                 <span class="kanban-card-priority">{{ task.priority }}</span>
                 <span class="kanban-card-due">
-                  {{ getEffectiveStatus(task) === 'Vencida' || task.riskIndicator === 'vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
+                  {{ getEffectiveStatus(task) === 'Vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
                 </span>
                 <app-avatar
                   [name]="task.assignee || 'Sin asignar'"

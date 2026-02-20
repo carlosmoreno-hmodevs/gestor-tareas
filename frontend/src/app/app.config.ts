@@ -6,15 +6,19 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 import { routes } from './app.routes';
+import { INITIAL_TENANTS } from './core/data/tenant-initial';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    // Cargar tenant de localStorage antes de la primera navegación para evitar redirección a /select-tenant
+    // Si no hay tenant guardado, elegir el primero por defecto (evita pasar por /select-tenant al recargar)
     {
       provide: APP_INITIALIZER,
       useFactory: () => {
-        inject(TenantContextService);
+        const tenantContext = inject(TenantContextService);
+        if (!tenantContext.hasTenant() && INITIAL_TENANTS.length > 0) {
+          tenantContext.setCurrentTenant(INITIAL_TENANTS[0].id);
+        }
         return () => {};
       },
       multi: true

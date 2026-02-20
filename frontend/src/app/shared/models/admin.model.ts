@@ -88,6 +88,14 @@ export interface AdminProjectType {
   active: boolean;
 }
 
+/** Catálogo de puestos (opcional) para asignar a usuarios. */
+export interface AdminPosition {
+  id: string;
+  name: string;
+  order: number;
+  active: boolean;
+}
+
 // --- Rules ---
 export type DueSoonUnit = 'days' | 'hours';
 
@@ -122,6 +130,7 @@ export interface AdminSnapshot {
   teams: AdminTeam[];
   tagSuggestions: AdminTagSuggestion[];
   projectTypes: AdminProjectType[];
+  positions?: AdminPosition[];
   dueDateRules: DueDateRules;
   notificationRules: NotificationRule[];
   savedAt: string;

@@ -1,6 +1,6 @@
 <div class="projects-header">
   <app-page-header
-    title="Proyectos"
+    title="Proyectos (Iniciativas)"
     subtitle="Vista general de proyectos"
     icon="work"
   />
@@ -50,7 +50,12 @@
               <app-avatar [name]="p.owner" [avatarUrl]="getUserByName(p.owner)?.avatarUrl" [size]="40" />
             }
             <div>
-              <mat-card-title>{{ p.name }}</mat-card-title>
+              <mat-card-title>
+                @if (p.initiativeId) {
+                  <span class="initiative-badge">{{ p.initiativeId }}</span>
+                }
+                {{ p.name }}
+              </mat-card-title>
               <mat-card-subtitle>{{ p.owner }} · {{ p.status }}</mat-card-subtitle>
             </div>
           </div>

@@ -47,7 +47,7 @@
       <div class="meta-text">
         <span class="folio">{{ t.folio }}</span>
         <span class="separator">•</span>
-        <span>{{ uiCopy.label('assignee') }}: {{ assigneeName() }}</span>
+        <span>{{ uiCopy.label('assignee') }}: {{ assigneeName() }}@if (assigneePosition()) { · {{ assigneePosition() }} }</span>
         <span class="separator">•</span>
         <span class="due-date" [class.overdue]="hasOverdueBadge()">
           {{ hasOverdueBadge() ? 'Venció' : (t.dueDate | dateFormat: 'short') }}

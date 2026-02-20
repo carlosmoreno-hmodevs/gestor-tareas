@@ -89,6 +89,17 @@
   mat-card-subtitle {
     margin: 0;
   }
+
+  .initiative-badge {
+    display: inline-block;
+    margin-right: $spacing-sm;
+    padding: 2px 8px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: var(--color-primary, #1976d2);
+    background: rgba($color-primary, 0.1);
+    border-radius: $radius-md;
+  }
 }
 
 .description {

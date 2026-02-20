@@ -207,6 +207,11 @@ export class TaskDetailFormComponent {
     return this.users().find((u) => u.id === id)?.name ?? 'Sin asignar';
   }
 
+  getAssigneePosition(id: string): string | undefined {
+    if (!id) return undefined;
+    return this.users().find((u) => u.id === id)?.position;
+  }
+
   getCategoryName(id: string | undefined): string {
     if (!id) return '—';
     return this.categories.find((c) => c.id === id)?.name ?? '—';

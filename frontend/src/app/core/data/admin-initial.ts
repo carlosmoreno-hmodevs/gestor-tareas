@@ -9,6 +9,7 @@ import type {
   AdminTeam,
   AdminTagSuggestion,
   AdminProjectType,
+  AdminPosition,
   DueDateRules,
   NotificationRule
 } from '../../shared/models/admin.model';
@@ -100,6 +101,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-owner',
     teamId: 'team-1',
     isActive: true,
+    position: 'Administrador',
     createdAt: new Date(now.getTime() - 400 * 86400000)
   },
   {
@@ -109,6 +111,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-admin',
     teamId: 'team-1',
     isActive: true,
+    position: 'Responsable de Abasto',
     createdAt: new Date(now.getTime() - 365 * 86400000)
   },
   {
@@ -118,6 +121,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-supervisor',
     teamId: 'team-2',
     isActive: true,
+    position: 'Jefe de área + Líder de tienda',
     createdAt: new Date(now.getTime() - 300 * 86400000)
   },
   {
@@ -127,6 +131,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-member',
     teamId: 'team-3',
     isActive: true,
+    position: 'Responsable de Ventas',
     createdAt: new Date(now.getTime() - 200 * 86400000)
   },
   {
@@ -136,6 +141,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-member',
     teamId: 'team-4',
     isActive: true,
+    position: 'Responsable de Inventarios',
     createdAt: new Date(now.getTime() - 150 * 86400000)
   },
   {
@@ -145,6 +151,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-supervisor',
     teamId: 'team-1',
     isActive: true,
+    position: 'Responsable de Finanzas',
     createdAt: new Date(now.getTime() - 100 * 86400000)
   },
   {
@@ -154,7 +161,28 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
     roleId: 'role-viewer',
     teamId: 'team-3',
     isActive: true,
+    position: 'Operación Tiendas',
     createdAt: new Date(now.getTime() - 80 * 86400000)
+  },
+  {
+    id: 'user-7',
+    name: 'Ricardo Mora',
+    email: 'ricardo@empresa.com',
+    roleId: 'role-member',
+    teamId: 'team-2',
+    isActive: true,
+    position: 'Jefe de área',
+    createdAt: new Date(now.getTime() - 120 * 86400000)
+  },
+  {
+    id: 'user-8',
+    name: 'Elena Vega',
+    email: 'elena@empresa.com',
+    roleId: 'role-member',
+    teamId: 'team-2',
+    isActive: true,
+    position: 'Líder de tienda',
+    createdAt: new Date(now.getTime() - 90 * 86400000)
   }
 ];
 
@@ -193,6 +221,19 @@ export const INITIAL_TEAMS: AdminTeam[] = [
   { id: 'team-2', name: 'Logística', area: 'Cadena de suministro', order: 2, active: true },
   { id: 'team-3', name: 'Calidad', area: 'Aseguramiento', order: 3, active: true },
   { id: 'team-4', name: 'Producción', area: 'Manufactura', order: 4, active: true }
+];
+
+/** Catálogo de puestos (opcional). Usuarios pueden tener position como texto o alineado a este catálogo. */
+export const INITIAL_POSITIONS: AdminPosition[] = [
+  { id: 'pos-1', name: 'Jefe de área', order: 1, active: true },
+  { id: 'pos-2', name: 'Líder de tienda', order: 2, active: true },
+  { id: 'pos-3', name: 'Jefe de área + Líder de tienda', order: 3, active: true },
+  { id: 'pos-4', name: 'Responsable de Abasto', order: 4, active: true },
+  { id: 'pos-5', name: 'Responsable de Ventas', order: 5, active: true },
+  { id: 'pos-6', name: 'Responsable de Inventarios', order: 6, active: true },
+  { id: 'pos-7', name: 'Responsable de Finanzas', order: 7, active: true },
+  { id: 'pos-8', name: 'Operación Tiendas', order: 8, active: true },
+  { id: 'pos-9', name: 'Administrador', order: 0, active: true }
 ];
 
 export const INITIAL_TAG_SUGGESTIONS: AdminTagSuggestion[] = [

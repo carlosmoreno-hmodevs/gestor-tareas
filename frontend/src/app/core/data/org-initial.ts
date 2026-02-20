@@ -28,6 +28,8 @@ export const INITIAL_USER_ORG_MEMBERSHIPS: UserOrgMembership[] = [
   { id: 'uom-3', tenantId: 'tenant-1', userId: 'user-2', orgUnitId: 'ou-2' },
   { id: 'uom-4', tenantId: 'tenant-1', userId: 'user-3', orgUnitId: 'ou-3' },
   { id: 'uom-5', tenantId: 'tenant-1', userId: 'user-1', orgUnitId: 'ou-4' },
+  { id: 'uom-8', tenantId: 'tenant-1', userId: 'user-7', orgUnitId: 'ou-1' },
+  { id: 'uom-9', tenantId: 'tenant-1', userId: 'user-8', orgUnitId: 'ou-2' },
   // tenant-2
   { id: 'uom-6', tenantId: 'tenant-2', userId: 'user-4', orgUnitId: 'ou-6' },
   { id: 'uom-7', tenantId: 'tenant-2', userId: 'user-5', orgUnitId: 'ou-7' }

@@ -61,6 +61,13 @@ export class TaskDetailComponent {
     this.taskService.tasks().find((t) => t.id === this.taskId())
   );
 
+  assigneePosition = computed(() => {
+    const t = this.task();
+    const id = t?.assigneeId;
+    if (!id) return undefined;
+    return this.dataService.getUsers().find((u) => u.id === id)?.position;
+  });
+
   allowedTransitions = computed(() => {
     const t = this.task();
     if (!t) return [];

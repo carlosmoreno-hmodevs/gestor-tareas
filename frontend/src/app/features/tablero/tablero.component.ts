@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { BaseChartDirective } from 'ng2-charts';
 import { TaskService } from '../../core/services/task.service';
+import { TaskWorkflowService } from '../../core/services/task-workflow.service';
 import { DataService } from '../../core/services/data.service';
 import { UiCopyService } from '../../core/services/ui-copy.service';
 import { TenantSettingsService } from '../../core/services/tenant-settings.service';
@@ -69,6 +70,7 @@ Chart.register(centerTotalPlugin);
 })
 export class TableroComponent {
   private readonly taskService = inject(TaskService);
+  private readonly workflow = inject(TaskWorkflowService);
   private readonly dataService = inject(DataService);
   readonly uiCopy = inject(UiCopyService);
   private readonly tenantSettings = inject(TenantSettingsService);
@@ -259,7 +261,7 @@ export class TableroComponent {
   overdueAltaCount = computed(() =>
     this.taskService
       .tasks()
-      .filter((t) => t.riskIndicator === 'vencida' && t.priority === 'Alta').length
+      .filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida' && t.priority === 'Alta').length
   );
 
   /** Tareas en estado En Espera (Bloqueadas en ferretero). */
@@ -374,7 +376,7 @@ export class TableroComponent {
         due.setHours(0, 0, 0, 0);
         if (due.getTime() !== d.getTime()) continue;
         if (['Completada', 'Liberada'].includes(t.status)) comp++;
-        else if (t.riskIndicator === 'vencida') venc++;
+        else if (this.workflow.getEffectiveStatus(t) === 'Vencida') venc++;
         else pend++;
       }
       completadas.push(comp);

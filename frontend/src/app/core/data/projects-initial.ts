@@ -21,6 +21,130 @@ function createActivityEntry(
   };
 }
 
+/** Proyectos BSC4 · Iniciativas Estratégicas (alineados con vista ORKesta/DIAGRAMA28). */
+function bscIniciativasProjectsForTenant(tenantId: string): Project[] {
+  const primaryOu = tenantId === 'tenant-1' ? 'ou-1' : 'ou-6';
+  const base = {
+    tenantId,
+    primaryOrgUnitId: primaryOu,
+    members: [] as Project['members'],
+    tags: [] as string[],
+    filesMeta: [],
+    milestones: [] as Project['milestones'],
+    activity: [] as Project['activity'],
+    createdBy: 'user-1',
+    createdByName: 'María García',
+    createdAt: addDays(now, -90),
+    lastUpdatedAt: now,
+    filesCount: 0,
+    activityCount: 0
+  };
+  return [
+    {
+      ...base,
+      id: 'bsc-i-01',
+      initiativeId: 'I-01',
+      name: 'Reposición automática por rotación y quiebre',
+      description: 'Piloto de reposición desde ERP: ventas por SKU/sucursal, existencias, pedidos en tránsito y lead time. Punto de reorden y cantidad a pedir para evitar quiebre sin sobreinventario.',
+      owner: 'María García',
+      ownerId: 'user-1',
+      status: 'Activo',
+      clientArea: 'Abasto',
+      startDate: addDays(now, -270),
+      dueDate: addDays(now, 95),
+      priority: 'Alta',
+      tags: ['BSC', 'Iniciativa', 'Q1-Q4', 'Fill Rate', 'DOH', 'Exactitud inventario'],
+      kpis: { completadas: 74, total: 120, vencidas: 2 },
+      members: [
+        { userId: 'user-1', role: 'Líder' },
+        { userId: 'user-2', role: 'Miembro' },
+        { userId: 'user-7', role: 'Miembro' }
+      ]
+    },
+    {
+      ...base,
+      id: 'bsc-i-02',
+      initiativeId: 'I-02',
+      name: 'Top 200 SKU críticos: cero quiebres',
+      description: 'Top 200 por sucursal (unidades y $), disponibilidad diaria. Lista priorizada y tareas piso/bodega/abasto para evitar quiebres en SKU críticos.',
+      owner: 'Carlos López',
+      ownerId: 'user-2',
+      status: 'En curso',
+      clientArea: 'Operación Tiendas',
+      startDate: addDays(now, -200),
+      dueDate: addDays(now, 65),
+      priority: 'Alta',
+      tags: ['BSC', 'Iniciativa', 'Q1-Q3', 'Top quiebres', 'Fill Rate'],
+      kpis: { completadas: 35, total: 80, vencidas: 11 },
+      members: [
+        { userId: 'user-2', role: 'Líder' },
+        { userId: 'user-7', role: 'Miembro' },
+        { userId: 'user-8', role: 'Miembro' }
+      ]
+    },
+    {
+      ...base,
+      id: 'bsc-i-03',
+      initiativeId: 'I-03',
+      name: 'Gobierno de descuentos y precios (política + auditoría)',
+      description: 'Uso de ERP/POS: precio lista, precio vendido, descuento aplicado, costo y autorizaciones. Impacto en margen y excepciones con trazabilidad.',
+      owner: 'Ana Martínez',
+      ownerId: 'user-3',
+      status: 'Activo',
+      clientArea: 'Ventas',
+      startDate: addDays(now, -270),
+      dueDate: addDays(now, 95),
+      priority: 'Alta',
+      tags: ['BSC', 'Iniciativa', 'Q1-Q4', 'Cumplimiento descuentos', 'Margen bruto', 'Ticket promedio'],
+      kpis: { completadas: 42, total: 60, vencidas: 0 },
+      members: [
+        { userId: 'user-3', role: 'Líder' },
+        { userId: 'user-2', role: 'Miembro' }
+      ]
+    },
+    {
+      ...base,
+      id: 'bsc-i-04',
+      initiativeId: 'I-04',
+      name: 'Racionalización de inventario (lento/obsoleto)',
+      description: 'Detección de inventario lento/obsoleto desde ERP: existencias, última venta, kárdex. Exceso vs cobertura objetivo y acciones (traslado, liquidación, devolución).',
+      owner: 'Pedro Sánchez',
+      ownerId: 'user-4',
+      status: 'Activo',
+      clientArea: 'Inventarios',
+      startDate: addDays(now, -180),
+      dueDate: addDays(now, 95),
+      priority: 'Media',
+      tags: ['BSC', 'Iniciativa', 'Q2-Q4', 'DOH', 'CCC'],
+      kpis: { completadas: 46, total: 90, vencidas: 6 },
+      members: [
+        { userId: 'user-4', role: 'Líder' },
+        { userId: 'user-1', role: 'Miembro' }
+      ]
+    },
+    {
+      ...base,
+      id: 'bsc-i-05',
+      initiativeId: 'I-05',
+      name: 'Recepción contra factura (3-way match)',
+      description: 'Cruze OC, recepción y factura de proveedor. Diferencias de cantidad y precio para bloquear pago hasta aclaración y mejorar liquidez.',
+      owner: 'Laura Rodríguez',
+      ownerId: 'user-5',
+      status: 'En curso',
+      clientArea: 'Finanzas',
+      startDate: addDays(now, -180),
+      dueDate: addDays(now, 95),
+      priority: 'Alta',
+      tags: ['BSC', 'Iniciativa', 'Q2-Q4', 'Recepción vs factura', 'CCC'],
+      kpis: { completadas: 25, total: 70, vencidas: 14 },
+      members: [
+        { userId: 'user-5', role: 'Líder' },
+        { userId: 'user-4', role: 'Miembro' }
+      ]
+    }
+  ];
+}
+
 /** Proyectos dummy modo ferretero: usan plantillas ferreteras. */
 function ferreteroProjectsForTenant(tenantId: string): Project[] {
   const primaryOu = tenantId === 'tenant-1' ? 'ou-2' : 'ou-7';
@@ -138,7 +262,11 @@ function ferreteroProjectsForTenant(tenantId: string): Project[] {
 }
 
 export function getInitialProjects(tenantId: string, mode?: SystemMode): Project[] {
-  if (mode === 'ferretero') return ferreteroProjectsForTenant(tenantId);
+  // Demo: solo iniciativas estratégicas BSC (I-01 a I-05)
+  if (mode === 'ferretero') {
+    return bscIniciativasProjectsForTenant(tenantId);
+  }
+  const bscProjects = bscIniciativasProjectsForTenant(tenantId);
   const byTenant: Record<string, Project[]> = {
     'tenant-1': [
       {
@@ -200,7 +328,8 @@ export function getInitialProjects(tenantId: string, mode?: SystemMode): Project
         kpis: { completadas: 5, total: 10, vencidas: 1 },
         filesCount: 8,
         activityCount: 18
-      }
+      },
+      ...bscProjects
     ],
     'tenant-2': [
       {
@@ -230,7 +359,8 @@ export function getInitialProjects(tenantId: string, mode?: SystemMode): Project
         kpis: { completadas: 2, total: 8, vencidas: 0 },
         filesCount: 3,
         activityCount: 5
-      }
+      },
+      ...bscProjects
     ]
   };
   return byTenant[tenantId] ?? [];

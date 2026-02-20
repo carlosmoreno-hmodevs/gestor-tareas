@@ -35,6 +35,7 @@ export class TaskDetailHeaderComponent {
   task = input.required<Task | null>();
   effectiveStatus = input.required<TaskStatus | null>();
   assigneeName = input<string>('Sin asignar');
+  assigneePosition = input<string | undefined>(undefined);
   hasOverdueBadge = input(false);
 
   menuAction = output<string>();

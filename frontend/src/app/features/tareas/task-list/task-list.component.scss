@@ -90,12 +90,11 @@
   &.hoy {
     background: rgba(25, 118, 210, 0.2);
   }
-  &.vencidas {
-    background: rgba(211, 47, 47, 0.2);
-    font-size: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  &.por-vencer {
+    background: rgba(237, 108, 2, 0.25);
+  }
+  &.esta-semana {
+    background: rgba(46, 125, 50, 0.2);
   }
   &.alta {
     background: rgba(237, 108, 2, 0.2);
@@ -107,6 +106,12 @@
   &.all {
     background: rgba(0, 0, 0, 0.06);
   }
+}
+
+.filters-hint {
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+  margin: -$spacing-xs 0 $spacing-sm;
 }
 
 .filter-text {
@@ -129,12 +134,29 @@
   }
 }
 
+.checkbox-group,
 .radio-group {
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;
 }
 
+.clear-filters {
+  margin-bottom: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-xs;
+  color: $color-primary;
+  background: transparent;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(25, 118, 210, 0.08);
+  }
+}
+
+.checkbox-item,
 .radio-item {
   display: flex;
   align-items: center;
@@ -190,38 +212,71 @@
   gap: $spacing-sm;
 }
 
-.kpi-mini {
-  display: flex;
-  gap: $spacing-lg;
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: $spacing-md;
   margin-bottom: $spacing-lg;
-  flex-wrap: wrap;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
-.kpi-mini-item {
+.kpi-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: $spacing-sm $spacing-md;
+  padding: $spacing-lg;
   background: var(--color-bg-card, #fff);
-  border-radius: $radius-md;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-radius: $radius-lg;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  min-height: 80px;
+  text-align: left;
+  border: 2px solid transparent;
+  font: inherit;
+  color: inherit;
 
-  .kpi-mini-label {
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  &.kpi-card-clickable {
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  &.active {
+    border-color: $color-primary;
+    box-shadow: 0 2px 12px rgba(25, 118, 210, 0.2);
+  }
+
+  .kpi-value {
+    display: block;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    line-height: 1.2;
+  }
+
+  .kpi-label {
+    display: block;
     font-size: $font-size-sm;
     color: var(--color-text-secondary, #757575);
-  }
-  .kpi-mini-value {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
+    margin-top: $spacing-xs;
   }
 
-  &.por-vencer .kpi-mini-value {
-    color: #ed6c02;
-  }
-  &.vencidas .kpi-mini-value {
-    color: #d32f2f;
-  }
+  &.kpi-pending .kpi-value { color: var(--color-text, #212121); }
+  &.kpi-inprogress .kpi-value { color: $color-primary; }
+  &.kpi-waiting .kpi-value { color: $color-warning; }
+  &.kpi-danger .kpi-value { color: $color-danger; }
+  &.kpi-success .kpi-value { color: $color-success; }
 }
 
 .results-header {

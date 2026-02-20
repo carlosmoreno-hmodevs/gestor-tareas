@@ -11,6 +11,7 @@ import type {
   AdminTeam,
   AdminTagSuggestion,
   AdminProjectType,
+  AdminPosition,
   DueDateRules,
   NotificationRule,
   AdminSnapshot
@@ -27,6 +28,7 @@ import {
   INITIAL_TEAMS,
   INITIAL_TAG_SUGGESTIONS,
   INITIAL_PROJECT_TYPES,
+  INITIAL_POSITIONS,
   INITIAL_DUE_DATE_RULES,
   INITIAL_NOTIFICATION_RULES
 } from '../data/admin-initial';
@@ -59,6 +61,7 @@ export class AdminService {
   private readonly _teams = signal<AdminTeam[]>([]);
   private readonly _tagSuggestions = signal<AdminTagSuggestion[]>([]);
   private readonly _projectTypes = signal<AdminProjectType[]>([]);
+  private readonly _positions = signal<AdminPosition[]>([]);
   private readonly _dueDateRules = signal<DueDateRules>(INITIAL_DUE_DATE_RULES);
   private readonly _notificationRules = signal<NotificationRule[]>(INITIAL_NOTIFICATION_RULES);
 
@@ -93,6 +96,7 @@ export class AdminService {
         this._teams.set(snap.teams ?? INITIAL_TEAMS);
         this._tagSuggestions.set(snap.tagSuggestions ?? INITIAL_TAG_SUGGESTIONS);
         this._projectTypes.set(snap.projectTypes ?? INITIAL_PROJECT_TYPES);
+        this._positions.set(snap.positions ?? INITIAL_POSITIONS);
         this._dueDateRules.set(snap.dueDateRules ?? INITIAL_DUE_DATE_RULES);
         this._notificationRules.set(snap.notificationRules ?? INITIAL_NOTIFICATION_RULES);
         return;
@@ -113,6 +117,7 @@ export class AdminService {
     this._teams.set([...INITIAL_TEAMS]);
     this._tagSuggestions.set([...INITIAL_TAG_SUGGESTIONS]);
     this._projectTypes.set([...INITIAL_PROJECT_TYPES]);
+    this._positions.set(INITIAL_POSITIONS.map((p) => ({ ...p })));
     this._dueDateRules.set({ ...INITIAL_DUE_DATE_RULES });
     this._notificationRules.set(INITIAL_NOTIFICATION_RULES.map((r) => ({ ...r })));
     this.persist();
@@ -137,6 +142,7 @@ export class AdminService {
         teams: this._teams(),
         tagSuggestions: this._tagSuggestions(),
         projectTypes: this._projectTypes(),
+        positions: this._positions(),
         dueDateRules: this._dueDateRules(),
         notificationRules: this._notificationRules(),
         savedAt: new Date().toISOString()
@@ -253,6 +259,7 @@ export class AdminService {
   taskStatuses = this._taskStatuses.asReadonly();
   projectStatuses = this._projectStatuses.asReadonly();
   teams = this._teams.asReadonly();
+  positions = this._positions.asReadonly();
   tagSuggestions = this._tagSuggestions.asReadonly();
   projectTypes = this._projectTypes.asReadonly();
   dueDateRules = this._dueDateRules.asReadonly();
@@ -283,7 +290,13 @@ export class AdminService {
       .map((t) => ({ id: t.id, name: t.name, area: t.area, order: t.order }));
   }
 
-  getUsers(): Array<{ id: string; name: string; email: string; role: string; team: string }> {
+  getPositions(): AdminPosition[] {
+    return this._positions()
+      .filter((p) => p.active)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  getUsers(): Array<{ id: string; name: string; email: string; role: string; team: string; position?: string }> {
     const tid = this.tenantContext.currentTenantId();
     const tenantUserIds = tid ? this.tenantContext.getTenantUsers(tid) : [];
     const roles = this._roles();
@@ -298,7 +311,8 @@ export class AdminService {
           name: u.name,
           email: u.email,
           role: role?.name ?? u.roleId,
-          team: team?.name ?? u.teamId
+          team: team?.name ?? u.teamId,
+          position: u.position
         };
       });
   }
@@ -460,6 +474,34 @@ export class AdminService {
     } else {
       this._teams.update((l) => l.filter((x) => x.id !== id));
     }
+    this.persist();
+  }
+
+  // --- Positions (catálogo opcional) ---
+  addPosition(payload: Omit<AdminPosition, 'id'>): AdminPosition {
+    if (!this.connectivity.isOnline()) throw new Error('Requires connection');
+    const exists = this._positions().some((p) => p.name.toLowerCase() === payload.name.toLowerCase());
+    if (exists) throw new Error('Nombre de puesto ya existe');
+    const id = `pos-${Date.now()}`;
+    const item: AdminPosition = { ...payload, id };
+    this._positions.update((l) => [...l, item]);
+    this.persist();
+    return item;
+  }
+
+  updatePosition(id: string, payload: Partial<AdminPosition>): AdminPosition {
+    if (!this.connectivity.isOnline()) throw new Error('Requires connection');
+    const p = this._positions().find((x) => x.id === id);
+    if (!p) throw new Error('Puesto no encontrado');
+    const updated = { ...p, ...payload };
+    this._positions.update((l) => l.map((x) => (x.id === id ? updated : x)));
+    this.persist();
+    return updated;
+  }
+
+  deletePosition(id: string): void {
+    if (!this.connectivity.isOnline()) throw new Error('Requires connection');
+    this._positions.update((l) => l.filter((x) => x.id !== id));
     this.persist();
   }
 

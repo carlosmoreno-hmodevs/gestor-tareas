@@ -24,7 +24,9 @@
       </div>
       <div class="detail-field">
         <span class="field-label">{{ uiCopy.label('assignee') }} principal</span>
-        <p class="field-value">{{ getAssigneeName(task()?.assigneeId ?? '') }}</p>
+        <p class="field-value">
+          {{ getAssigneeName(task()?.assigneeId ?? '') }}@if (getAssigneePosition(task()?.assigneeId ?? '')) { · {{ getAssigneePosition(task()?.assigneeId ?? '') }} }
+        </p>
       </div>
       <div class="detail-field">
         <span class="field-label">{{ uiCopy.label('priority') }}</span>

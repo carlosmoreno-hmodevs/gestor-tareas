@@ -166,8 +166,9 @@ export class TaskService {
     ).length
   );
 
+  /** Solo tareas con estado efectivo Vencida (pendientes y pasadas de fecha). */
   readonly overdueCount = computed(() =>
-    this.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida' || t.riskIndicator === 'vencida').length
+    this.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length
   );
 
   readonly dueSoonCount = computed(() =>

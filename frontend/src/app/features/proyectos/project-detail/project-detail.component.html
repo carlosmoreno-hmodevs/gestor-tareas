@@ -32,31 +32,33 @@
     <div class="header-content">
       <div class="header-top">
         <h1 class="project-title">{{ p.name }}</h1>
-        <button
-          mat-stroked-button
-          color="primary"
-          class="add-task-header-btn"
-          [disabled]="!connectivity.isOnline()"
-          [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
-          (click)="openAddExistingTasks()"
-        >
-          <mat-icon>link</mat-icon>
-          Agregar tareas
-        </button>
-        <button
-          mat-flat-button
-          color="primary"
-          class="add-task-header-btn"
-          [disabled]="!connectivity.isOnline()"
-          [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
-          (click)="openAddTask()"
-        >
-          <mat-icon>add</mat-icon>
-          Nueva tarea
-        </button>
-        <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Más acciones">
-          <mat-icon>more_vert</mat-icon>
-        </button>
+        <div class="header-actions-row">
+          <button
+            mat-stroked-button
+            color="primary"
+            class="add-task-header-btn"
+            [disabled]="!connectivity.isOnline()"
+            [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+            (click)="openAddExistingTasks()"
+          >
+            <mat-icon>link</mat-icon>
+            Agregar tareas
+          </button>
+          <button
+            mat-flat-button
+            color="primary"
+            class="add-task-header-btn"
+            [disabled]="!connectivity.isOnline()"
+            [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+            (click)="openAddTask()"
+          >
+            <mat-icon>add</mat-icon>
+            Nueva tarea
+          </button>
+          <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Más acciones">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
         <mat-menu #menu="matMenu">
           <button mat-menu-item (click)="onMenuAction('edit')">
             <mat-icon>edit</mat-icon>
@@ -73,6 +75,9 @@
         </mat-menu>
       </div>
       <div class="header-chips">
+        @if (p.initiativeId) {
+          <span class="chip initiative">Iniciativa {{ p.initiativeId }}</span>
+        }
         @if (p.status) {
           <span class="chip status">{{ p.status }}</span>
         }
@@ -82,40 +87,48 @@
         @if (p.dueDate) {
           <span class="chip">Vence: {{ p.dueDate | dateFormat: 'short' }}</span>
         }
-        @if (!p.status && !p.clientArea && !p.dueDate) {
+        @if (!p.initiativeId && !p.status && !p.clientArea && !p.dueDate) {
           <span class="chip muted">—</span>
         }
       </div>
       <div class="header-owner">
         <app-avatar [name]="p.owner" [size]="28" />
-        <span>{{ p.owner }}</span>
+        <span>{{ p.owner }}@if (getUserById(p.ownerId)?.position) { · {{ getUserById(p.ownerId)?.position }} }</span>
       </div>
     </div>
   </header>
 
   <section class="kpis-strip animate-fade-in">
-    <div class="kpi-card">
+    <button type="button" class="kpi-card kpi-card-clickable kpi-pending" (click)="goToTasksWithFilter('Pendiente')">
+      <span class="kpi-value">{{ kpis().tasksPending }}</span>
+      <span class="kpi-label">Pendientes</span>
+    </button>
+    <button type="button" class="kpi-card kpi-card-clickable kpi-inprogress" (click)="goToTasksWithFilter('En Progreso')">
       <span class="kpi-value">{{ kpis().tasksInProgress }}</span>
       <span class="kpi-label">En progreso</span>
-    </div>
-    <div class="kpi-card danger">
+    </button>
+    <button type="button" class="kpi-card kpi-card-clickable kpi-waiting" (click)="goToTasksWithFilter('En Espera')">
+      <span class="kpi-value">{{ kpis().tasksEnEspera }}</span>
+      <span class="kpi-label">En espera</span>
+    </button>
+    <button type="button" class="kpi-card kpi-card-clickable kpi-danger" [class.focus-vencidas-pulse]="focusVencidasActive()" (click)="goToTasksWithFilter('Vencida')">
       <span class="kpi-value">{{ kpis().tasksOverdue }}</span>
       <span class="kpi-label">Vencidas</span>
-    </div>
-    <div class="kpi-card success">
+    </button>
+    <button type="button" class="kpi-card kpi-card-clickable kpi-success" (click)="goToTasksWithFilter('completadas')">
       <span class="kpi-value">{{ kpis().completedTasks }}</span>
       <span class="kpi-label">Completadas</span>
-    </div>
-    <div class="kpi-card progress">
+    </button>
+    <button type="button" class="kpi-card kpi-card-clickable kpi-progress" (click)="goToTasksWithFilter('todas')">
       <span class="kpi-value">{{ kpis().progressPercent }}%</span>
       <span class="kpi-label">Progreso</span>
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" [style.width.%]="kpis().progressPercent"></div>
       </div>
-    </div>
+    </button>
   </section>
 
-  <mat-tab-group class="project-tabs">
+  <mat-tab-group class="project-tabs" [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="selectedTabIndex.set($event)">
     <mat-tab label="Overview">
       <div class="tab-content overview-tab">
         <div class="overview-grid-cards">
@@ -150,6 +163,31 @@
               }
             </mat-card-content>
           </mat-card>
+          @if (p.initiativeId) {
+            <mat-card class="overview-card">
+              <mat-card-header>
+                <mat-card-title>Datos del proyecto</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="key-dates">
+                  <div class="key-date-row">
+                    <mat-icon>label</mat-icon>
+                    <div>
+                      <span class="label">Iniciativa</span>
+                      <span class="value">{{ p.initiativeId }}</span>
+                    </div>
+                  </div>
+                  <div class="key-date-row">
+                    <mat-icon>person</mat-icon>
+                    <div>
+                      <span class="label">Responsable</span>
+                      <span class="value">{{ p.owner }}@if (getUserById(p.ownerId)?.position) { · {{ getUserById(p.ownerId)?.position }} }</span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
           <mat-card class="overview-card">
             <mat-card-header>
               <mat-card-title>Fechas clave</mat-card-title>
@@ -250,33 +288,54 @@
     </mat-tab>
     <mat-tab label="Tasks">
       <div class="tab-content tasks-tab">
-        <button
-          mat-stroked-button
-          color="primary"
-          class="add-task-btn"
-          [disabled]="!connectivity.isOnline()"
-          (click)="openAddExistingTasks()"
-        >
-          <mat-icon>link</mat-icon>
-          Agregar tareas
-        </button>
-        <button
-          mat-flat-button
-          color="primary"
-          class="add-task-btn"
-          [disabled]="!connectivity.isOnline()"
-          (click)="openAddTask()"
-        >
-          <mat-icon>add</mat-icon>
-          Nueva tarea
-        </button>
-        @if (projectTasks().length) {
+        <div class="tasks-toolbar">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="toolbar-field">
+            <mat-label>Orden</mat-label>
+            <mat-select [value]="tasksSortOrder()" (valueChange)="tasksSortOrder.set($event)">
+              <mat-option value="default">Por defecto</mat-option>
+              <mat-option value="vencidas-primero">Vencidas primero</mat-option>
+              <mat-option value="fecha">Por fecha vencimiento</mat-option>
+              <mat-option value="estado">Por estado</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="toolbar-field">
+            <mat-label>Filtrar</mat-label>
+            <mat-select [value]="tasksFilter()" (valueChange)="tasksFilter.set($event)">
+              @for (opt of taskFilterOptions; track opt.value) {
+                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <div class="toolbar-actions">
+            <button
+              mat-stroked-button
+              color="primary"
+              class="toolbar-btn"
+              [disabled]="!connectivity.isOnline()"
+              (click)="openAddExistingTasks()"
+            >
+              <mat-icon>link</mat-icon>
+              Agregar tareas
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              class="toolbar-btn"
+              [disabled]="!connectivity.isOnline()"
+              (click)="openAddTask()"
+            >
+              <mat-icon>add</mat-icon>
+              Nueva tarea
+            </button>
+          </div>
+        </div>
+        @if (projectTasksDisplay().length) {
           <div class="tasks-list">
-            @for (t of projectTasks(); track t.id) {
+            @for (t of projectTasksDisplay(); track t.id) {
               <div class="task-card" (click)="goToTask(t.id)">
                 <div class="task-main">
                   <span class="task-title">{{ t.title }}</span>
-                  <span class="task-status" [class]="t.status">{{ t.status }}</span>
+                  <span class="task-status" [class]="workflow.getEffectiveStatus(t)">{{ workflow.getEffectiveStatus(t) }}</span>
                 </div>
                 <div class="task-meta">
                   @if (t.assignee) {

@@ -12,6 +12,7 @@
       [task]="t"
       [effectiveStatus]="effStatus"
       [assigneeName]="t.assignee || 'Sin asignar'"
+      [assigneePosition]="assigneePosition()"
       [hasOverdueBadge]="effStatus === 'Vencida'"
       (menuAction)="onMenuAction($event)"
     />

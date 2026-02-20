@@ -45,9 +45,13 @@ export class OrgService {
   private loadStoredOrgUnitIdFor(tid: string): string | null {
     try {
       const raw = localStorage.getItem(STORAGE_PREFIX + tid + STORAGE_SUFFIX_ORG);
-      if (!raw) return null;
-      const id = raw.trim();
-      return this._units().some((u) => u.id === id && u.tenantId === tid) ? id : null;
+      if (raw) {
+        const id = raw.trim();
+        if (this._units().some((u) => u.id === id && u.tenantId === tid)) return id;
+      }
+      // Por defecto: primera unidad organizativa del tenant para no pedir selección en cada recarga
+      const units = this.getOrgUnits(tid);
+      return units.length > 0 ? units[0].id : null;
     } catch {
       return null;
     }
