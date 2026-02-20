@@ -63,7 +63,11 @@
         <mat-card-content>
           <p class="description">{{ p.description }}</p>
           <div class="kpis">
-            <span class="kpi"><strong>{{ getKpis(p.id).completedTasks }}</strong> completadas</span>
+            @if (p.initiativeId) {
+              <span class="kpi"><strong>{{ getKpis(p.id).liberadasTasks }}</strong>/{{ getKpis(p.id).totalTasks }} liberadas</span>
+            } @else {
+              <span class="kpi"><strong>{{ getKpis(p.id).completedTasks }}</strong> completadas</span>
+            }
             <span class="kpi"><strong>{{ getKpis(p.id).totalTasks }}</strong> total</span>
             <span class="kpi danger"><strong>{{ getKpis(p.id).tasksOverdue }}</strong> vencidas</span>
           </div>

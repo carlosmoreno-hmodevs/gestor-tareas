@@ -109,6 +109,7 @@ export class ProjectService {
     const tasks = this.taskService.getTasksByProjectId(projectId);
     const totalTasks = tasks.length;
     let completedTasks = 0;
+    let liberadasTasks = 0;
     let tasksOverdue = 0;
     let tasksInProgress = 0;
     let tasksPending = 0;
@@ -117,13 +118,15 @@ export class ProjectService {
     for (const t of tasks) {
       const effective = this.workflow.getEffectiveStatus(t);
       if (effective === 'Vencida') tasksOverdue++;
-      else if (['Completada', 'Liberada'].includes(effective)) completedTasks++;
+      else if (effective === 'Completada') completedTasks++;
+      else if (effective === 'Liberada') liberadasTasks++;
       else if (effective === 'Pendiente') tasksPending++;
       else if (effective === 'En Espera') tasksEnEspera++;
       else if (effective === 'En Progreso') tasksInProgress++;
     }
 
-    const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const doneCount = completedTasks + liberadasTasks;
+    const progressPercent = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
 
     return {
       tasksPending,
@@ -131,6 +134,7 @@ export class ProjectService {
       tasksInProgress,
       tasksOverdue,
       completedTasks,
+      liberadasTasks,
       totalTasks,
       progressPercent
     };

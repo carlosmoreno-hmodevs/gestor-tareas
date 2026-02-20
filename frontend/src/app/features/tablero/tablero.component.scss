@@ -38,6 +38,7 @@
   grid-template-columns: repeat(2, 1fr);
   gap: $spacing-md;
   margin-bottom: $spacing-xl;
+  align-items: stretch;
 
   @media (min-width: 768px) {
     grid-template-columns: repeat(4, 1fr);
@@ -49,6 +50,10 @@
   border-radius: $radius-lg !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
   transition: box-shadow 0.25s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
 
   &:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
@@ -56,10 +61,15 @@
 
   mat-card-content {
     padding: 0 !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   a {
-    margin-top: $spacing-sm;
+    margin-top: auto;
+    flex-shrink: 0;
   }
 }
 
@@ -78,6 +88,7 @@
   font-size: 2rem;
   font-weight: $font-weight-bold;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .kpi-label {
@@ -218,6 +229,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: $spacing-md;
+  align-items: stretch;
 
   @media (min-width: 600px) {
     grid-template-columns: repeat(3, 1fr);
@@ -232,6 +244,25 @@
 
 .ferretero-kpi-card {
   position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .kpi-value,
+  .kpi-label,
+  .kpi-sublabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   &.kpi-warning .kpi-value { color: #ed6c02; }
   &.kpi-danger .kpi-value { color: #d32f2f; }
@@ -240,7 +271,16 @@
 .kpi-card-link {
   text-decoration: none;
   color: inherit;
-  display: block;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+
+  .kpi-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .kpi-info-icon {

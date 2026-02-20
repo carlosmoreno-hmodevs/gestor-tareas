@@ -143,10 +143,6 @@
     </div>
 
     <div class="kpi-strip animate-stagger">
-      <button type="button" class="kpi-card kpi-card-clickable kpi-pending" [class.active]="isStatusFilterActive('Pendiente')" (click)="applyStatusFilter('Pendiente')">
-        <span class="kpi-value">{{ pendingCount() }}</span>
-        <span class="kpi-label">Pendientes</span>
-      </button>
       <button type="button" class="kpi-card kpi-card-clickable kpi-inprogress" [class.active]="isStatusFilterActive('En Progreso')" (click)="applyStatusFilter('En Progreso')">
         <span class="kpi-value">{{ inProgressCount() }}</span>
         <span class="kpi-label">En progreso</span>
@@ -159,9 +155,13 @@
         <span class="kpi-value">{{ overdueCount() }}</span>
         <span class="kpi-label">Vencidas</span>
       </button>
-      <button type="button" class="kpi-card kpi-card-clickable kpi-success" [class.active]="isStatusFilterActive('completadas')" (click)="applyStatusFilter('completadas')">
+      <button type="button" class="kpi-card kpi-card-clickable kpi-success" [class.active]="isStatusFilterActive('Completada')" (click)="applyStatusFilter('Completada')">
         <span class="kpi-value">{{ completedCount() }}</span>
         <span class="kpi-label">Completadas</span>
+      </button>
+      <button type="button" class="kpi-card kpi-card-clickable kpi-liberadas" [class.active]="isStatusFilterActive('Liberada')" (click)="applyStatusFilter('Liberada')">
+        <span class="kpi-value">{{ liberadasCount() }}</span>
+        <span class="kpi-label">Liberadas</span>
       </button>
     </div>
 

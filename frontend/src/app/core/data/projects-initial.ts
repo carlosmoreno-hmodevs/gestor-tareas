@@ -54,7 +54,7 @@ function bscIniciativasProjectsForTenant(tenantId: string): Project[] {
       dueDate: addDays(now, 95),
       priority: 'Alta',
       tags: ['BSC', 'Iniciativa', 'Q1-Q4', 'Fill Rate', 'DOH', 'Exactitud inventario'],
-      kpis: { completadas: 74, total: 120, vencidas: 2 },
+      kpis: { liberadas: 74, completadas: 10, total: 120, vencidas: 2 },
       members: [
         { userId: 'user-1', role: 'Líder' },
         { userId: 'user-2', role: 'Miembro' },
@@ -75,7 +75,7 @@ function bscIniciativasProjectsForTenant(tenantId: string): Project[] {
       dueDate: addDays(now, 65),
       priority: 'Alta',
       tags: ['BSC', 'Iniciativa', 'Q1-Q3', 'Top quiebres', 'Fill Rate'],
-      kpis: { completadas: 35, total: 80, vencidas: 11 },
+      kpis: { liberadas: 35, completadas: 8, total: 80, vencidas: 11 },
       members: [
         { userId: 'user-2', role: 'Líder' },
         { userId: 'user-7', role: 'Miembro' },
@@ -96,7 +96,7 @@ function bscIniciativasProjectsForTenant(tenantId: string): Project[] {
       dueDate: addDays(now, 95),
       priority: 'Alta',
       tags: ['BSC', 'Iniciativa', 'Q1-Q4', 'Cumplimiento descuentos', 'Margen bruto', 'Ticket promedio'],
-      kpis: { completadas: 42, total: 60, vencidas: 0 },
+      kpis: { liberadas: 42, completadas: 6, total: 60, vencidas: 0 },
       members: [
         { userId: 'user-3', role: 'Líder' },
         { userId: 'user-2', role: 'Miembro' }
@@ -136,7 +136,7 @@ function bscIniciativasProjectsForTenant(tenantId: string): Project[] {
       dueDate: addDays(now, 95),
       priority: 'Alta',
       tags: ['BSC', 'Iniciativa', 'Q2-Q4', 'Recepción vs factura', 'CCC'],
-      kpis: { completadas: 25, total: 70, vencidas: 14 },
+      kpis: { liberadas: 25, completadas: 6, total: 70, vencidas: 14 },
       members: [
         { userId: 'user-5', role: 'Líder' },
         { userId: 'user-4', role: 'Miembro' }

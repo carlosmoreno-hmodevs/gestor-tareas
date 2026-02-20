@@ -13,6 +13,27 @@ const ACTIVE_STATES: TaskStatus[] = ['Pendiente', 'En Progreso', 'En Espera', 'R
 const DONE_STATES: TaskStatus[] = ['Liberada', 'Completada'];
 const OVERDUE_EXEMPT: TaskStatus[] = ['Completada', 'Liberada', 'Cancelada', 'Rechazada'];
 
+/** Interpola entre dos colores hex; t en [0,1]. */
+function lerpHex(hex1: string, hex2: string, t: number): string {
+  const parse = (h: string) => {
+    const n = h.replace('#', '');
+    return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+  };
+  const [r1, g1, b1] = parse(hex1);
+  const [r2, g2, b2] = parse(hex2);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/** Color por nivel de carga: más tareas = más rojo (advertencia/peligro), menos = más amarillo. */
+function colorByBacklogDanger(count: number, minCount: number, maxCount: number): string {
+  const range = maxCount - minCount || 1;
+  const t = (count - minCount) / range;
+  return lerpHex('#ffeb3b', '#b71c1c', t);
+}
+
 /** Normaliza texto legacy para agrupar: trim, minúsculas, sin tildes, colapsar espacios. */
 function normalizeLegacyReason(s: string): string {
   const t = (s ?? '').trim();
@@ -293,10 +314,7 @@ export class FerreteroKpiService {
     const checklistCompletionPct =
       checklistItemsTotal > 0 ? (checklistItemsDone / checklistItemsTotal) * 100 : 0;
 
-    const backlogByAreaMap = new Map<string, { count: number; color: string }>();
-    for (const c of FERRETERO_CATEGORIES) {
-      backlogByAreaMap.set(c.name, { count: 0, color: c.color ?? '#757575' });
-    }
+    const backlogByAreaMap = new Map<string, number>();
     const backlogTasks = tasks.filter(
       (t) =>
         (ACTIVE_STATES.includes(t.status) || t.status === 'Vencida') &&
@@ -304,20 +322,20 @@ export class FerreteroKpiService {
     );
     for (const t of backlogTasks) {
       const name = t.categoryName ?? FERRETERO_CATEGORIES.find((c) => c.id === t.categoryId)?.name ?? 'Sin categoría';
-      const entry = backlogByAreaMap.get(name);
-      if (entry) entry.count++;
-      else backlogByAreaMap.set(name, { count: 1, color: '#757575' });
+      backlogByAreaMap.set(name, (backlogByAreaMap.get(name) ?? 0) + 1);
     }
-    const backlogByArea: BacklogByAreaItem[] = Array.from(backlogByAreaMap.entries())
-      .filter(([, v]) => v.count > 0)
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 5)
-      .map(([areaName, v]) => ({
-        areaName,
-        areaId: FERRETERO_CATEGORIES.find((c) => c.name === areaName)?.id ?? '',
-        count: v.count,
-        color: v.color
-      }));
+    const sorted = Array.from(backlogByAreaMap.entries())
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    const maxCount = sorted[0]?.[1] ?? 0;
+    const minCount = sorted[sorted.length - 1]?.[1] ?? 0;
+    const backlogByArea: BacklogByAreaItem[] = sorted.map(([areaName, count]) => ({
+      areaName,
+      areaId: FERRETERO_CATEGORIES.find((c) => c.name === areaName)?.id ?? '',
+      count,
+      color: colorByBacklogDanger(count, minCount, maxCount)
+    }));
 
     const statusByEffective = new Map<string, number>();
     for (const t of tasks) {

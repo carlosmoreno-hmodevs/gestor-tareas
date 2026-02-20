@@ -124,9 +124,10 @@ export class TaskListComponent implements OnInit {
     this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'En Espera').length
   );
   completedCount = computed(() =>
-    this.taskService.tasks().filter((t) =>
-      ['Completada', 'Liberada'].includes(this.workflow.getEffectiveStatus(t))
-    ).length
+    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Completada').length
+  );
+  liberadasCount = computed(() =>
+    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Liberada').length
   );
 
   hoyCount = computed(() => {
@@ -297,8 +298,8 @@ export class TaskListComponent implements OnInit {
     this.quickFilter.set(filter);
   }
 
-  /** Aplicar filtro por estado al hacer clic en las tarjetas KPI (Pendientes, En progreso, etc.). */
-  applyStatusFilter(value: 'Pendiente' | 'En Progreso' | 'En Espera' | 'Vencida' | 'completadas'): void {
+  /** Aplicar filtro por estado al hacer clic en las tarjetas KPI (En progreso, En espera, etc.). */
+  applyStatusFilter(value: 'Pendiente' | 'En Progreso' | 'En Espera' | 'Vencida' | 'Completada' | 'Liberada'): void {
     if (value === 'Vencida') {
       this.quickFilter.set('vencidas');
       this.statusFilter.set([]);
@@ -309,7 +310,7 @@ export class TaskListComponent implements OnInit {
   }
 
   /** Indica si el filtro activo es el de la tarjeta de estado (para resaltar la tarjeta). */
-  isStatusFilterActive(value: 'Pendiente' | 'En Progreso' | 'En Espera' | 'Vencida' | 'completadas'): boolean {
+  isStatusFilterActive(value: 'Pendiente' | 'En Progreso' | 'En Espera' | 'Vencida' | 'Completada' | 'Liberada'): boolean {
     if (value === 'Vencida') return this.quickFilter() === 'vencidas';
     const list = this.statusFilter();
     return list.length === 1 && list[0] === value;

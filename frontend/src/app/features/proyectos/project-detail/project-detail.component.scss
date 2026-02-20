@@ -299,6 +299,7 @@
   &.kpi-waiting .kpi-value { color: $color-warning; }
   &.kpi-danger .kpi-value { color: $color-danger; }
   &.kpi-success .kpi-value { color: $color-success; }
+  &.kpi-liberadas .kpi-value { color: #00897b; }
   &.kpi-progress .kpi-value { color: var(--color-text, #212121); }
 
   &.kpi-progress {

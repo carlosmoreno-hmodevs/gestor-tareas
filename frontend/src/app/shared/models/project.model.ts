@@ -56,6 +56,7 @@ export interface ProjectKpis {
   tasksInProgress: number;
   tasksOverdue: number;
   completedTasks: number;
+  liberadasTasks: number;
   totalTasks: number;
   progressPercent: number;
 }
@@ -92,8 +93,8 @@ export interface Project {
   createdByName?: string;
   createdAt: Date;
   lastUpdatedAt?: Date;
-  /** Legacy/computed - prefer computeKPIs() for live values */
-  kpis?: { completadas: number; total: number; vencidas: number };
+  /** Legacy/computed - prefer computeKPIs() for live values. Iniciativas: liberadas + completadas. */
+  kpis?: { liberadas?: number; completadas?: number; total: number; vencidas: number };
   filesCount?: number;
   activityCount?: number;
   /** Modo ferretero: plantilla aplicada al crear. */

@@ -99,10 +99,6 @@
   </header>
 
   <section class="kpis-strip animate-fade-in">
-    <button type="button" class="kpi-card kpi-card-clickable kpi-pending" (click)="goToTasksWithFilter('Pendiente')">
-      <span class="kpi-value">{{ kpis().tasksPending }}</span>
-      <span class="kpi-label">Pendientes</span>
-    </button>
     <button type="button" class="kpi-card kpi-card-clickable kpi-inprogress" (click)="goToTasksWithFilter('En Progreso')">
       <span class="kpi-value">{{ kpis().tasksInProgress }}</span>
       <span class="kpi-label">En progreso</span>
@@ -115,9 +111,13 @@
       <span class="kpi-value">{{ kpis().tasksOverdue }}</span>
       <span class="kpi-label">Vencidas</span>
     </button>
-    <button type="button" class="kpi-card kpi-card-clickable kpi-success" (click)="goToTasksWithFilter('completadas')">
+    <button type="button" class="kpi-card kpi-card-clickable kpi-success" (click)="goToTasksWithFilter('Completada')">
       <span class="kpi-value">{{ kpis().completedTasks }}</span>
       <span class="kpi-label">Completadas</span>
+    </button>
+    <button type="button" class="kpi-card kpi-card-clickable kpi-liberadas" (click)="goToTasksWithFilter('Liberada')">
+      <span class="kpi-value">{{ kpis().liberadasTasks }}</span>
+      <span class="kpi-label">Liberadas</span>
     </button>
     <button type="button" class="kpi-card kpi-card-clickable kpi-progress" (click)="goToTasksWithFilter('todas')">
       <span class="kpi-value">{{ kpis().progressPercent }}%</span>

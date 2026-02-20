@@ -88,38 +88,38 @@ function createDemoTask001(): Task {
 function tasksForTenant1(): Task[] {
   return [
   createDemoTask001(),
-  createTask('TASK-002', 'Actualizar inventario de almacén', 'Carlos López', 'user-2', 'Pendiente', 'Media', addDays(now, 1)),
-  createTask('TASK-003', 'Auditoría interna ISO 9001', 'Ana Martínez', 'user-3', 'Completada', 'Alta', addDays(now, -2)),
-  createTask('TASK-004', 'Reunión de planificación semanal', 'Pedro Sánchez', 'user-4', 'En Espera', 'Baja', addDays(now, 3)),
-  createTask('TASK-005', 'Corregir no conformidad NC-2024-001', 'María García', 'user-1', 'Vencida', 'Alta', addDays(now, -1), { commentsCount: 5 }),
-  createTask('TASK-006', 'Capacitación nuevo personal', 'Laura Rodríguez', 'user-5', 'Pendiente', 'Media', addDays(now, 5)),
-  createTask('TASK-007', 'Revisar proveedores críticos', 'Carlos López', 'user-2', 'En Progreso', 'Alta', addHours(now, 36)),
-  createTask('TASK-008', 'Elaborar informe mensual', 'Ana Martínez', 'user-3', 'Liberada', 'Media', addDays(now, -3)),
-  createTask('TASK-009', 'Mantenimiento preventivo equipo A', 'Pedro Sánchez', 'user-4', 'Pendiente', 'Baja', addDays(now, 7)),
-  createTask('TASK-010', 'Investigación root cause defecto', 'María García', 'user-1', 'En Progreso', 'Alta', addDays(now, 2)),
-  createTask('TASK-011', 'Cerrar orden de compra OC-4421', 'Carlos López', 'user-2', 'Pendiente', 'Media', addHours(now, 24)),
-  createTask('TASK-012', 'Inspección final lote #890', 'Ana Martínez', 'user-3', 'Completada', 'Media', addDays(now, -1)),
-  createTask('TASK-013', 'Configurar nuevo software ERP', 'Pedro Sánchez', 'user-4', 'En Espera', 'Baja', addDays(now, 14)),
-  createTask('TASK-014', 'Responder queja de cliente #567', 'Laura Rodríguez', 'user-5', 'Vencida', 'Alta', addDays(now, -2)),
-  createTask('TASK-015', 'Actualizar procedimientos de trabajo', 'María García', 'user-1', 'Pendiente', 'Media', addDays(now, 4)),
-  createTask('TASK-016', 'Supervisar entrega de mercancía', 'Carlos López', 'user-2', 'En Progreso', 'Baja', addHours(now, 6)),
-  createTask('TASK-017', 'Calibración instrumentos', 'Ana Martínez', 'user-3', 'Pendiente', 'Alta', addDays(now, 1)),
-  createTask('TASK-018', 'Revisión de seguridad área B', 'Pedro Sánchez', 'user-4', 'Completada', 'Media', addDays(now, -5)),
-  createTask('TASK-019', 'Formación equipo en Lean', 'Laura Rodríguez', 'user-5', 'Pendiente', 'Media', addDays(now, 10)),
-  createTask('TASK-020', 'Cierre de incidencia INC-089', 'María García', 'user-1', 'Vencida', 'Alta', addDays(now, -4)),
-  createTask('TASK-021', 'Preparar presentación gerencial', 'Carlos López', 'user-2', 'En Progreso', 'Media', addDays(now, 2)),
-  createTask('TASK-022', 'Validar muestras lote nuevo', 'Ana Martínez', 'user-3', 'Pendiente', 'Alta', addHours(now, 48)),
-  createTask('TASK-023', 'Sin asignar - Revisar backlog', 'Sin asignar', '', 'Pendiente', 'Baja', addDays(now, 6)),
-  createTask('TASK-024', 'Optimizar rutas de distribución', 'Carlos López', 'user-2', 'Cancelada', 'Media', addDays(now, -1)),
-  createTask('TASK-025', 'Implementar 5S en almacén', 'Laura Rodríguez', 'user-5', 'En Progreso', 'Media', addDays(now, 3)),
-  createTask('TASK-026', 'Verificar trazabilidad producto X', 'Ana Martínez', 'user-3', 'Pendiente', 'Alta', addHours(now, 18)),
-  createTask('TASK-027', 'Coordinar visita auditor externo', 'María García', 'user-1', 'En Espera', 'Media', addDays(now, 8)),
-  createTask('TASK-028', 'Revisar KPIs del trimestre', 'Pedro Sánchez', 'user-4', 'Completada', 'Baja', addDays(now, -7)),
-  createTask('TASK-029', 'Sin asignar - Urgente', 'Sin asignar', '', 'Pendiente', 'Alta', addHours(now, 4)),
-  createTask('TASK-030', 'Actualizar certificaciones equipo', 'Laura Rodríguez', 'user-5', 'Liberada', 'Media', addDays(now, -2)),
-  createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Pedro Sánchez', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { rejectionComment: 'Faltan evidencias de la última auditoría.' }),
-  createTask('TASK-032', 'Revisión de reportes (solo lectura)', 'Eva Torres', 'user-6', 'Pendiente', 'Baja', addDays(now, 5)),
-  createTask('TASK-033', 'Auditoría general del sistema', 'Super Admin', 'user-owner', 'En Progreso', 'Alta', addDays(now, 3))
+  createTask('TASK-002', 'Actualizar inventario de almacén', 'Carlos López', 'user-2', 'Pendiente', 'Media', addDays(now, 1), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-003', 'Auditoría interna ISO 9001', 'Ana Martínez', 'user-3', 'Completada', 'Alta', addDays(now, -2), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-004', 'Reunión de planificación semanal', 'Pedro Sánchez', 'user-4', 'En Espera', 'Baja', addDays(now, 3), { categoryId: 'cat-3', categoryName: 'Producción', blockedReason: { code: 'MANAGER_APPROVAL', label: 'Autorización de gerencia', source: 'catalog' } as TaskBlockedReason, blockedAt: addHours(now, -18).toISOString() }),
+  createTask('TASK-005', 'Corregir no conformidad NC-2024-001', 'María García', 'user-1', 'Vencida', 'Alta', addDays(now, -1), { commentsCount: 5, categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-006', 'Capacitación nuevo personal', 'Laura Rodríguez', 'user-5', 'Pendiente', 'Media', addDays(now, 5), { categoryId: 'cat-3', categoryName: 'Producción' }),
+  createTask('TASK-007', 'Revisar proveedores críticos', 'Carlos López', 'user-2', 'En Progreso', 'Alta', addHours(now, 36), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-008', 'Elaborar informe mensual', 'Ana Martínez', 'user-3', 'Liberada', 'Media', addDays(now, -3), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-009', 'Mantenimiento preventivo equipo A', 'Pedro Sánchez', 'user-4', 'Pendiente', 'Baja', addDays(now, 7), { categoryId: 'cat-3', categoryName: 'Producción' }),
+  createTask('TASK-010', 'Investigación root cause defecto', 'María García', 'user-1', 'En Progreso', 'Alta', addDays(now, 2), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-011', 'Cerrar orden de compra OC-4421', 'Carlos López', 'user-2', 'Pendiente', 'Media', addHours(now, 24), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-012', 'Inspección final lote #890', 'Ana Martínez', 'user-3', 'Completada', 'Media', addDays(now, -1), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-013', 'Configurar nuevo software ERP', 'Pedro Sánchez', 'user-4', 'En Espera', 'Baja', addDays(now, 14), { categoryId: 'cat-3', categoryName: 'Producción', blockedReason: { code: 'WAITING_SUPERVISOR', label: 'Esperando validación supervisor', source: 'catalog' } as TaskBlockedReason, blockedAt: addHours(now, -48).toISOString() }),
+  createTask('TASK-014', 'Responder queja de cliente #567', 'Laura Rodríguez', 'user-5', 'Vencida', 'Alta', addDays(now, -2), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-015', 'Actualizar procedimientos de trabajo', 'María García', 'user-1', 'Pendiente', 'Media', addDays(now, 4), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-016', 'Supervisar entrega de mercancía', 'Carlos López', 'user-2', 'En Progreso', 'Baja', addHours(now, 6), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-017', 'Calibración instrumentos', 'Ana Martínez', 'user-3', 'Pendiente', 'Alta', addDays(now, 1), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-018', 'Revisión de seguridad área B', 'Pedro Sánchez', 'user-4', 'Completada', 'Media', addDays(now, -5), { categoryId: 'cat-3', categoryName: 'Producción' }),
+  createTask('TASK-019', 'Formación equipo en Lean', 'Laura Rodríguez', 'user-5', 'Pendiente', 'Media', addDays(now, 10), { categoryId: 'cat-3', categoryName: 'Producción' }),
+  createTask('TASK-020', 'Cierre de incidencia INC-089', 'María García', 'user-1', 'Vencida', 'Alta', addDays(now, -4), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-021', 'Preparar presentación gerencial', 'Carlos López', 'user-2', 'En Progreso', 'Media', addDays(now, 2), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-022', 'Validar muestras lote nuevo', 'Ana Martínez', 'user-3', 'Pendiente', 'Alta', addHours(now, 48), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-023', 'Sin asignar - Revisar backlog', 'Sin asignar', '', 'Pendiente', 'Baja', addDays(now, 6), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-024', 'Optimizar rutas de distribución', 'Carlos López', 'user-2', 'Cancelada', 'Media', addDays(now, -1), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-025', 'Implementar 5S en almacén', 'Laura Rodríguez', 'user-5', 'En Progreso', 'Media', addDays(now, 3), { categoryId: 'cat-3', categoryName: 'Producción' }),
+  createTask('TASK-026', 'Verificar trazabilidad producto X', 'Ana Martínez', 'user-3', 'Pendiente', 'Alta', addHours(now, 18), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-027', 'Coordinar visita auditor externo', 'María García', 'user-1', 'En Espera', 'Media', addDays(now, 8), { categoryId: 'cat-1', categoryName: 'Calidad', blockedReason: { code: 'CUSTOMER_PENDING_WARRANTY', label: 'Pendiente de cliente (garantías)', source: 'catalog' } as TaskBlockedReason, blockedAt: addHours(now, -36).toISOString() }),
+  createTask('TASK-028', 'Revisar KPIs del trimestre', 'Pedro Sánchez', 'user-4', 'Completada', 'Baja', addDays(now, -7), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-029', 'Sin asignar - Urgente', 'Sin asignar', '', 'Pendiente', 'Alta', addHours(now, 4), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-030', 'Actualizar certificaciones equipo', 'Laura Rodríguez', 'user-5', 'Liberada', 'Media', addDays(now, -2), { categoryId: 'cat-3', categoryName: 'Producción' }),
+  createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Pedro Sánchez', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { categoryId: 'cat-1', categoryName: 'Calidad', rejectionComment: 'Faltan evidencias de la última auditoría.', rejectedReason: { code: 'MISSING_EVIDENCE', label: 'Falta evidencia (foto/comprobante)', source: 'catalog' } as TaskRejectedReason }),
+  createTask('TASK-032', 'Revisión de reportes (solo lectura)', 'Eva Torres', 'user-6', 'Pendiente', 'Baja', addDays(now, 5), { categoryId: 'cat-2', categoryName: 'Logística' }),
+  createTask('TASK-033', 'Auditoría general del sistema', 'Super Admin', 'user-owner', 'En Progreso', 'Alta', addDays(now, 3), { categoryId: 'cat-1', categoryName: 'Calidad' })
   ];
 }
 
@@ -134,19 +134,42 @@ function tasksForTenant2(): Task[] {
 /** IDs de proyectos BSC Iniciativas (ver projects-initial). */
 const BSC_PROJECT_IDS = ['bsc-i-01', 'bsc-i-02', 'bsc-i-03', 'bsc-i-04', 'bsc-i-05'] as const;
 
-/** Genera tareas para un proyecto BSC con total, completadas y vencidas alineados al dashboard. */
+/** Motivos de bloqueo ferretero para tareas En Espera (demo). */
+const BSC_BLOCKED_REASONS: (TaskBlockedReason | string)[] = [
+  { code: 'SUPPLIER_CONFIRMATION', label: 'Falta confirmación de proveedor', source: 'catalog' as const },
+  { code: 'INVOICE_CLARIFICATION', label: 'Error o aclaración de factura', source: 'catalog' as const },
+  { code: 'MISSING_IN_DELIVERY', label: 'Faltante en entrega', source: 'catalog' as const },
+  { code: 'MANAGER_APPROVAL', label: 'Autorización de gerencia', source: 'catalog' as const },
+  { code: 'NO_STOCK_REPLENISH', label: 'Sin stock / reposición pendiente', source: 'catalog' as const }
+];
+
+/** Motivos de rechazo ferretero para demo. */
+const BSC_REJECTED_REASONS: TaskRejectedReason[] = [
+  { code: 'MISSING_EVIDENCE', label: 'Falta evidencia (foto/comprobante)', source: 'catalog' as const },
+  { code: 'CHECKLIST_INCOMPLETE', label: 'Checklist incompleto', source: 'catalog' as const },
+  { code: 'COUNT_INCONSISTENT', label: 'Conteo inconsistente', source: 'catalog' as const }
+];
+
+/** Categorías ferreteras (IDs) para asignar a tareas BSC en modo ferretero. */
+const FERRETERO_CAT_IDS = ['fcat-bodega', 'fcat-mostrador', 'fcat-compras', 'fcat-entregas', 'fcat-garantias', 'fcat-exhibicion', 'fcat-mantenimiento', 'fcat-admin'] as const;
+
+/** Genera tareas para un proyecto BSC. liberadas = Tareas X/Y (liberadas de total), completadas = tarjeta Completadas, suma = total. */
 function bscProjectTasks(
   tenantId: string,
   projectId: string,
   projectIndex: number,
   total: number,
-  completed: number,
+  liberadas: number,
+  completadas: number,
   overdue: number,
   ownerId: string,
   ownerName: string,
-  titleTemplates: { done: string[]; overdue: string[]; rest: string[] }
+  titleTemplates: { done: string[]; overdue: string[]; rest: string[] },
+  options?: { forFerretero?: boolean; rejectedCount?: number }
 ): Task[] {
-  const rest = total - completed - overdue;
+  const forFerretero = options?.forFerretero ?? false;
+  const rejectedCount = options?.rejectedCount ?? 0;
+  const rest = total - liberadas - completadas - overdue - rejectedCount;
   const users = [
     { id: 'user-1', name: 'María García' },
     { id: 'user-2', name: 'Carlos López' },
@@ -159,44 +182,72 @@ function bscProjectTasks(
   const future = (d: number) => addDays(now, d);
   const tasks: Task[] = [];
   let idx = 0;
+  let taskIdx = 0;
   const pref = `BSC${String(projectIndex + 1).padStart(2, '0')}`;
-  const t = (status: Task['status'], due: Date, title: string, assignee = ownerName, assigneeId = ownerId) => {
+  const t = (status: Task['status'], due: Date, title: string, assignee = ownerName, assigneeId = ownerId, extra: Partial<Task> = {}) => {
     const folio = `${pref}-${String(++idx).padStart(3, '0')}`;
-    tasks.push(
-      createTask(folio, title, assignee, assigneeId, status, status === 'Vencida' ? 'Alta' : 'Media', due, {
-        tenantId,
-        projectId,
-        orgUnitId: tenantId === 'tenant-1' ? 'ou-1' : 'ou-6'
-      })
-    );
+    const base: Partial<Task> = { tenantId, projectId, orgUnitId: tenantId === 'tenant-1' ? 'ou-1' : 'ou-6' };
+    if (forFerretero) {
+      const catId = FERRETERO_CAT_IDS[taskIdx % FERRETERO_CAT_IDS.length];
+      base.categoryId = catId;
+      base.categoryName = FERRETERO_CATEGORIES.find((c) => c.id === catId)?.name ?? catId;
+      taskIdx++;
+    }
+    tasks.push(createTask(folio, title, assignee, assigneeId, status, status === 'Vencida' ? 'Alta' : 'Media', due, { ...base, ...extra }));
   };
-  const doneStatuses: Task['status'][] = ['Completada', 'Liberada'];
-  for (let i = 0; i < completed; i++) {
+  for (let i = 0; i < liberadas; i++) {
     const title = titleTemplates.done[i % titleTemplates.done.length].replace('{n}', String(i + 1));
-    t(doneStatuses[i % 2], past(2 + (i % 14)), title);
+    t('Liberada', past(2 + (i % 14)), title);
+  }
+  for (let i = 0; i < completadas; i++) {
+    const title = titleTemplates.done[(liberadas + i) % titleTemplates.done.length].replace('{n}', String(liberadas + i + 1));
+    t('Completada', past(3 + (i % 10)), title);
   }
   for (let i = 0; i < overdue; i++) {
     const title = titleTemplates.overdue[i % titleTemplates.overdue.length].replace('{n}', String(i + 1));
     t('Vencida', past(1 + (i % 30)), title);
   }
+  for (let i = 0; i < rejectedCount; i++) {
+    const title = (titleTemplates.overdue[i % titleTemplates.overdue.length] ?? 'Revisión rechazada {n}').replace('{n}', String(i + 1));
+    const u = pickUser(liberadas + completadas + overdue + i);
+    const extra: Partial<Task> = forFerretero ? { rejectedReason: BSC_REJECTED_REASONS[i % BSC_REJECTED_REASONS.length] } : {};
+    t('Rechazada', past(1 + (i % 14)), title, u.name, u.id, extra);
+  }
   const restStatuses: Task['status'][] = ['Pendiente', 'En Progreso', 'En Espera'];
   for (let i = 0; i < rest; i++) {
     const title = titleTemplates.rest[i % titleTemplates.rest.length].replace('{n}', String(i + 1));
     const u = pickUser(i);
-    t(restStatuses[i % 3], future(1 + (i % 21)), title, u.name, u.id);
+    const status = restStatuses[i % 3];
+    const extra: Partial<Task> = {};
+    if (forFerretero && status === 'En Espera') {
+      const reason = BSC_BLOCKED_REASONS[i % BSC_BLOCKED_REASONS.length];
+      extra.blockedReason = reason;
+      extra.blockedAt = addHours(now, -12 - i * 8).toISOString();
+    }
+    if (forFerretero && i % 5 === 0) {
+      extra.checklist = [
+        { id: `chk-${pref}-${i}-0`, text: 'Verificar datos', isDone: i % 3 === 0 },
+        { id: `chk-${pref}-${i}-1`, text: 'Adjuntar evidencia', isDone: false },
+        { id: `chk-${pref}-${i}-2`, text: 'Validar con supervisor', isDone: false }
+      ];
+    }
+    t(status, future(1 + (i % 21)), title, u.name, u.id, extra);
   }
   return tasks.map((task) => ({ ...task, id: `task-${task.folio}` }));
 }
 
 /** Tareas BSC4 · Iniciativas Estratégicas (alineadas con ORKesta/DIAGRAMA28). */
-function tasksBscIniciativasForTenant(tenantId: string): Task[] {
+function tasksBscIniciativasForTenant(tenantId: string, mode?: SystemMode): Task[] {
+  const forFerretero = mode === 'ferretero';
   const T = (done: string[], overdue: string[], rest: string[]) => ({ done, overdue, rest });
   const configs = [
     {
       projectId: BSC_PROJECT_IDS[0],
       total: 120,
-      completed: 74,
+      liberadas: 74,
+      completadas: 10,
       overdue: 2,
+      rejectedCount: forFerretero ? 3 : 0,
       ownerId: 'user-1',
       ownerName: 'María García',
       titles: T(
@@ -222,8 +273,10 @@ function tasksBscIniciativasForTenant(tenantId: string): Task[] {
     {
       projectId: BSC_PROJECT_IDS[1],
       total: 80,
-      completed: 35,
+      liberadas: 35,
+      completadas: 8,
       overdue: 11,
+      rejectedCount: forFerretero ? 4 : 0,
       ownerId: 'user-2',
       ownerName: 'Carlos López',
       titles: T(
@@ -250,8 +303,10 @@ function tasksBscIniciativasForTenant(tenantId: string): Task[] {
     {
       projectId: BSC_PROJECT_IDS[2],
       total: 60,
-      completed: 42,
+      liberadas: 42,
+      completadas: 6,
       overdue: 0,
+      rejectedCount: forFerretero ? 2 : 0,
       ownerId: 'user-3',
       ownerName: 'Ana Martínez',
       titles: T(
@@ -274,8 +329,10 @@ function tasksBscIniciativasForTenant(tenantId: string): Task[] {
     {
       projectId: BSC_PROJECT_IDS[3],
       total: 90,
-      completed: 46,
+      liberadas: 46,
+      completadas: 10,
       overdue: 6,
+      rejectedCount: forFerretero ? 3 : 0,
       ownerId: 'user-4',
       ownerName: 'Pedro Sánchez',
       titles: T(
@@ -302,8 +359,10 @@ function tasksBscIniciativasForTenant(tenantId: string): Task[] {
     {
       projectId: BSC_PROJECT_IDS[4],
       total: 70,
-      completed: 25,
+      liberadas: 25,
+      completadas: 6,
       overdue: 14,
+      rejectedCount: forFerretero ? 5 : 0,
       ownerId: 'user-5',
       ownerName: 'Laura Rodríguez',
       titles: T(
@@ -334,11 +393,13 @@ function tasksBscIniciativasForTenant(tenantId: string): Task[] {
       c.projectId,
       i,
       c.total,
-      c.completed,
+      c.liberadas,
+      c.completadas,
       c.overdue,
       c.ownerId,
       c.ownerName,
-      c.titles
+      c.titles,
+      { forFerretero, rejectedCount: (c as { rejectedCount?: number }).rejectedCount ?? 0 }
     )
   );
 }
@@ -746,10 +807,8 @@ function tasksFerreteroForTenant(tenantId: string): Task[] {
 
 /** Tareas iniciales por tenant y modo: normal (genéricos + BSC) o ferretero (solo BSC iniciativas del demo). */
 export function getInitialTasks(tenantId: string, mode?: SystemMode): Task[] {
-  if (mode === 'ferretero') {
-    return tasksBscIniciativasForTenant(tenantId);
-  }
-  const bsc = tasksBscIniciativasForTenant(tenantId);
+  const bsc = tasksBscIniciativasForTenant(tenantId, mode);
+  if (mode === 'ferretero') return bsc;
   if (tenantId === 'tenant-1') return [...tasksForTenant1(), ...bsc];
   if (tenantId === 'tenant-2') return [...tasksForTenant2(), ...bsc];
   return bsc;
