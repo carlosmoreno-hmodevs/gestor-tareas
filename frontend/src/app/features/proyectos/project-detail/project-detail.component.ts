@@ -8,7 +8,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { ProjectService } from '../../../core/services/project.service';
+import { AddTasksToProjectDialogComponent } from '../add-tasks-to-project-dialog/add-tasks-to-project-dialog.component';
 import { DataService } from '../../../core/services/data.service';
 import { TaskService } from '../../../core/services/task.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
@@ -46,6 +48,7 @@ export class ProjectDetailComponent {
   private readonly taskService = inject(TaskService);
   private readonly currentUser = inject(CurrentUserService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   readonly connectivity = inject(ConnectivityService);
   private readonly tenantSettings = inject(TenantSettingsService);
   readonly uiCopy = inject(UiCopyService);
@@ -96,6 +99,7 @@ export class ProjectDetailComponent {
     const labels: Record<string, string> = {
       CREATED: 'Creó el proyecto',
       TASK_ADDED: 'Añadió una tarea',
+      TASK_REMOVED: 'Quitó una tarea del proyecto',
       TASK_COMPLETED: 'Completó una tarea',
       UPDATED: 'Actualizó el proyecto',
       FILE_UPLOADED: 'Subió un archivo'
@@ -108,6 +112,32 @@ export class ProjectDetailComponent {
     this.router.navigate(['/tareas/nueva'], {
       queryParams: { projectId: this.projectId() }
     });
+  }
+
+  openAddExistingTasks(): void {
+    if (!this.connectivity.isOnline()) return;
+    const p = this.project();
+    if (!p) return;
+    const ref = this.dialog.open(AddTasksToProjectDialogComponent, {
+      data: {
+        projectId: p.id,
+        projectName: p.name,
+        excludeTaskIds: this.projectTasks().map((t) => t.id)
+      },
+      width: '90vw',
+      maxWidth: '640px'
+    });
+    ref.afterClosed().subscribe((result: { added: number } | null) => {
+      if (result?.added != null && result.added > 0) {
+        this.snackBar.open(`${result.added} tarea(s) agregada(s)`, 'Cerrar', { duration: 3000 });
+      }
+    });
+  }
+
+  unlinkTask(task: { id: string; title: string }): void {
+    if (!confirm(`¿Quitar la tarea "${task.title}" del proyecto? La tarea no se eliminará.`)) return;
+    this.projectService.unlinkTaskFromProject(this.projectId(), task.id);
+    this.snackBar.open('Tarea desvinculada del proyecto', 'Cerrar', { duration: 2000 });
   }
 
   onMenuAction(action: string): void {

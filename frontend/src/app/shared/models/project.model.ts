@@ -26,6 +26,7 @@ export interface ProjectFileMeta {
 export type ProjectActivityType =
   | 'CREATED'
   | 'TASK_ADDED'
+  | 'TASK_REMOVED'
   | 'TASK_COMPLETED'
   | 'TASK_OVERDUE'
   | 'FILE_ADDED'

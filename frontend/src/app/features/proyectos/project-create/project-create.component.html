@@ -191,6 +191,36 @@
 
       <mat-card class="form-section">
         <mat-card-header>
+          <mat-card-title>Tareas del proyecto</mat-card-title>
+          <mat-card-subtitle>Crear nuevas o asociar tareas existentes</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-tab-group animationDuration="0ms">
+            <mat-tab label="Crear nuevas">
+              <div class="tasks-tab-content">
+                @if (isFerretero()) {
+                  <p class="tasks-hint">Usa la <strong>Plantilla de proyecto</strong> de arriba para generar tareas sugeridas. Selecciona una plantilla y configura las tareas que quieras incluir.</p>
+                } @else {
+                  <p class="tasks-hint">Selecciona una plantilla de proyecto (si está disponible) para generar tareas sugeridas automáticamente.</p>
+                }
+              </div>
+            </mat-tab>
+            <mat-tab label="Agregar existentes">
+              <div class="tasks-tab-content">
+                <p class="tasks-hint">Busca y selecciona tareas existentes para asociarlas al nuevo proyecto.</p>
+                <app-task-picker-inline
+                  [excludeTaskIds]="[]"
+                  (selectedIdsChange)="selectedExistingTaskIds.set($event)"
+                  (canProceedChange)="tasksPickerCanProceed.set($event)"
+                />
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="form-section">
+        <mat-card-header>
           <mat-card-title>Equipo</mat-card-title>
           <mat-card-subtitle>Miembros del equipo del proyecto</mat-card-subtitle>
         </mat-card-header>
@@ -292,8 +322,8 @@
       mat-flat-button
       color="primary"
       type="submit"
-      [disabled]="form.invalid || !connectivity.isOnline() || saving"
-      [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+      [disabled]="form.invalid || !connectivity.isOnline() || saving || (selectedExistingTaskIds().length > 0 && !tasksPickerCanProceed())"
+      [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : (selectedExistingTaskIds().length > 0 && !tasksPickerCanProceed() ? 'Confirma que deseas mover tareas de otro proyecto' : '')"
     >
       @if (saving) {
         <span class="btn-loading">Guardando...</span>

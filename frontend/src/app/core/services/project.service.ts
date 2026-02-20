@@ -451,4 +451,62 @@ export class ProjectService {
       return next;
     });
   }
+
+  /**
+   * Vincula tareas existentes al proyecto. Si una tarea ya pertenece a otro proyecto,
+   * se desasocia del anterior (move). Registra actividad TASK_ADDED por cada una.
+   */
+  linkTasksToProject(projectId: string, taskIds: string[], allowMoveFromOther = true): { linked: number; errors: string[] } {
+    const project = this.getProjectById(projectId);
+    if (!project) return { linked: 0, errors: ['Proyecto no encontrado'] };
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return { linked: 0, errors: ['Sin tenant'] };
+    const alreadyInProject = new Set(this.getProjectTasks(projectId).map((t) => t.id));
+    const errors: string[] = [];
+    let linked = 0;
+    for (const taskId of taskIds) {
+      if (alreadyInProject.has(taskId)) continue;
+      const task = this.taskService.getById(taskId) ?? this.taskService.getAllTasksForTenant().find((t) => t.id === taskId);
+      if (!task || task.tenantId !== tid) {
+        errors.push(`Tarea ${taskId} no encontrada o de otro tenant`);
+        continue;
+      }
+      if (task.projectId && task.projectId !== projectId && !allowMoveFromOther) {
+        errors.push(`La tarea "${task.title}" ya pertenece a otro proyecto`);
+        continue;
+      }
+      try {
+        this.taskService.setTaskProject(taskId, projectId);
+        this.addActivity(projectId, {
+          type: 'TASK_ADDED',
+          timestamp: new Date(),
+          userId: this.currentUser.id,
+          userName: this.currentUser.name,
+          details: { taskId, taskTitle: task.title, existingTask: true }
+        });
+        alreadyInProject.add(taskId);
+        linked++;
+      } catch (e) {
+        errors.push((e as Error).message ?? String(e));
+      }
+    }
+    return { linked, errors };
+  }
+
+  /**
+   * Desvincula una tarea del proyecto (sin borrar la tarea). Registra actividad TASK_REMOVED.
+   */
+  unlinkTaskFromProject(projectId: string, taskId: string): void {
+    const task = this.taskService.getById(taskId);
+    if (!task || task.projectId !== projectId) return;
+    const taskTitle = task.title;
+    this.taskService.setTaskProject(taskId, null);
+    this.addActivity(projectId, {
+      type: 'TASK_REMOVED',
+      timestamp: new Date(),
+      userId: this.currentUser.id,
+      userName: this.currentUser.name,
+      details: { taskId, taskTitle }
+    });
+  }
 }

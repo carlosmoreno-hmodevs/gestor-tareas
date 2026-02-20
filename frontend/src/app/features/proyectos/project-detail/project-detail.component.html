@@ -33,6 +33,17 @@
       <div class="header-top">
         <h1 class="project-title">{{ p.name }}</h1>
         <button
+          mat-stroked-button
+          color="primary"
+          class="add-task-header-btn"
+          [disabled]="!connectivity.isOnline()"
+          [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''"
+          (click)="openAddExistingTasks()"
+        >
+          <mat-icon>link</mat-icon>
+          Agregar tareas
+        </button>
+        <button
           mat-flat-button
           color="primary"
           class="add-task-header-btn"
@@ -240,6 +251,16 @@
     <mat-tab label="Tasks">
       <div class="tab-content tasks-tab">
         <button
+          mat-stroked-button
+          color="primary"
+          class="add-task-btn"
+          [disabled]="!connectivity.isOnline()"
+          (click)="openAddExistingTasks()"
+        >
+          <mat-icon>link</mat-icon>
+          Agregar tareas
+        </button>
+        <button
           mat-flat-button
           color="primary"
           class="add-task-btn"
@@ -264,13 +285,21 @@
                   @if (t.dueDate) {
                     <span class="due-badge">{{ t.dueDate | dateFormat: 'short' }}</span>
                   }
+                  <button
+                    mat-icon-button
+                    matTooltip="Quitar del proyecto"
+                    (click)="unlinkTask(t); $event.stopPropagation()"
+                    type="button"
+                  >
+                    <mat-icon>link_off</mat-icon>
+                  </button>
                   <mat-icon>chevron_right</mat-icon>
                 </div>
               </div>
             }
           </div>
         } @else {
-          <p class="empty-state">Sin tareas. Añade la primera.</p>
+          <p class="empty-state">Sin tareas. Usa "Agregar tareas" para vincular existentes o "Nueva tarea" para crear una.</p>
         }
       </div>
     </mat-tab>

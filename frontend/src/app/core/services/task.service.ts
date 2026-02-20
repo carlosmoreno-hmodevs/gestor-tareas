@@ -193,6 +193,42 @@ export class TaskService {
     return this._tasks().filter((t) => t.projectId === projectId && t.tenantId === tid);
   }
 
+  /**
+   * Vincula o desvincula una tarea de un proyecto (solo mismo tenant).
+   * Al vincular, opcionalmente asigna orgUnitId desde el proyecto.
+   */
+  setTaskProject(taskId: string, projectId: string | null): void {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) throw new Error('No tenant context');
+    const task = this._tasks().find((t) => t.id === taskId && t.tenantId === tid);
+    if (!task) throw new Error('Task not found');
+    const projectService = this.injector.get(ProjectService);
+    const proj = projectId ? projectService.getProjectById(projectId) : undefined;
+    const prevProjectId = task.projectId ?? '';
+    const newOrgUnitId = proj?.primaryOrgUnitId ?? task.orgUnitId;
+    const updated: Task = {
+      ...task,
+      projectId: projectId ?? undefined,
+      orgUnitId: projectId ? (task.orgUnitId ?? newOrgUnitId) : task.orgUnitId
+    };
+    updated.riskIndicator = this.workflow.computeRiskIndicator(updated);
+    const withHistory = this.appendHistoryEntry(updated, 'EDITED', {
+      field: 'projectId',
+      oldValue: prevProjectId,
+      newValue: projectId ?? ''
+    });
+    this.persistTask(withHistory);
+    if (projectId && (updated.assigneeId || (updated.subAssigneeIds?.length ?? 0) > 0)) {
+      const getUserName = (userId: string) => this.adminService.getUserById(userId)?.name ?? userId;
+      projectService.addTaskAssigneesAsMembers(
+        projectId,
+        updated.assigneeId ?? '',
+        updated.subAssigneeIds ?? [],
+        getUserName
+      );
+    }
+  }
+
   getById(id: string): Task | undefined {
     const tid = this.tenantContext.currentTenantId();
     const t = this._tasks().find((task) => task.id === id && task.tenantId === tid);

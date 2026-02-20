@@ -1,0 +1,89 @@
+<h2 mat-dialog-title>Agregar tareas existentes</h2>
+<mat-dialog-content>
+  <p class="project-name">Proyecto: <strong>{{ data.projectName }}</strong></p>
+
+  <div class="filters">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Buscar por título o folio</mat-label>
+      <input matInput [ngModel]="searchText()" (ngModelChange)="searchText.set($event)" placeholder="Ej: Revisión" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Estado</mat-label>
+      <mat-select [value]="statusFilter()" (selectionChange)="statusFilter.set($event.value)">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="Pendiente">Pendiente</mat-option>
+        <mat-option value="En Progreso">En Progreso</mat-option>
+        <mat-option value="En Espera">En Espera</mat-option>
+        <mat-option value="Completada">Completada</mat-option>
+        <mat-option value="Liberada">Liberada</mat-option>
+        <mat-option value="Rechazada">Rechazada</mat-option>
+        <mat-option value="Vencida">Vencida</mat-option>
+        <mat-option value="Cancelada">Cancelada</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Categoría</mat-label>
+      <mat-select [value]="categoryFilter()" (selectionChange)="categoryFilter.set($event.value)">
+        <mat-option value="">Todas</mat-option>
+        @for (c of categories; track c.id) {
+          <mat-option [value]="c.id">{{ c.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <label class="scope-toggle">
+      <input type="checkbox" [checked]="scopeOnly()" (change)="scopeOnly.set($any($event.target).checked)" />
+      Solo ámbito de la organización actual
+    </label>
+  </div>
+
+  <div class="selection-actions">
+    <button mat-button type="button" (click)="selectAll()">Seleccionar todas</button>
+    <button mat-button type="button" (click)="clearSelection()">Quitar selección</button>
+    <span class="selected-count">{{ selectedCount() }} seleccionada(s)</span>
+  </div>
+
+  @if (hasTasksInOtherProject()) {
+    <div class="move-warning">
+      <strong>Algunas tareas pertenecen a otro proyecto.</strong> Se desasociarán de ese proyecto y quedarán solo en este.
+      <label class="confirm-move">
+        <input type="checkbox" [checked]="confirmMove()" (change)="confirmMove.set($any($event.target).checked)" />
+        Entiendo y deseo continuar
+      </label>
+    </div>
+  }
+
+  <div class="task-list">
+    @if (filteredTasks().length === 0) {
+      <p class="empty">No hay tareas que coincidan con los filtros o ya están en el proyecto.</p>
+    } @else {
+      @for (t of filteredTasks(); track t.id) {
+        <div class="task-row" [class.selected]="isSelected(t.id)" (click)="toggleTask(t.id)">
+          <mat-checkbox [checked]="isSelected(t.id)" (click)="$event.stopPropagation()" (change)="toggleTask(t.id)"></mat-checkbox>
+          <div class="task-info">
+            <span class="task-title">{{ t.title }}</span>
+            <span class="task-meta">{{ t.folio }} · {{ t.status }} · {{ t.assignee }}</span>
+            @if (t.projectId && t.projectId !== data.projectId) {
+              <span class="other-project">En otro proyecto</span>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancelar</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="add()"
+    [disabled]="selectedCount() === 0 || saving() || (hasTasksInOtherProject() && !confirmMove())"
+  >
+    @if (saving()) {
+      <mat-spinner diameter="20"></mat-spinner>
+      Agregando...
+    } @else {
+      Agregar {{ selectedCount() }} al proyecto
+    }
+  </button>
+</mat-dialog-actions>

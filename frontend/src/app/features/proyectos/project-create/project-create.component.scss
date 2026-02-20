@@ -41,6 +41,15 @@
   gap: $spacing-xl;
 }
 
+.tasks-tab-content {
+  padding: $spacing-md 0;
+}
+.tasks-hint {
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
+  margin-bottom: $spacing-md;
+}
+
 .template-preview {
   margin-top: $spacing-md;
   padding: $spacing-md;

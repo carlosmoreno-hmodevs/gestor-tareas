@@ -22,6 +22,7 @@ import { OrgService } from '../../../core/services/org.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TenantSettingsService } from '../../../core/services/tenant-settings.service';
 import { FERRETERO_PROJECT_TEMPLATES, FERRETERO_TASK_TEMPLATES } from '../../../core/data/ferretero-initial';
@@ -29,6 +30,7 @@ import type { ProjectTemplate } from '../../../shared/models/project-template.mo
 import type { ProjectTemplateBuilderItem } from '../../../shared/models/project-template-builder.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ProjectTemplateBuilderComponent } from '../project-template-builder/project-template-builder.component';
+import { TaskPickerInlineComponent } from '../task-picker-inline/task-picker-inline.component';
 
 function dueDateValidator(control: AbstractControl): ValidationErrors | null {
   const group = control as FormGroup;
@@ -56,8 +58,10 @@ function dueDateValidator(control: AbstractControl): ValidationErrors | null {
     MatCardModule,
     MatTooltipModule,
     MatSlideToggleModule,
+    MatTabsModule,
     PageHeaderComponent,
-    ProjectTemplateBuilderComponent
+    ProjectTemplateBuilderComponent,
+    TaskPickerInlineComponent
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './project-create.component.html',
@@ -81,6 +85,9 @@ export class ProjectCreateComponent {
   taskTemplates = FERRETERO_TASK_TEMPLATES;
   selectedTemplateId = signal<string>('');
   builderItems = signal<ProjectTemplateBuilderItem[]>([]);
+  selectedExistingTaskIds = signal<string[]>([]);
+  /** El picker emite si puede proceder (false cuando hay tareas en otro proyecto sin confirmar) */
+  tasksPickerCanProceed = signal(true);
 
   users = this.dataService.usersForCurrentOrg;
   orgUnits = this.orgService.getOrgUnits(this.tenantContext.currentTenantId() ?? '');
@@ -320,6 +327,14 @@ export class ProjectCreateComponent {
       }
     } else {
       this.snackBar.open('Proyecto creado correctamente', 'Cerrar', { duration: 3000 });
+    }
+
+    const existingIds = this.selectedExistingTaskIds();
+    if (existingIds.length > 0) {
+      const result = this.projectService.linkTasksToProject(project.id, existingIds, true);
+      if (result.linked > 0) {
+        this.snackBar.open(`${result.linked} tarea(s) existente(s) asociada(s) al proyecto`, 'Cerrar', { duration: 3000 });
+      }
     }
 
     this.saving = false;
