@@ -26,11 +26,14 @@ export class TenantContextService {
   private loadStoredTenantId(): string | null {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_TENANT);
-      if (!raw) return null;
-      const id = raw.trim();
-      return this._tenants.some((t) => t.id === id) ? id : null;
+      if (raw) {
+        const id = raw.trim();
+        if (this._tenants.some((t) => t.id === id)) return id;
+      }
+      // Fallback: primer tenant cuando no hay nada guardado (primera visita, storage restringido en móvil, etc.)
+      return this._tenants[0]?.id ?? null;
     } catch {
-      return null;
+      return this._tenants[0]?.id ?? null;
     }
   }
 
