@@ -10,7 +10,7 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "assets/logo-orkesta.png",
       "sizes": "48x48",
       "type": "image/x-icon",
       "purpose": "any"
