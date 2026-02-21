@@ -5,16 +5,28 @@
   align-items: flex-start;
   gap: $spacing-md;
   margin-bottom: $spacing-lg;
+  min-width: 0;
+  overflow: visible;
 
   @media (max-width: 600px) {
     margin-bottom: $spacing-md;
   }
 }
 
+.page-header-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
 .page-header-icon {
   font-size: 2rem;
   width: 2rem;
   height: 2rem;
+  min-width: 2rem;
+  flex-shrink: 0;
   opacity: 0.8;
 }
 

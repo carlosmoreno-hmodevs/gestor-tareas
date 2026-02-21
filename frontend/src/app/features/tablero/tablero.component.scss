@@ -7,6 +7,13 @@
   align-items: flex-start;
   gap: $spacing-md;
   margin-bottom: $spacing-xl;
+  overflow: visible;
+
+  app-page-header {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
+  }
 }
 
 .period-filter {
@@ -216,6 +223,7 @@
 // ——— Dashboard Ferretero (3 secciones) ———
 .ferretero-section {
   margin-bottom: $spacing-xl;
+  overflow: visible;
 
   .section-title {
     margin: 0 0 $spacing-md;
@@ -264,6 +272,8 @@
   .kpi-value,
   .kpi-label,
   .kpi-sublabel {
+    flex-shrink: 0;
+    min-height: 1.2em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -1,6 +1,8 @@
 <header class="page-header">
   @if (icon()) {
-    <mat-icon class="page-header-icon">{{ icon() }}</mat-icon>
+    <span class="page-header-icon-wrap">
+      <mat-icon class="page-header-icon">{{ icon() }}</mat-icon>
+    </span>
   }
   <div class="page-header-text">
     <h1 class="page-header-title">{{ title() }}</h1>

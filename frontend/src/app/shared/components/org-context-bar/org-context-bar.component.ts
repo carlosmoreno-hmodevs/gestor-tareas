@@ -16,7 +16,7 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
   imports: [CommonModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, AvatarComponent],
   template: `
     <div class="org-context-bar">
-      <button mat-button [matMenuTriggerFor]="tenantMenu" class="org-btn" matTooltip="Organización">
+      <button mat-button [matMenuTriggerFor]="tenantMenu" class="org-btn" [matTooltip]="tenantContext.currentTenant()?.name ?? 'Organización'">
         <span class="org-btn-inner">
           <span class="org-avatar-wrap">
             <app-avatar
@@ -82,11 +82,13 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
       display: flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 8px;
+      padding: 2px 8px 2px 10px;
       height: 36px;
       background: rgba(0, 0, 0, 0.03);
       border-radius: 8px;
       border: 1px solid rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     [data-theme='dark'] .org-context-bar {
@@ -208,7 +210,7 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
     /* Cuando está debajo del header (org-selectors-mobile): selectores alineados e igual tamaño */
     :host-context(.org-selectors-mobile) .org-context-bar {
       width: 100%;
-      padding: 8px 12px;
+      padding: 8px 12px 8px 14px;
       gap: 8px;
       height: auto;
       min-height: 40px;
@@ -230,7 +232,7 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
     }
     :host-context(.org-selectors-mobile) .org-name,
     :host-context(.org-selectors-mobile) .unit-name {
-      max-width: none;
+      max-width: 100px;
       flex: 1;
       min-width: 0;
     }
@@ -256,7 +258,7 @@ import type { OrgUnitTreeNode } from '../../../shared/models/org.model';
         padding: 0 10px;
       }
       .org-name, .unit-name {
-        max-width: none;
+        max-width: 100px;
       }
       .unit-btn {
         flex: 1;

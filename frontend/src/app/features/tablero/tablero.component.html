@@ -34,8 +34,8 @@
           <mat-card class="kpi-card ferretero-kpi-card" [class.kpi-warning]="card.variant === 'warning'" [class.kpi-danger]="card.variant === 'danger'">
             <mat-card-content>
               <span class="kpi-value">{{ card.value }}{{ card.valueSuffix ?? '' }}</span>
-              <span class="kpi-label">{{ card.label }}</span>
-              <span class="kpi-sublabel">{{ card.sublabel }}</span>
+              <span class="kpi-label">{{ card.label || '' }}</span>
+              <span class="kpi-sublabel">{{ card.sublabel || '' }}</span>
               @if (getTooltipForCard(card.id); as tip) {
                 <mat-icon matTooltip="{{ tip }}" class="kpi-info-icon">info</mat-icon>
               }
