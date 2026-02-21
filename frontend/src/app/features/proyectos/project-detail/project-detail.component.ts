@@ -12,7 +12,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { BaseChartDirective } from 'ng2-charts';
 import { ProjectService } from '../../../core/services/project.service';
+import type { ChartConfiguration } from 'chart.js';
 import { AddTasksToProjectDialogComponent } from '../add-tasks-to-project-dialog/add-tasks-to-project-dialog.component';
 import { DataService } from '../../../core/services/data.service';
 import { TaskService } from '../../../core/services/task.service';
@@ -42,7 +44,8 @@ import type { Project, Task, TaskStatus } from '../../../shared/models';
     MatFormFieldModule,
     DateFormatPipe,
     RelativeTimePipe,
-    AvatarComponent
+    AvatarComponent,
+    BaseChartDirective
   ],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.scss'
@@ -98,6 +101,64 @@ export class ProjectDetailComponent {
   });
   kpis = computed(() => this.projectService.computeKPIs(this.projectId()));
   projectTasks = computed(() => this.projectService.getProjectTasks(this.projectId()));
+
+  /** Doughnut: distribución por estado (solo tareas del proyecto). */
+  projectMetricsDoughnutData = computed<ChartConfiguration<'doughnut'>['data']>(() => {
+    const k = this.kpis();
+    const concluidas = k.completedTasks + k.liberadasTasks;
+    return {
+      labels: ['Concluidas (Completada + Liberada)', 'Vencidas', 'En progreso', 'En espera', 'Pendientes'],
+      datasets: [
+        {
+          data: [concluidas, k.tasksOverdue, k.tasksInProgress, k.tasksEnEspera, k.tasksPending],
+          backgroundColor: ['#2e7d32', '#d32f2f', '#1976d2', '#7b1fa2', '#9e9e9e'],
+          hoverBackgroundColor: ['#66bb6a', '#ef5350', '#42a5f5', '#9c27b0', '#bdbdbd'],
+          borderWidth: 1
+        }
+      ]
+    };
+  });
+
+  projectMetricsDoughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 1.2,
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true } },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} tarea(s)` } }
+    }
+  };
+
+  /** Barra: Concluidas vs Vencidas (solo proyecto). */
+  projectConcluidasVencidasBarData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const k = this.kpis();
+    const concluidas = k.completedTasks + k.liberadasTasks;
+    return {
+      labels: ['Concluidas', 'Vencidas'],
+      datasets: [
+        {
+          label: 'Tareas',
+          data: [concluidas, k.tasksOverdue],
+          backgroundColor: ['#2e7d32', '#d32f2f'],
+          borderRadius: 8
+        }
+      ]
+    };
+  });
+
+  projectConcluidasVencidasBarOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: true,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.x} tarea(s)` } }
+    },
+    scales: {
+      x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+      y: { grid: { display: false } }
+    }
+  };
 
   /** Tareas a mostrar: aplica filtro y orden elegidos (siempre en la tab Tareas). */
   projectTasksDisplay = computed(() => {
@@ -168,6 +229,34 @@ export class ProjectDetailComponent {
   );
 
   users = this.dataService.usersForCurrentOrg;
+
+  /** Por cada miembro del proyecto: nombre, puesto, total tareas, liberadas y % efectividad. */
+  teamMemberStats = computed(() => {
+    const p = this.project();
+    const tasks = this.projectTasks();
+    this.users();
+    if (!p?.members?.length) return [];
+    return p.members.map((m) => {
+      const user = this.getUserById(m.userId);
+      const memberTasks = tasks.filter((t) => t.assigneeId === m.userId);
+      const total = memberTasks.length;
+      const liberadas = memberTasks.filter((t) => t.status === 'Liberada').length;
+      const effectiveness = total > 0 ? Math.round((liberadas / total) * 100) : 0;
+      let level: 'high' | 'medium' | 'low' = 'low';
+      if (total === 0) level = 'medium';
+      else if (effectiveness >= 80) level = 'high';
+      else if (effectiveness >= 50) level = 'medium';
+      return {
+        userId: m.userId,
+        name: user?.name ?? m.userId,
+        position: user?.position ?? m.role ?? '',
+        total,
+        liberadas,
+        effectiveness,
+        effectivenessLevel: level
+      };
+    });
+  });
 
   getUserById(id: string) {
     return this.users().find((u) => u.id === id);

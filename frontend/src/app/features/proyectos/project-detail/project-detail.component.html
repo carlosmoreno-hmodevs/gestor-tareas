@@ -129,7 +129,7 @@
   </section>
 
   <mat-tab-group class="project-tabs" [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="selectedTabIndex.set($event)">
-    <mat-tab label="Overview">
+    <mat-tab label="Resumen">
       <div class="tab-content overview-tab">
         <div class="overview-grid-cards">
           <mat-card class="overview-card">
@@ -149,12 +149,23 @@
               <mat-card-title>Equipo</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              @if (p.members.length) {
-                <div class="team-avatars">
-                  @for (m of p.members; track m.userId) {
-                    <div class="team-member">
-                      <app-avatar [name]="getUserById(m.userId)?.name ?? m.userId" [size]="40" />
-                      <span class="member-name">{{ getUserById(m.userId)?.name ?? m.userId }}</span>
+              @if (teamMemberStats().length) {
+                <div class="team-cards">
+                  @for (s of teamMemberStats(); track s.userId) {
+                    <div class="team-member-card" [class.effectiveness-high]="s.effectivenessLevel === 'high'" [class.effectiveness-medium]="s.effectivenessLevel === 'medium'" [class.effectiveness-low]="s.effectivenessLevel === 'low'">
+                      <div class="team-card-header">
+                        <app-avatar [name]="s.name" [size]="44" />
+                        <div class="team-card-info">
+                          <span class="member-name">{{ s.name }}</span>
+                          @if (s.position) {
+                            <span class="member-position">{{ s.position }}</span>
+                          }
+                        </div>
+                      </div>
+                      <div class="team-card-stats">
+                        <span class="stat-liberadas">{{ s.liberadas }} / {{ s.total }} liberadas</span>
+                        <span class="stat-effectiveness" [class.eff-high]="s.effectivenessLevel === 'high'" [class.eff-medium]="s.effectivenessLevel === 'medium'" [class.eff-low]="s.effectivenessLevel === 'low'">{{ s.effectiveness }}% efectividad</span>
+                      </div>
                     </div>
                   }
                 </div>
@@ -286,7 +297,7 @@
         </div>
       </div>
     </mat-tab>
-    <mat-tab label="Tasks">
+    <mat-tab label="Tareas">
       <div class="tab-content tasks-tab">
         <div class="tasks-toolbar">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="toolbar-field">
@@ -362,7 +373,7 @@
         }
       </div>
     </mat-tab>
-    <mat-tab label="Files">
+    <mat-tab label="Archivos">
       <div class="tab-content files-tab">
         @if (p.filesMeta.length) {
           <div class="files-list">
@@ -381,24 +392,47 @@
         }
       </div>
     </mat-tab>
-    <mat-tab label="Activity">
-      <div class="tab-content activity-tab">
-        @if (p.activity.length) {
-          <div class="activity-timeline">
-            @for (a of (p.activity | slice:0:20); track a.id) {
-              <div class="activity-timeline-item">
-                <div class="avatar-wrap"><app-avatar [name]="a.userName ?? a.userId" [size]="36" /></div>
-                <div class="content">
-                  <span class="user">{{ a.userName ?? a.userId }}</span>
-                  <span class="text">{{ getActivityLabel(a.type) }}</span>
-                  <span class="time">{{ a.timestamp | relativeTime }}</span>
+    <mat-tab label="Métricas">
+      <div class="tab-content metrics-tab">
+        <div class="metrics-grid">
+          <mat-card class="metrics-card progress-card">
+            <mat-card-header>
+              <mat-card-title>Progreso del proyecto</mat-card-title>
+              <mat-card-subtitle>Concluidas (Completada + Liberada) sobre total de tareas</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="progress-display">
+                <span class="progress-value">{{ kpis().progressPercent }}%</span>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar-fill" [style.width.%]="kpis().progressPercent"></div>
                 </div>
+                <span class="progress-legend">{{ kpis().completedTasks + kpis().liberadasTasks }} / {{ kpis().totalTasks }} tareas concluidas</span>
               </div>
-            }
-          </div>
-        } @else {
-          <p class="empty-state">Sin actividad</p>
-        }
+            </mat-card-content>
+          </mat-card>
+          <mat-card class="metrics-card chart-card">
+            <mat-card-header>
+              <mat-card-title>Distribución por estado</mat-card-title>
+              <mat-card-subtitle>Solo tareas de este proyecto</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="chart-container chart-doughnut">
+                <canvas baseChart [data]="projectMetricsDoughnutData()" [options]="projectMetricsDoughnutOptions" [type]="'doughnut'"></canvas>
+              </div>
+            </mat-card-content>
+          </mat-card>
+          <mat-card class="metrics-card chart-card">
+            <mat-card-header>
+              <mat-card-title>Concluidas vs Vencidas</mat-card-title>
+              <mat-card-subtitle>Comparativa (solo este proyecto)</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="chart-container chart-bar-h">
+                <canvas baseChart [data]="projectConcluidasVencidasBarData()" [options]="projectConcluidasVencidasBarOptions" [type]="'bar'"></canvas>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
       </div>
     </mat-tab>
   </mat-tab-group>

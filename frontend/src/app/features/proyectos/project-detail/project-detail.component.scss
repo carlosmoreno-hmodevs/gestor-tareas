@@ -507,19 +507,84 @@
   margin: 0;
 }
 
-.team-avatars {
+.team-cards {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 }
 
-.team-member {
+.team-member-card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+
+  &.effectiveness-high {
+    border-left: 4px solid $color-success;
+  }
+  &.effectiveness-medium {
+    border-left: 4px solid $color-warning;
+  }
+  &.effectiveness-low {
+    border-left: 4px solid $color-danger;
+  }
+}
+
+[data-theme='dark'] .team-member-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.team-card-header {
   display: flex;
   align-items: center;
   gap: $spacing-md;
+}
 
-  .member-name {
-    font-size: $font-size-sm;
+.team-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.team-member-card .member-name {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: var(--color-text, #212121);
+}
+
+.team-member-card .member-position {
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+}
+
+.team-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-xs;
+}
+
+.team-member-card .stat-liberadas {
+  color: var(--color-text-secondary, #757575);
+}
+
+.team-member-card .stat-effectiveness {
+  font-weight: $font-weight-semibold;
+
+  &.eff-high {
+    color: $color-success;
+  }
+  &.eff-medium {
+    color: $color-warning;
+  }
+  &.eff-low {
+    color: $color-danger;
   }
 }
 
@@ -799,7 +864,98 @@
   }
 }
 
-// Activity tab
+// Métricas tab (gráficas del proyecto)
+.tab-content.metrics-tab {
+  padding: $spacing-xl 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xl;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.metrics-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+
+  mat-card-title {
+    font-size: $font-size-base !important;
+    font-weight: $font-weight-semibold;
+  }
+  mat-card-subtitle {
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.metrics-card.progress-card {
+  grid-column: 1 / -1;
+
+  @media (min-width: 768px) {
+    grid-column: span 2;
+  }
+  @media (min-width: 1024px) {
+    grid-column: span 1;
+  }
+}
+
+.progress-display {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  .progress-value {
+    font-size: 2rem;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+  }
+
+  .progress-bar-wrap {
+    height: 14px;
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    display: block;
+    height: 100%;
+    background: $color-primary;
+    border-radius: 7px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-legend {
+    font-size: $font-size-sm;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.metrics-card .chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+  height: 220px;
+}
+
+.metrics-card .chart-doughnut {
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.metrics-card .chart-bar-h {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+// Activity tab (legacy, por si se referencia)
 .activity-tab .empty-state {
   padding: $spacing-xl;
 }
