@@ -235,10 +235,14 @@
 
 .ferretero-kpi-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: $spacing-lg;
+  grid-template-columns: 1fr;
+  gap: $spacing-md;
   align-items: stretch;
 
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: $spacing-lg;
+  }
   @media (min-width: 600px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -275,8 +279,19 @@
     flex-shrink: 0;
     min-height: 1.2em;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+  }
+
+  .kpi-value {
+    font-size: clamp(1.125rem, 3.5vw, 2rem);
+  }
+
+  .kpi-label {
+    font-size: clamp(0.7rem, 1.8vw, $font-size-sm);
+  }
+
+  .kpi-sublabel {
+    font-size: clamp(0.65rem, 1.5vw, $font-size-xs);
   }
 
   &.kpi-warning .kpi-value { color: #ed6c02; }
