@@ -12,6 +12,7 @@
 }
 
 .filters-sidebar {
+  display: none;
   flex-shrink: 0;
   background: var(--color-bg-card, #fff);
   border-radius: $radius-lg;
@@ -190,12 +191,17 @@
 }
 
 .search-field {
-  flex: 1;
+  flex: 1 1 320px;
   max-width: 100%;
 
   @media (min-width: 768px) {
     max-width: 400px;
   }
+}
+
+.project-field,
+.quick-field {
+  min-width: 190px;
 }
 
 .view-toggle {

@@ -1,6 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { TenantContextService } from './tenant-context.service';
-import { AdminService } from './admin.service';
 import type { SystemMode, TenantSettings } from '../../shared/models/tenant-settings.model';
 import { DEFAULT_SYSTEM_MODE } from '../../shared/models/tenant-settings.model';
 
@@ -9,7 +8,6 @@ const STORAGE_PREFIX = 'gestor-tareas:snapshot:settings.';
 @Injectable({ providedIn: 'root' })
 export class TenantSettingsService {
   private readonly tenantContext = inject(TenantContextService);
-  private readonly adminService = inject(AdminService);
 
   private readonly _settingsByTenant = signal<Record<string, TenantSettings>>({});
 
@@ -33,8 +31,12 @@ export class TenantSettingsService {
           const raw = localStorage.getItem(key);
           if (raw) {
             const parsed = JSON.parse(raw) as TenantSettings;
-            if (parsed.tenantId && (parsed.systemMode === 'normal' || parsed.systemMode === 'ferretero')) {
-              out[tenantId] = parsed;
+            if (parsed.tenantId) {
+              // Modo único soportado actualmente: normal.
+              out[tenantId] = {
+                ...parsed,
+                systemMode: 'normal'
+              };
             }
           }
         }
@@ -46,7 +48,7 @@ export class TenantSettingsService {
   }
 
   /**
-   * Obtiene la configuración del tenant. Si no existe, devuelve default (systemMode por defecto: ferretero).
+   * Obtiene la configuración del tenant. Si no existe, devuelve default (systemMode por defecto: normal).
    */
   getSettings(tenantId: string): TenantSettings {
     const stored = this._settingsByTenant()[tenantId];
@@ -67,7 +69,8 @@ export class TenantSettingsService {
     const now = new Date().toISOString();
     const settings: TenantSettings = {
       tenantId,
-      systemMode: mode,
+      // Modo único soportado actualmente: normal.
+      systemMode: 'normal',
       updatedAt: now,
       updatedByUserId
     };
@@ -77,8 +80,9 @@ export class TenantSettingsService {
     } catch {
       /* ignore */
     }
-    if (mode === 'ferretero' && this.tenantContext.currentTenantId() === tenantId) {
-      this.adminService.ensureFerreteroPresets();
+    if (mode === 'ferretero') {
+      // Sin efecto: se mantiene modo normal.
+      return;
     }
   }
 

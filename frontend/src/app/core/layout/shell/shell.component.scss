@@ -229,6 +229,7 @@
 
 .user-avatar-wrap {
   margin-left: $spacing-sm;
+  cursor: pointer;
 }
 
 .user-switch-menu {
@@ -312,6 +313,13 @@ app-offline-banner {
   &.has-bottom-nav {
     padding-bottom: calc(72px + #{$spacing-md});
     min-height: calc(100vh - 56px - 72px);
+  }
+
+  &.full-bleed-board {
+    max-width: none;
+    width: 100%;
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
   }
 }
 

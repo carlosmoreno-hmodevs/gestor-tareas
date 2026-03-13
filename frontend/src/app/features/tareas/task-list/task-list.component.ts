@@ -58,6 +58,7 @@ export class TaskListComponent implements OnInit {
   private readonly tenantContext = inject(TenantContextService);
 
   searchText = signal('');
+  selectedProjectId = signal('all');
 
   ngOnInit(): void {
     const tid = this.tenantContext.currentTenantId();
@@ -86,6 +87,18 @@ export class TaskListComponent implements OnInit {
   statuses = this.dataService.getStatuses();
   priorities = this.dataService.getPriorities();
   users = this.dataService.usersForCurrentOrg;
+  projects = this.dataService.projectsForCurrentOrg;
+  projectFilterOptions = computed(() => {
+    const counts = new Map<string, number>();
+    for (const t of this.taskService.tasks()) {
+      if (!t.projectId) continue;
+      counts.set(t.projectId, (counts.get(t.projectId) ?? 0) + 1);
+    }
+    return this.projects()
+      .filter((p) => counts.has(p.id))
+      .map((p) => ({ id: p.id, name: p.name, count: counts.get(p.id) ?? 0 }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  });
   displayedColumns = ['folio', 'title', 'assignee', 'status', 'priority', 'dueDate', 'risk', 'counts'];
 
   getUserById(id: string) {
@@ -177,6 +190,7 @@ export class TaskListComponent implements OnInit {
     this.quickFilter.set('all');
     this.statusFilter.set([]);
     this.priorityFilter.set([]);
+    this.selectedProjectId.set('all');
   };
 
   tasksByStatus = computed(() => {
@@ -200,6 +214,11 @@ export class TaskListComponent implements OnInit {
     const qf = this.quickFilter();
     const sfList = this.statusFilter();
     const pfList = this.priorityFilter();
+    const projectId = this.selectedProjectId();
+
+    if (projectId !== 'all') {
+      list = list.filter((t) => t.projectId === projectId);
+    }
 
     if (search) {
       list = list.filter(
@@ -293,8 +312,8 @@ export class TaskListComponent implements OnInit {
     this.router.navigate(['/tareas', 'nueva']);
   }
 
-  /** Aplicar filtro rápido (sidebar); no incluye "Vencidas" (esa va en las tarjetas KPI). */
-  setQuickFilter(filter: 'all' | 'hoy' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar'): void {
+  /** Aplicar filtro rápido simplificado. */
+  setQuickFilter(filter: 'all' | 'hoy' | 'vencidas' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar'): void {
     this.quickFilter.set(filter);
   }
 

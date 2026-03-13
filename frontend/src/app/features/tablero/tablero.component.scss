@@ -408,3 +408,131 @@
   font-size: $font-size-sm;
   color: var(--color-text-secondary, #757575);
 }
+
+.personal-board-section {
+  margin-top: $spacing-sm;
+}
+
+.personal-kpi-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  flex-wrap: nowrap;
+
+  .kpi-card {
+    width: 280px;
+    min-height: 72px;
+    padding: 10px 12px !important;
+  }
+
+  .kpi-value {
+    font-size: 1.65rem;
+    line-height: 1;
+  }
+
+  .kpi-label {
+    margin-top: 2px;
+    font-size: $font-size-base;
+  }
+
+  .kpi-sublabel {
+    font-size: $font-size-sm;
+  }
+
+  .personal-kpi-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    min-width: 0;
+
+    .project-filter {
+      min-width: 250px;
+      width: 320px;
+      margin: 0;
+      position: relative;
+      top: -4px;
+    }
+  }
+
+  @media (max-width: 900px) {
+    width: 100%;
+    flex-wrap: wrap;
+
+    .kpi-card {
+      width: calc(50% - #{$spacing-sm} / 2);
+      min-width: 240px;
+    }
+
+    .personal-kpi-actions {
+      margin-left: 0;
+      width: 100%;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+
+      .project-filter {
+        width: 100%;
+      }
+    }
+  }
+
+  @media (max-width: 640px) {
+    .kpi-card {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .kpi-label {
+      font-size: $font-size-base;
+    }
+
+    .kpi-sublabel {
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+.personal-task-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+
+  @media (min-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.personal-task-list {
+  margin: 0;
+  padding-left: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  a {
+    color: var(--color-text, #212121);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+.personal-board-card {
+  mat-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  .board-header-actions {
+    flex-shrink: 0;
+  }
+
+  mat-card-content {
+    overflow-x: auto;
+  }
+}

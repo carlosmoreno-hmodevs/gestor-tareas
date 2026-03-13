@@ -1,12 +1,11 @@
 import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ThemeService } from '../../services/theme.service';
-import { DataService } from '../../services/data.service';
-import { AdminService } from '../../services/admin.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { TenantSettingsService } from '../../services/tenant-settings.service';
 import { TenantContextService } from '../../services/tenant-context.service';
@@ -15,13 +14,13 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { OrgContextBarComponent } from '../../../shared/components/org-context-bar/org-context-bar.component';
 import { OfflineBannerComponent } from '../../../shared/components/offline-banner/offline-banner.component';
 import { CommonModule } from '@angular/common';
-import type { User } from '../../../shared/models';
 
 interface NavItem {
   path: string;
   label: string;
   shortLabel: string;
   icon: string;
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -35,6 +34,7 @@ interface NavItem {
     MatSidenavModule,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     AvatarComponent,
     OrgContextBarComponent,
     OfflineBannerComponent
@@ -44,8 +44,7 @@ interface NavItem {
 })
 export class ShellComponent implements OnInit {
   private readonly breakpoint = inject(BreakpointObserver);
-  private readonly dataService = inject(DataService);
-  private readonly adminService = inject(AdminService);
+  private readonly router = inject(Router);
   private readonly currentUserService = inject(CurrentUserService);
   readonly themeService = inject(ThemeService);
   readonly tenantSettings = inject(TenantSettingsService);
@@ -53,6 +52,7 @@ export class ShellComponent implements OnInit {
   private readonly automationService = inject(AutomationService);
 
   isMobile = signal(true);
+  private readonly currentPath = signal('');
 
   constructor() {
     effect(() => {
@@ -61,25 +61,44 @@ export class ShellComponent implements OnInit {
     });
   }
 
-  currentUser = signal<User>({ id: 'guest', name: 'Usuario', email: '', role: '', team: '' });
+  currentUser = this.currentUserService.currentUser;
+  availableUsers = this.currentUserService.availableUsers;
+
+  canAccessOperationalDashboard = computed(() => {
+    const tid = this.tenantContext.currentTenantId();
+    const uid = this.currentUser().id;
+    if (!tid || !uid) return false;
+    const role = this.tenantContext.getGlobalRole(tid, uid);
+    return role === 'OWNER' || role === 'TENANT_ADMIN';
+  });
 
   navItems = computed<NavItem[]>(() => [
-    { path: '/tablero', label: 'Tablero', shortLabel: 'Inicio', icon: 'dashboard' },
+    { path: '/tablero', label: 'Mi tablero', shortLabel: 'Inicio', icon: 'task_alt' },
+    { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Operativo', icon: 'dashboard', adminOnly: true },
     { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
     { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
     { path: '/documentos', label: 'Documentos', shortLabel: 'Docs', icon: 'folder' },
     { path: '/admin', label: 'Administración', shortLabel: 'Admin', icon: 'settings' },
     { path: '/ia', label: 'Asistente IA', shortLabel: 'IA', icon: 'auto_awesome' }
-  ]);
+  ].filter((item) => !item.adminOnly || this.canAccessOperationalDashboard()));
 
   isDesktop = computed(() => !this.isMobile());
+  isMyBoardRoute = computed(() => this.currentPath() === '/tablero');
 
   ngOnInit(): void {
-    const users = this.dataService.getUsers();
-    if (users.length > 0) this.currentUser.set(users[0]);
+    this.currentPath.set(this.router.url.split('?')[0] ?? '');
+    this.router.events.subscribe((evt) => {
+      if (evt instanceof NavigationEnd) {
+        this.currentPath.set(evt.urlAfterRedirects.split('?')[0] ?? '');
+      }
+    });
     this.breakpoint.observe('(min-width: 1024px)').subscribe((r) => {
       this.isMobile.set(!r.matches);
     });
+  }
+
+  switchUser(userId: string): void {
+    this.currentUserService.setCurrentUser(userId);
   }
 
 }

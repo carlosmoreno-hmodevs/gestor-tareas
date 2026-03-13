@@ -1,5 +1,9 @@
 @use 'styles/tokens' as *;
 
+.kanban-shell {
+  width: 100%;
+}
+
 .kanban-board {
   display: flex;
   gap: $spacing-md;
@@ -20,6 +24,19 @@
   }
 }
 
+.kanban-board--trello {
+  align-items: stretch;
+  min-height: 68vh;
+  max-height: 68vh;
+  overflow-y: hidden;
+  padding-bottom: $spacing-sm;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    height: 0;
+  }
+}
+
 .kanban-column {
   flex: 0 0 280px;
   min-width: 280px;
@@ -37,6 +54,12 @@
   &[data-status='Liberada'] .kanban-column-title::before { background: #0288d1; }
   &[data-status='Rechazada'] .kanban-column-title::before { background: #c62828; }
   &[data-status='Cancelada'] .kanban-column-title::before { background: #616161; }
+}
+
+.kanban-board--trello .kanban-column {
+  flex: 0 0 320px;
+  min-width: 320px;
+  max-height: 100%;
 }
 
 .kanban-column-header {
@@ -83,6 +106,48 @@
   flex-direction: column;
   gap: $spacing-sm;
   min-height: 80px;
+}
+
+.kanban-board--trello .kanban-column-cards {
+  min-height: 0;
+}
+
+.kanban-bottom-scroll {
+  display: none;
+  position: sticky;
+  bottom: 8px;
+  z-index: 3;
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-top: $spacing-sm;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.kanban-bottom-scroll-track {
+  height: 14px;
+}
+
+.kanban-bottom-scroll.is-active {
+  display: block;
+}
+
+.kanban-bottom-scroll::-webkit-scrollbar {
+  height: 14px;
+}
+
+.kanban-bottom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.kanban-bottom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(25, 118, 210, 0.55);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .kanban-card-wrapper {

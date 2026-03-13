@@ -1,4 +1,4 @@
-import { Component, input, output, computed, inject } from '@angular/core';
+import { Component, input, output, computed, inject, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -29,7 +29,7 @@ const KANBAN_COLUMNS: { status: TaskStatus; label: string }[] = [
   templateUrl: './kanban-board.component.html',
   styleUrl: './kanban-board.component.scss'
 })
-export class KanbanBoardComponent {
+export class KanbanBoardComponent implements AfterViewInit, OnDestroy {
   readonly taskService = inject(TaskService);
   private readonly workflow = inject(TaskWorkflowService);
   private readonly connectivity = inject(ConnectivityService);
@@ -38,6 +38,56 @@ export class KanbanBoardComponent {
 
   tasks = input.required<Task[]>();
   draggable = input(true);
+  layoutMode = input<'default' | 'trello'>('default');
+
+  @ViewChild('boardScroller') private boardScroller?: ElementRef<HTMLDivElement>;
+  @ViewChild('externalScroller') private externalScroller?: ElementRef<HTMLDivElement>;
+  @ViewChild('externalTrack') private externalTrack?: ElementRef<HTMLDivElement>;
+
+  private syncing = false;
+  private resizeObserver?: ResizeObserver;
+
+  ngAfterViewInit(): void {
+    // Espera un tick para asegurar que inputs/template condicional estén montados.
+    setTimeout(() => this.setupExternalScroll());
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+  }
+
+  private setupExternalScroll(): void {
+    const board = this.boardScroller?.nativeElement;
+    const external = this.externalScroller?.nativeElement;
+    const track = this.externalTrack?.nativeElement;
+    if (!board || !external || !track) return;
+
+    const syncFromBoard = () => {
+      if (this.syncing) return;
+      this.syncing = true;
+      external.scrollLeft = board.scrollLeft;
+      this.syncing = false;
+    };
+    const syncFromExternal = () => {
+      if (this.syncing) return;
+      this.syncing = true;
+      board.scrollLeft = external.scrollLeft;
+      this.syncing = false;
+    };
+    const updateTrackWidth = () => {
+      track.style.width = `${board.scrollWidth}px`;
+      const shouldShow = this.layoutMode() === 'trello' && board.scrollWidth > board.clientWidth;
+      external.style.display = shouldShow ? 'block' : 'none';
+      syncFromBoard();
+    };
+
+    board.addEventListener('scroll', syncFromBoard, { passive: true });
+    external.addEventListener('scroll', syncFromExternal, { passive: true });
+
+    this.resizeObserver = new ResizeObserver(() => updateTrackWidth());
+    this.resizeObserver.observe(board);
+    updateTrackWidth();
+  }
 
   columns = KANBAN_COLUMNS;
   columnIds = KANBAN_COLUMNS.map((c) => 'drop-' + c.status.replace(/\s+/g, '-'));

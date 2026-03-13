@@ -16,10 +16,10 @@ export interface AdminSistemaConfirmDialogData {
     <h2 mat-dialog-title>Aplicar modo del sistema</h2>
     <mat-dialog-content>
       <p>
-        Se cambiará el modo a <strong>{{ data.mode === 'ferretero' ? 'Ferretero' : 'Normal' }}</strong>.
+        Se aplicará el modo <strong>Normal</strong>.
       </p>
       <p>
-        Esto ajusta la UI, catálogos, plantillas y KPIs para este tenant. No se alteran los datos históricos; solo la presentación y los presets.
+        Esto ajusta la UI para operación estándar del tenant. No se alteran los datos históricos.
       </p>
       <p>¿Deseas continuar?</p>
     </mat-dialog-content>

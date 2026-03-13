@@ -25,8 +25,8 @@
           <div class="org-selectors org-selectors-desktop">
             <app-org-context-bar />
           </div>
-          <span class="mode-badge" [attr.aria-label]="'Modo: ' + (tenantSettings.isFerretero() ? 'Ferretero' : 'Normal')">
-            Modo: {{ tenantSettings.isFerretero() ? 'Ferretero' : 'Normal' }}
+          <span class="mode-badge" aria-label="Modo: Normal">
+            Modo: Normal
           </span>
           <button mat-icon-button aria-label="Buscar" class="header-action">
             <mat-icon>search</mat-icon>
@@ -42,9 +42,22 @@
           >
             <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           </button>
-          <div class="user-avatar-wrap">
+          <div class="user-avatar-wrap" [matMenuTriggerFor]="userMenu">
             <app-avatar [name]="currentUser().name" [avatarUrl]="currentUser().avatarUrl" [size]="36" />
           </div>
+          <mat-menu #userMenu="matMenu" class="user-switch-menu">
+            <div class="user-menu-header">
+              <span class="user-menu-title">Cambiar usuario</span>
+              <span class="user-menu-subtitle">Vista según permisos del usuario</span>
+            </div>
+            @for (u of availableUsers(); track u.id) {
+              <button mat-menu-item (click)="switchUser(u.id)" [class.selected]="u.id === currentUser().id">
+                <app-avatar [name]="u.name" [size]="28" />
+                <span class="user-menu-name">{{ u.name }}</span>
+                <span class="user-menu-role">{{ u.role }}</span>
+              </button>
+            }
+          </mat-menu>
         </div>
       </header>
       <div class="org-selectors org-selectors-mobile">
@@ -52,7 +65,7 @@
       </div>
     </div>
     <app-offline-banner />
-    <main class="app-content" [class.has-bottom-nav]="!isDesktop()">
+    <main class="app-content" [class.has-bottom-nav]="!isDesktop()" [class.full-bleed-board]="isMyBoardRoute()">
       <router-outlet />
     </main>
 

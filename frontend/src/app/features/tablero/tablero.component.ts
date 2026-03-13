@@ -1,9 +1,11 @@
 import { Component, inject, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { BaseChartDirective } from 'ng2-charts';
@@ -13,11 +15,13 @@ import { DataService } from '../../core/services/data.service';
 import { UiCopyService } from '../../core/services/ui-copy.service';
 import { TenantSettingsService } from '../../core/services/tenant-settings.service';
 import { TenantContextService } from '../../core/services/tenant-context.service';
+import { CurrentUserService } from '../../core/services/current-user.service';
 import { OrgService } from '../../core/services/org.service';
 import { ProjectService } from '../../core/services/project.service';
 import { FerreteroKpiService } from '../../core/services/ferretero-kpi.service';
 import { AutomationService } from '../../core/services/automation.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { KanbanBoardComponent } from '../../shared/components/kanban-board/kanban-board.component';
 import { FERRETERO_CATEGORIES } from '../../core/data/ferretero-initial';
 import { Chart } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
@@ -59,10 +63,12 @@ Chart.register(centerTotalPlugin);
     RouterLink,
     MatCardModule,
     MatIconModule,
+    MatButtonModule,
     MatTooltipModule,
     MatFormFieldModule,
     MatSelectModule,
     PageHeaderComponent,
+    KanbanBoardComponent,
     BaseChartDirective
   ],
   templateUrl: './tablero.component.html',
@@ -75,6 +81,8 @@ export class TableroComponent {
   readonly uiCopy = inject(UiCopyService);
   private readonly tenantSettings = inject(TenantSettingsService);
   private readonly tenantContext = inject(TenantContextService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly route = inject(ActivatedRoute);
   private readonly orgService = inject(OrgService);
   private readonly projectService = inject(ProjectService);
   readonly ferreteroKpiService = inject(FerreteroKpiService);
@@ -270,6 +278,75 @@ export class TableroComponent {
   );
 
   isFerretero = this.tenantSettings.isFerretero;
+  currentUser = this.currentUserService.currentUser;
+
+  /** Admin funcional del tenant: OWNER o TENANT_ADMIN. */
+  private readonly isTenantAdmin = computed(() => {
+    const tid = this.tenantContext.currentTenantId();
+    const uid = this.currentUser().id;
+    if (!tid || !uid) return false;
+    const role = this.tenantContext.getGlobalRole(tid, uid);
+    return role === 'OWNER' || role === 'TENANT_ADMIN';
+  });
+
+  readonly isOperationalRoute = computed(() => this.route.snapshot.routeConfig?.path === 'tablero-operativo');
+  canViewGlobalDashboard = computed(() => this.isOperationalRoute() && this.isTenantAdmin());
+
+  /** Tablero personal (no admin): tareas asignadas al usuario actual. */
+  myTasks = computed(() => {
+    const uid = this.currentUser().id;
+    return this.taskService.tasks().filter((t) => t.assigneeId === uid);
+  });
+
+  selectedProjectId = signal('all');
+
+  myProjectOptions = computed(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>();
+    for (const t of this.myTasks()) {
+      const pid = t.projectId;
+      if (!pid) continue;
+      const project = this.projectService.getProjectById(pid);
+      const current = map.get(pid);
+      if (current) {
+        current.count += 1;
+      } else {
+        map.set(pid, { id: pid, name: project?.name ?? pid, count: 1 });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  myTasksFiltered = computed(() => {
+    const pid = this.selectedProjectId();
+    if (pid === 'all') return this.myTasks();
+    return this.myTasks().filter((t) => t.projectId === pid);
+  });
+
+  /** Tareas urgentes: vencidas o alta prioridad activa. */
+  myUrgentTasks = computed(() =>
+    this.myTasksFiltered()
+      .filter((t) => {
+        const effective = this.workflow.getEffectiveStatus(t);
+        if (effective === 'Vencida') return true;
+        return t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status);
+      })
+      .slice(0, 6)
+  );
+
+  /** Próximas por vencer en 48h, ordenadas por fecha. */
+  myDueSoonTasks = computed(() => {
+    const now = Date.now();
+    const maxMs = 48 * 60 * 60 * 1000;
+    return this.myTasksFiltered()
+      .filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status))
+      .filter((t) => {
+        const dueMs = new Date(t.dueDate).getTime();
+        const delta = dueMs - now;
+        return delta >= 0 && delta <= maxMs;
+      })
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 6);
+  });
 
   /** Modo ferretero: tareas agrupadas por categoría operativa (nombre + color). */
   loadByCategoryFerretero = computed(() => {

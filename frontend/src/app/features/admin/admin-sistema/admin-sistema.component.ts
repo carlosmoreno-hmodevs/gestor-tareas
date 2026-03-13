@@ -70,13 +70,7 @@ export class AdminSistemaComponent implements OnInit {
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
         this.tenantSettings.setSystemMode(tid, mode, this.currentUser.id);
-        this.snackBar.open(
-          mode === 'ferretero'
-            ? 'Modo Ferretero aplicado. UI, catálogos y KPIs se han ajustado.'
-            : 'Modo Normal aplicado.',
-          undefined,
-          { duration: 4000 }
-        );
+        this.snackBar.open('Modo Normal aplicado.', undefined, { duration: 4000 });
       }
     });
   }

@@ -8,4 +8,4 @@ export interface TenantSettings {
   updatedByUserId?: string;
 }
 
-export const DEFAULT_SYSTEM_MODE: SystemMode = 'ferretero';
+export const DEFAULT_SYSTEM_MODE: SystemMode = 'normal';

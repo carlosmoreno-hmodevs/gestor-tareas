@@ -120,6 +120,27 @@
         />
         <mat-icon matPrefix>search</mat-icon>
       </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="project-field">
+        <mat-label>Proyecto</mat-label>
+        <mat-select [value]="selectedProjectId()" (valueChange)="selectedProjectId.set($event)">
+          <mat-option value="all">Todos</mat-option>
+          @for (p of projectFilterOptions(); track p.id) {
+            <mat-option [value]="p.id">{{ p.name }} ({{ p.count }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="quick-field">
+        <mat-label>Filtro rápido</mat-label>
+        <mat-select [value]="quickFilter()" (valueChange)="setQuickFilter($event)">
+          <mat-option value="all">Todas</mat-option>
+          <mat-option value="hoy">Hoy</mat-option>
+          <mat-option value="por-vencer">Por vencer</mat-option>
+          <mat-option value="vencidas">Vencidas</mat-option>
+          <mat-option value="esta-semana">Esta semana</mat-option>
+          <mat-option value="alta">Alta prioridad</mat-option>
+          <mat-option value="sin-asignar">Sin asignar</mat-option>
+        </mat-select>
+      </mat-form-field>
       <mat-button-toggle-group [value]="viewMode()" (valueChange)="viewMode.set($event)" class="view-toggle">
         <mat-button-toggle value="list">
           <mat-icon>view_list</mat-icon>
