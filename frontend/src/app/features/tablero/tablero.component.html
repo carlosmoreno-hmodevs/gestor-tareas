@@ -1,3 +1,11 @@
+<section class="board-greeting animate-stagger">
+  <p class="board-greeting-date">{{ greetingDate() }}</p>
+  <h1 class="board-greeting-title">{{ greetingTitle() }}</h1>
+  <p class="board-greeting-subtitle">{{ greetingComplement() }}</p>
+</section>
+
+@if (showDashboardContent()) {
+<div class="board-content-reveal">
 <div class="tablero-header">
   @if (isOperationalRoute()) {
     <app-page-header
@@ -362,4 +370,6 @@
       </mat-card>
     </section>
   }
+}
+</div>
 }

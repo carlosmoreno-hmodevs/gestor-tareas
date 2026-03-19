@@ -1,5 +1,66 @@
 @use 'styles/tokens' as *;
 
+.board-greeting {
+  margin: 0 0 $spacing-lg;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $radius-lg;
+  background: linear-gradient(120deg, rgba(25, 118, 210, 0.1), rgba(123, 31, 162, 0.08));
+  box-shadow: 0 10px 26px rgba(25, 118, 210, 0.08);
+  animation: greeting-pop 380ms ease-out;
+}
+
+.board-greeting-date {
+  margin: 0;
+  font-size: $font-size-xs;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+  color: var(--color-text-secondary, #616161);
+}
+
+.board-greeting-title {
+  margin: 2px 0 0;
+  font-size: clamp(1.35rem, 2.2vw, 2rem);
+  font-weight: $font-weight-bold;
+  line-height: 1.2;
+  background: linear-gradient(90deg, #1565c0, #6a1b9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.board-greeting-subtitle {
+  margin: $spacing-xs 0 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--color-text, #212121);
+}
+
+.board-content-reveal {
+  animation: board-reveal 420ms ease-out;
+}
+
+@keyframes greeting-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes board-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .tablero-header {
   display: flex;
   flex-wrap: wrap;

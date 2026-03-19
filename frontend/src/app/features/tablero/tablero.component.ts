@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, effect } from '@angular/core';
+import { Component, inject, computed, signal, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
@@ -77,7 +77,7 @@ Chart.register(centerTotalPlugin);
   templateUrl: './tablero.component.html',
   styleUrl: './tablero.component.scss'
 })
-export class TableroComponent {
+export class TableroComponent implements OnDestroy {
   private readonly taskService = inject(TaskService);
   private readonly workflow = inject(TaskWorkflowService);
   private readonly dataService = inject(DataService);
@@ -94,9 +94,64 @@ export class TableroComponent {
   /** Estado de KPIs ferretero (solo tiene datos cuando isFerretero). */
   ferreteroKpi = this.ferreteroKpiService.kpiState;
 
+  showDashboardContent = signal(false);
+  greetingHour = signal(new Date().getHours());
+  greetingComplement = signal('');
+  private greetingRevealTimer: ReturnType<typeof setTimeout> | null = null;
+  private greetingClockTimer: ReturnType<typeof setInterval> | null = null;
+
+  private readonly greetingComplementsByPeriod: Record<'day' | 'afternoon' | 'night', string[]> = {
+    day: [
+      'Iniciemos con el día y enfoquémonos en lo importante.',
+      'Hoy es buen momento para avanzar en tus prioridades.',
+      'Arranquemos con foco: una tarea a la vez.'
+    ],
+    afternoon: [
+      'Sigamos con buen ritmo para cerrar pendientes clave.',
+      'Excelente momento para revisar avances y ajustar prioridades.',
+      'Vamos por una tarde productiva y ordenada.'
+    ],
+    night: [
+      'Cerremos el día con claridad y tareas críticas al frente.',
+      'Último impulso: prioriza lo urgente y deja todo encaminado.',
+      'Buen momento para consolidar resultados del día.'
+    ]
+  };
+
   ngOnInit(): void {
     const tid = this.tenantContext.currentTenantId();
     if (tid) this.automationService.runEngine(tid);
+    this.refreshGreeting();
+    this.greetingRevealTimer = setTimeout(() => this.showDashboardContent.set(true), 1000);
+    this.greetingClockTimer = setInterval(() => this.refreshGreeting(), 60_000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.greetingRevealTimer) clearTimeout(this.greetingRevealTimer);
+    if (this.greetingClockTimer) clearInterval(this.greetingClockTimer);
+  }
+
+  greetingTitle = computed(() => {
+    const hour = this.greetingHour();
+    const period = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+    const name = this.currentUser().name?.trim();
+    return name ? `${period}, ${name}` : period;
+  });
+
+  greetingDate = computed(() =>
+    new Intl.DateTimeFormat('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    }).format(new Date())
+  );
+
+  private refreshGreeting(): void {
+    const hour = new Date().getHours();
+    this.greetingHour.set(hour);
+    const periodKey: 'day' | 'afternoon' | 'night' = hour < 12 ? 'day' : hour < 19 ? 'afternoon' : 'night';
+    const options = this.greetingComplementsByPeriod[periodKey];
+    this.greetingComplement.set(options[Math.floor(Math.random() * options.length)]);
   }
 
   /** Gráfico de backlog por área (modo ferretero). */
