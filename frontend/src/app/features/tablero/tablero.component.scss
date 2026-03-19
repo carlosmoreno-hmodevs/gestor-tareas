@@ -411,6 +411,10 @@
 
 .personal-board-section {
   margin-top: $spacing-sm;
+
+  @media (max-width: 700px) {
+    margin-top: 0;
+  }
 }
 
 .personal-kpi-row {
@@ -418,6 +422,7 @@
   align-items: stretch;
   width: 100%;
   gap: $spacing-sm;
+  row-gap: $spacing-sm;
   margin-bottom: $spacing-md;
   flex-wrap: nowrap;
 
@@ -425,6 +430,27 @@
     width: 280px;
     min-height: 72px;
     padding: 10px 12px !important;
+  }
+
+  .kpi-card--interactive {
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.15s ease, transform 0.12s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(25, 118, 210, 0.4);
+      outline-offset: 2px;
+    }
+
+    &.is-active {
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.35), 0 6px 18px rgba(0, 0, 0, 0.12) !important;
+      transform: translateY(-1px);
+    }
   }
 
   .kpi-value {
@@ -435,10 +461,14 @@
   .kpi-label {
     margin-top: 2px;
     font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: var(--color-text, #212121);
   }
 
   .kpi-sublabel {
     font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: var(--color-text-secondary, #616161);
   }
 
   .personal-kpi-actions {
@@ -446,7 +476,19 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
+    row-gap: $spacing-sm;
     min-width: 0;
+
+    .owner-scope-toggle {
+      height: 40px;
+      border-radius: 10px;
+      overflow: hidden;
+      flex-shrink: 0;
+
+      .label-mobile {
+        display: none;
+      }
+    }
 
     .project-filter {
       min-width: 250px;
@@ -472,6 +514,10 @@
       justify-content: flex-start;
       flex-wrap: wrap;
 
+      .owner-scope-toggle {
+        width: 100%;
+      }
+
       .project-filter {
         width: 100%;
       }
@@ -479,17 +525,79 @@
   }
 
   @media (max-width: 640px) {
+    gap: $spacing-xs;
+    row-gap: $spacing-md;
+
     .kpi-card {
-      width: 100%;
+      width: calc(50% - #{$spacing-xs} / 2);
       min-width: 0;
+      min-height: 68px;
+      padding: 8px 10px !important;
+    }
+
+    .kpi-value {
+      font-size: 1.45rem;
+      line-height: 1;
     }
 
     .kpi-label {
-      font-size: $font-size-base;
+      font-size: 0.98rem;
+      margin-top: 1px;
     }
 
     .kpi-sublabel {
-      font-size: $font-size-sm;
+      font-size: 0.9rem;
+      line-height: 1.15;
+    }
+
+    .personal-kpi-actions {
+      margin-top: $spacing-xs;
+      row-gap: $spacing-sm;
+
+      .owner-scope-toggle {
+        width: 100%;
+        height: 36px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        .label-desktop {
+          display: none;
+        }
+
+        .label-mobile {
+          display: inline;
+        }
+      }
+
+      .project-filter {
+        top: 0;
+        margin-top: $spacing-xs;
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  @media (max-width: 430px) {
+    .kpi-card {
+      padding: 8px 9px !important;
+    }
+
+    .kpi-value {
+      font-size: 1.35rem;
+    }
+
+    .kpi-label {
+      font-size: 0.94rem;
+    }
+
+    .kpi-sublabel {
+      font-size: 0.82rem;
+    }
+
+    .personal-kpi-actions {
+      .owner-scope-toggle {
+        height: 34px;
+      }
     }
   }
 }
@@ -528,11 +636,73 @@
     gap: $spacing-sm;
   }
 
+  .board-header-text {
+    text-align: left;
+    margin-right: auto;
+    min-width: 0;
+  }
+
+  mat-card-title {
+    font-size: 1.25rem !important;
+    font-weight: $font-weight-bold !important;
+    color: var(--color-text, #111111);
+    letter-spacing: 0.2px;
+  }
+
+  mat-card-subtitle {
+    font-size: $font-size-sm !important;
+    font-weight: $font-weight-semibold !important;
+    color: var(--color-text-secondary, #555555);
+    margin-top: 2px;
+  }
+
   .board-header-actions {
     flex-shrink: 0;
   }
 
   mat-card-content {
     overflow-x: auto;
+  }
+
+  @media (max-width: 700px) {
+    mat-card-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: $spacing-sm;
+      padding-bottom: $spacing-xs;
+    }
+
+    .board-header-text {
+      margin-right: 0;
+    }
+
+    .board-header-actions {
+      width: 100%;
+
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    mat-card-title {
+      font-size: 1.15rem !important;
+      line-height: 1.25;
+    }
+
+    mat-card-subtitle {
+      line-height: 1.25;
+      margin-top: 1px;
+    }
+
+    mat-card-content {
+      padding-top: $spacing-xs !important;
+    }
+  }
+
+  @media (max-width: 430px) {
+    mat-card-title {
+      font-size: 1.08rem !important;
+    }
   }
 }

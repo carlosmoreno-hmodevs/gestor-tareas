@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { BaseChartDirective } from 'ng2-charts';
@@ -64,6 +65,7 @@ Chart.register(centerTotalPlugin);
     MatCardModule,
     MatIconModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatTooltipModule,
     MatFormFieldModule,
     MatSelectModule,
@@ -292,13 +294,22 @@ export class TableroComponent {
   readonly isOperationalRoute = computed(() => this.route.snapshot.routeConfig?.path === 'tablero-operativo');
   canViewGlobalDashboard = computed(() => this.isOperationalRoute() && this.isTenantAdmin());
 
-  /** Tablero personal (no admin): tareas asignadas al usuario actual. */
+  /** Tablero personal: por defecto muestra tareas asignadas y creadas por el usuario. */
   myTasks = computed(() => {
     const uid = this.currentUser().id;
-    return this.taskService.tasks().filter((t) => t.assigneeId === uid);
+    const scope = this.personalTaskScope();
+    if (scope === 'assigned') {
+      return this.taskService.tasks().filter((t) => t.assigneeId === uid);
+    }
+    if (scope === 'created') {
+      return this.taskService.tasks().filter((t) => t.createdBy === uid);
+    }
+    return this.taskService.tasks().filter((t) => t.assigneeId === uid || t.createdBy === uid);
   });
 
   selectedProjectId = signal('all');
+  personalTaskScope = signal<'all' | 'assigned' | 'created'>('all');
+  personalQuickFilter = signal<'all' | 'urgent' | 'due48'>('all');
 
   myProjectOptions = computed(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -316,15 +327,71 @@ export class TableroComponent {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  myTasksFiltered = computed(() => {
+  myTasksByProject = computed(() => {
     const pid = this.selectedProjectId();
     if (pid === 'all') return this.myTasks();
     return this.myTasks().filter((t) => t.projectId === pid);
   });
 
+  myTasksFiltered = computed(() => {
+    const quick = this.personalQuickFilter();
+    const base = this.myTasksByProject();
+    if (quick === 'all') return base;
+    if (quick === 'urgent') {
+      return base.filter((t) => {
+        const effective = this.workflow.getEffectiveStatus(t);
+        if (effective === 'Vencida') return true;
+        return t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status);
+      });
+    }
+    const now = Date.now();
+    const maxMs = 48 * 60 * 60 * 1000;
+    return base
+      .filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status))
+      .filter((t) => {
+        const dueMs = new Date(t.dueDate).getTime();
+        const delta = dueMs - now;
+        return delta >= 0 && delta <= maxMs;
+      });
+  });
+
+  setPersonalQuickFilter(filter: 'urgent' | 'due48'): void {
+    this.personalQuickFilter.update((current) => current === filter ? 'all' : filter);
+  }
+
+  personalTaskScopeLabel = computed(() => {
+    const scope = this.personalTaskScope();
+    if (scope === 'assigned') return 'Solo asignadas a mí';
+    if (scope === 'created') return 'Solo creadas por mí';
+    return 'Asignadas a mí + creadas por mí';
+  });
+
+  boardTitle = computed(() => {
+    const pid = this.selectedProjectId();
+    const quick = this.personalQuickFilter();
+    const projectLabel = pid === 'all'
+      ? 'tareas'
+      : (this.myProjectOptions().find((p) => p.id === pid)?.name ?? 'tareas');
+    if (quick === 'urgent') return pid === 'all' ? 'Tareas urgentes' : `Urgentes: ${projectLabel}`;
+    if (quick === 'due48') return pid === 'all' ? 'Tareas próximas 48h' : `Próximas 48h: ${projectLabel}`;
+    if (pid === 'all') return 'Todas mis tareas';
+    const option = this.myProjectOptions().find((p) => p.id === pid);
+    return option ? option.name : 'Todas mis tareas';
+  });
+
+  boardSubtitle = computed(() => {
+    const quick = this.personalQuickFilter();
+    const scopeInfo = this.personalTaskScopeLabel();
+    if (quick === 'urgent') return `Filtro activo: vencidas o prioridad alta · ${scopeInfo}`;
+    if (quick === 'due48') return `Filtro activo: tareas con vencimiento en 48 horas · ${scopeInfo}`;
+    return this.selectedProjectId() === 'all'
+      ? `Vista tipo tablero por estado · ${scopeInfo}`
+      : `Vista tipo tablero del proyecto seleccionado · ${scopeInfo}`;
+  });
+
   /** Tareas urgentes: vencidas o alta prioridad activa. */
   myUrgentTasks = computed(() =>
-    this.myTasksFiltered()
+    this.myTasksByProject()
       .filter((t) => {
         const effective = this.workflow.getEffectiveStatus(t);
         if (effective === 'Vencida') return true;
@@ -337,7 +404,7 @@ export class TableroComponent {
   myDueSoonTasks = computed(() => {
     const now = Date.now();
     const maxMs = 48 * 60 * 60 * 1000;
-    return this.myTasksFiltered()
+    return this.myTasksByProject()
       .filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status))
       .filter((t) => {
         const dueMs = new Date(t.dueDate).getTime();

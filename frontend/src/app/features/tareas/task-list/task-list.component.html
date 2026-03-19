@@ -146,9 +146,9 @@
           <mat-icon>view_list</mat-icon>
           <span class="view-toggle-label">Lista</span>
         </mat-button-toggle>
-        <mat-button-toggle value="board">
-          <mat-icon>view_column</mat-icon>
-          <span class="view-toggle-label">Tablero</span>
+        <mat-button-toggle value="calendar">
+          <mat-icon>calendar_month</mat-icon>
+          <span class="view-toggle-label">Calendario</span>
         </mat-button-toggle>
       </mat-button-toggle-group>
       <div class="toolbar-actions">
@@ -206,12 +206,97 @@
         title="Sin resultados"
         message="Ajusta los filtros o crea una nueva tarea"
       />
-    } @else if (viewMode() === 'board') {
-      <app-kanban-board
-        [tasks]="displayedTasks()"
-        [draggable]="true"
-        class="animate-stagger"
-      />
+    } @else if (viewMode() === 'calendar') {
+      <section class="task-calendar animate-stagger" aria-label="Vista calendario de tareas">
+        <header class="calendar-toolbar">
+          <div class="calendar-toolbar-left">
+            <button mat-icon-button type="button" (click)="previousCalendarPeriod()" aria-label="Anterior">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <h3 class="calendar-title">{{ calendarTitle() }}</h3>
+            <button mat-icon-button type="button" (click)="nextCalendarPeriod()" aria-label="Siguiente">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+          <div class="calendar-toolbar-actions">
+            <mat-button-toggle-group
+              class="calendar-mode-toggle"
+              [value]="calendarGranularity()"
+              (change)="setCalendarGranularity($event.value)"
+            >
+              <mat-button-toggle value="month">Mensual</mat-button-toggle>
+              <mat-button-toggle value="week">Semanal</mat-button-toggle>
+              <mat-button-toggle value="day">Diario</mat-button-toggle>
+            </mat-button-toggle-group>
+            <button mat-stroked-button type="button" (click)="goToCurrentDate()">Hoy</button>
+          </div>
+        </header>
+
+        @if (calendarGranularity() !== 'day') {
+          <div class="calendar-grid calendar-grid-weekdays">
+            @for (label of calendarWeekdays; track label) {
+              <div class="calendar-weekday">{{ label }}</div>
+            }
+          </div>
+        }
+
+        <div class="calendar-grid calendar-grid-days" [class.week-mode]="calendarGranularity() === 'week'" [class.day-mode]="calendarGranularity() === 'day'">
+          @for (day of calendarDays(); track day.key) {
+            <article
+              class="calendar-day"
+              [class.outside-month]="!day.inCurrentMonth"
+              [class.is-today]="day.isToday"
+              [class.week-view]="calendarGranularity() === 'week'"
+              [class.day-view]="calendarGranularity() === 'day'"
+            >
+              <header class="calendar-day-header">
+                <span class="calendar-day-number">{{ day.dayNumber }}</span>
+                @if (day.tasks.length) {
+                  <span class="calendar-day-count">{{ day.tasks.length }}</span>
+                }
+              </header>
+
+              <div class="calendar-day-tasks">
+                @for (task of day.tasks.slice(0, maxCalendarTasksPerDay()); track task.id) {
+                  <a class="calendar-task-pill" [routerLink]="['/tareas', task.id]" [title]="task.title">
+                    <span class="calendar-task-dot" [attr.data-prio]="task.priority"></span>
+                    <span class="calendar-task-text">{{ task.title }}</span>
+                    @if (calendarGranularity() !== 'month') {
+                      <span class="calendar-task-meta">{{ task.dueDate | date: 'dd MMM' }} · {{ getEffectiveStatus(task) }}</span>
+                    }
+                  </a>
+                }
+                @if (day.tasks.length > maxCalendarTasksPerDay()) {
+                  <span class="calendar-more">+{{ day.tasks.length - maxCalendarTasksPerDay() }} más</span>
+                }
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (calendarGranularity() === 'day') {
+          <section class="calendar-day-detail">
+            <h4 class="calendar-day-detail-title">Detalle del día</h4>
+            @if (focusedDayTasks().length === 0) {
+              <p class="calendar-day-empty">Sin tareas para este día con los filtros actuales.</p>
+            } @else {
+              <div class="calendar-day-detail-list">
+                @for (task of focusedDayTasks(); track task.id) {
+                  <a class="calendar-day-detail-item" [routerLink]="['/tareas', task.id]">
+                    <div class="calendar-day-detail-main">
+                      <span class="calendar-task-dot" [attr.data-prio]="task.priority"></span>
+                      <span class="calendar-day-detail-title-text">{{ task.title }}</span>
+                    </div>
+                    <span class="calendar-day-detail-meta">
+                      {{ task.folio }} · {{ task.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(task) }}
+                    </span>
+                  </a>
+                }
+              </div>
+            }
+          </section>
+        }
+      </section>
     } @else {
       <div class="task-cards-list animate-stagger">
         @for (task of displayedTasks(); track task.id) {

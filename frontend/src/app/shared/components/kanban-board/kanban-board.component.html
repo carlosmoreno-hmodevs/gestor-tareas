@@ -8,7 +8,6 @@
         [id]="'drop-' + col.status.replace(/\s+/g, '-')"
         [cdkDropListData]="(tasksByStatus().get(col.status) ?? [])"
         [cdkDropListConnectedTo]="columnIds"
-        [cdkDropListSortingDisabled]="true"
         (cdkDropListDropped)="onDrop($event)"
       >
         <div class="kanban-column-header">
@@ -31,6 +30,9 @@
                 [class.prio-alta]="task.priority === 'Alta'"
                 [class.prio-media]="task.priority === 'Media'"
                 [class.prio-baja]="task.priority === 'Baja'"
+                [class.owner-assigned]="getOwnershipType(task) === 'assigned'"
+                [class.owner-created]="getOwnershipType(task) === 'created'"
+                [class.owner-both]="getOwnershipType(task) === 'both'"
               >
                 <a class="kanban-card-link" [routerLink]="['/tareas', task.id]" (click)="$event.stopPropagation()">
                   <h4 class="kanban-card-title">

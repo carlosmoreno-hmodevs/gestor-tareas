@@ -23,8 +23,7 @@ import { StatusChipComponent } from '../../../shared/components/status-chip/stat
 import { PriorityPillComponent } from '../../../shared/components/priority-pill/priority-pill.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
-import { KanbanBoardComponent } from '../../../shared/components/kanban-board/kanban-board.component';
-import type { TaskStatus, Priority } from '../../../shared/models';
+import type { TaskStatus, Priority, Task } from '../../../shared/models';
 
 @Component({
   selector: 'app-task-list',
@@ -42,8 +41,7 @@ import type { TaskStatus, Priority } from '../../../shared/models';
     MatTableModule,
     MatButtonToggleModule,
     EmptyStateComponent,
-    AvatarComponent,
-    KanbanBoardComponent
+    AvatarComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrl: './task-list.component.scss'
@@ -69,7 +67,9 @@ export class TaskListComponent implements OnInit {
   statusFilter = signal<(TaskStatus | 'completadas')[]>([]);
   /** Prioridades seleccionadas (varias se combinan con OR). Vacío = sin filtro por prioridad. */
   priorityFilter = signal<Priority[]>([]);
-  viewMode = signal<'list' | 'board'>('list');
+  viewMode = signal<'list' | 'calendar'>('list');
+  calendarGranularity = signal<'month' | 'week' | 'day'>('month');
+  calendarCursor = signal(new Date());
   /** Orden de la lista (como en detalle de proyecto). */
   sortOrder = signal<'default' | 'vencidas-primero' | 'fecha' | 'estado' | 'prioridad'>('default');
 
@@ -308,8 +308,163 @@ export class TaskListComponent implements OnInit {
     });
   });
 
+  calendarTitle = computed(() => {
+    const d = this.calendarCursor();
+    const g = this.calendarGranularity();
+    const monthFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' });
+    if (g === 'month') return monthFmt.format(d);
+    if (g === 'week') {
+      const start = this.startOfWeek(d);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const dayFmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' });
+      const year = end.getFullYear();
+      return `${dayFmt.format(start)} - ${dayFmt.format(end)} ${year}`;
+    }
+    return new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(d);
+  });
+
+  calendarWeekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+  maxCalendarTasksPerDay = computed(() => {
+    const g = this.calendarGranularity();
+    if (g === 'month') return 3;
+    if (g === 'week') return 6;
+    return 999;
+  });
+
+  calendarDays = computed(() => {
+    const source = this.displayedTasks();
+    const cursor = this.calendarCursor();
+    const granularity = this.calendarGranularity();
+    const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+    const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+    let gridStart = new Date(monthStart);
+    let gridEnd = new Date(monthEnd);
+
+    if (granularity === 'month') {
+      const startOffset = (monthStart.getDay() + 6) % 7;
+      gridStart = new Date(monthStart);
+      gridStart.setDate(monthStart.getDate() - startOffset);
+
+      const endOffset = 6 - ((monthEnd.getDay() + 6) % 7);
+      gridEnd = new Date(monthEnd);
+      gridEnd.setDate(monthEnd.getDate() + endOffset);
+    } else if (granularity === 'week') {
+      gridStart = this.startOfWeek(cursor);
+      gridEnd = new Date(gridStart);
+      gridEnd.setDate(gridStart.getDate() + 6);
+    } else {
+      gridStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+      gridEnd = new Date(gridStart);
+    }
+
+    const taskMap = new Map<string, Task[]>();
+    for (const task of source) {
+      const key = this.toDateKey(task.dueDate);
+      const list = taskMap.get(key) ?? [];
+      list.push(task);
+      taskMap.set(key, list);
+    }
+    for (const [, list] of taskMap) {
+      list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    }
+
+    const days: Array<{
+      key: string;
+      date: Date;
+      dayNumber: number;
+      inCurrentMonth: boolean;
+      isToday: boolean;
+      tasks: Task[];
+    }> = [];
+
+    const todayKey = this.toDateKey(new Date());
+    const currentMonth = cursor.getMonth();
+    const currentYear = cursor.getFullYear();
+    const iter = new Date(gridStart);
+
+    while (iter <= gridEnd) {
+      const d = new Date(iter);
+      const key = this.toDateKey(d);
+      days.push({
+        key,
+        date: d,
+        dayNumber: d.getDate(),
+        inCurrentMonth: d.getMonth() === currentMonth && d.getFullYear() === currentYear,
+        isToday: key === todayKey,
+        tasks: taskMap.get(key) ?? []
+      });
+      iter.setDate(iter.getDate() + 1);
+    }
+
+    return days;
+  });
+
+  focusedDayTasks = computed(() => {
+    const key = this.toDateKey(this.calendarCursor());
+    return this.displayedTasks()
+      .filter((t) => this.toDateKey(t.dueDate) === key)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  });
+
   openNewTask(): void {
     this.router.navigate(['/tareas', 'nueva']);
+  }
+
+  previousCalendarPeriod(): void {
+    const d = this.calendarCursor();
+    const g = this.calendarGranularity();
+    if (g === 'month') {
+      this.calendarCursor.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+      return;
+    }
+    if (g === 'week') {
+      const next = new Date(d);
+      next.setDate(next.getDate() - 7);
+      this.calendarCursor.set(next);
+      return;
+    }
+    const next = new Date(d);
+    next.setDate(next.getDate() - 1);
+    this.calendarCursor.set(next);
+  }
+
+  nextCalendarPeriod(): void {
+    const d = this.calendarCursor();
+    const g = this.calendarGranularity();
+    if (g === 'month') {
+      this.calendarCursor.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
+      return;
+    }
+    if (g === 'week') {
+      const next = new Date(d);
+      next.setDate(next.getDate() + 7);
+      this.calendarCursor.set(next);
+      return;
+    }
+    const next = new Date(d);
+    next.setDate(next.getDate() + 1);
+    this.calendarCursor.set(next);
+  }
+
+  goToCurrentDate(): void {
+    const now = new Date();
+    const current = this.calendarCursor();
+    const granularity = this.calendarGranularity();
+    const alreadyInCurrentPeriod =
+      granularity === 'month'
+        ? this.isSameMonth(current, now)
+        : granularity === 'week'
+          ? this.isSameWeek(current, now)
+          : this.isSameDay(current, now);
+
+    this.calendarCursor.set(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+
+    // Si ya estaba en el período actual, forzamos una acción visible.
+    if (alreadyInCurrentPeriod) {
+      this.calendarGranularity.set('day');
+    }
   }
 
   /** Aplicar filtro rápido simplificado. */
@@ -378,5 +533,41 @@ export class TaskListComponent implements OnInit {
 
   clearPriorityFilter(): void {
     this.priorityFilter.set([]);
+  }
+
+  setCalendarGranularity(mode: 'month' | 'week' | 'day'): void {
+    this.calendarGranularity.set(mode);
+  }
+
+  private startOfWeek(date: Date): Date {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const weekday = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - weekday);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private isSameDay(a: Date, b: Date): boolean {
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
+
+  private isSameMonth(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  }
+
+  private isSameWeek(a: Date, b: Date): boolean {
+    return this.startOfWeek(a).getTime() === this.startOfWeek(b).getTime();
+  }
+
+  private toDateKey(value: Date | string): string {
+    const d = new Date(value);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 }
