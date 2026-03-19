@@ -15,7 +15,7 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'tablero', pathMatch: 'full' },
       { path: 'tablero', loadComponent: () => import('./features/tablero/tablero.component').then((m) => m.TableroComponent) },
-      { path: 'tablero-operativo', canActivate: [adminGuard], loadComponent: () => import('./features/tablero/tablero.component').then((m) => m.TableroComponent) },
+      { path: 'tablero-operativo', loadComponent: () => import('./features/tablero/tablero.component').then((m) => m.TableroComponent) },
       { path: 'tareas', loadComponent: () => import('./features/tareas/task-list/task-list.component').then((m) => m.TaskListComponent) },
       { path: 'tareas/nueva', loadComponent: () => import('./features/tareas/task-create/task-create.component').then((m) => m.TaskCreateComponent) },
       { path: 'tareas/:id', loadComponent: () => import('./features/tareas/task-detail/task-detail.component').then((m) => m.TaskDetailComponent) },

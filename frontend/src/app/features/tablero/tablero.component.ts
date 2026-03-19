@@ -26,6 +26,7 @@ import { KanbanBoardComponent } from '../../shared/components/kanban-board/kanba
 import { FERRETERO_CATEGORIES } from '../../core/data/ferretero-initial';
 import { Chart } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
+import type { Task, TaskStatus } from '../../shared/models';
 
 /** Plugin para mostrar el total en el centro de gráficos tipo doughnut. */
 const centerTotalPlugin = {
@@ -292,7 +293,306 @@ export class TableroComponent {
   });
 
   readonly isOperationalRoute = computed(() => this.route.snapshot.routeConfig?.path === 'tablero-operativo');
-  canViewGlobalDashboard = computed(() => this.isOperationalRoute() && this.isTenantAdmin());
+  canViewGlobalDashboard = computed(() => false);
+  private readonly isSupervisorProfile = computed(() =>
+    String(this.currentUser().role ?? '').toLowerCase().includes('supervisor')
+  );
+
+  private readonly userBranchOrgIds = computed(() => {
+    const tid = this.tenantContext.currentTenantId();
+    const uid = this.currentUser().id;
+    if (!tid || !uid) return new Set<string>();
+    const roots = this.orgService.getOrgUnitIdsForUser(tid, uid);
+    const ids = new Set<string>(roots);
+    for (const rootId of roots) {
+      for (const childId of this.orgService.getDescendants(rootId)) ids.add(childId);
+    }
+    return ids;
+  });
+
+  private readonly userBranchUserIds = computed(() => {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid) return new Set<string>();
+    const ids = new Set<string>();
+    for (const orgId of this.userBranchOrgIds()) {
+      for (const userId of this.orgService.getUserIdsInScope(tid, orgId)) ids.add(userId);
+    }
+    return ids;
+  });
+
+  /** Tablero operativo con alcance según rol/jerarquía. */
+  operationalTasks = computed(() => {
+    if (!this.isOperationalRoute()) return [] as Task[];
+    const base = this.taskService.tasks();
+    const uid = this.currentUser().id;
+    if (!uid) return base;
+    if (this.isTenantAdmin()) return base;
+
+    if (!this.isSupervisorProfile()) {
+      return base.filter((t) => t.assigneeId === uid || t.createdBy === uid);
+    }
+
+    const orgIds = this.userBranchOrgIds();
+    const userIds = this.userBranchUserIds();
+    return base.filter((t) => {
+      const taskOrgId = this.getTaskOrgUnitId(t);
+      if (taskOrgId && orgIds.has(taskOrgId)) return true;
+      if (t.assigneeId && userIds.has(t.assigneeId)) return true;
+      if (t.createdBy && userIds.has(t.createdBy)) return true;
+      return false;
+    });
+  });
+
+  operationalScopeHint = computed(() => {
+    if (this.isTenantAdmin()) return 'Vista global del scope organizacional seleccionado.';
+    if (this.isSupervisorProfile()) return 'Vista operativa de tu rama (unidad y descendencia).';
+    return 'Vista operativa personal: tareas asignadas o creadas por ti.';
+  });
+
+  operationalKpiCards = computed(() => {
+    const tasks = this.operationalTasks();
+    const active = tasks.filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length;
+    const overdue = tasks.filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length;
+    const dueSoon = tasks.filter((t) => t.riskIndicator === 'por-vencer' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length;
+    const blocked = tasks.filter((t) => this.workflow.getEffectiveStatus(t) === 'En Espera').length;
+    const inProgress = tasks.filter((t) => this.workflow.getEffectiveStatus(t) === 'En Progreso').length;
+    const done = tasks.filter((t) => ['Completada', 'Liberada'].includes(this.workflow.getEffectiveStatus(t))).length;
+    return [
+      { id: 'active', value: active, label: 'Operativas activas', sublabel: 'Pendientes en ejecución', variant: 'default' as const },
+      { id: 'overdue', value: overdue, label: 'Fuera de plazo', sublabel: 'Requieren atención inmediata', variant: 'danger' as const },
+      { id: 'dueSoon', value: dueSoon, label: 'Próximas 48h', sublabel: 'Riesgo por vencimiento', variant: 'warning' as const },
+      { id: 'blocked', value: blocked, label: 'En espera', sublabel: 'Bloqueadas o detenidas', variant: 'warning' as const },
+      { id: 'inProgress', value: inProgress, label: 'En progreso', sublabel: 'Trabajo activo en curso', variant: 'default' as const },
+      { id: 'done', value: done, label: 'Cerradas', sublabel: 'Completadas y liberadas', variant: 'default' as const }
+    ];
+  });
+
+  operationalStatusBreakdown = computed(() => {
+    const tasks = this.operationalTasks();
+    const statuses: TaskStatus[] = ['Pendiente', 'En Progreso', 'En Espera', 'Vencida', 'Completada', 'Liberada', 'Rechazada', 'Cancelada'];
+    return statuses
+      .map((status) => ({ status, count: tasks.filter((t) => this.workflow.getEffectiveStatus(t) === status).length }))
+      .filter((x) => x.count > 0);
+  });
+
+  operationalTopAssignees = computed(() => {
+    const map = new Map<string, number>();
+    for (const t of this.operationalTasks()) {
+      const key = t.assignee || 'Sin asignar';
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, count]) => ({ name, count }));
+  });
+
+  operationalUpcomingTasks = computed(() =>
+    this.operationalTasks()
+      .filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status))
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 10)
+  );
+
+  getOperationalCardQuery(cardId: string): Record<string, string> {
+    const map: Record<string, Record<string, string>> = {
+      overdue: { filtro: 'vencidas' },
+      dueSoon: { filtro: 'por-vencer' },
+      blocked: { estado: 'En Espera' },
+      inProgress: { estado: 'En Progreso' }
+    };
+    return map[cardId] ?? {};
+  }
+
+  private readonly operationalDaysWindow = computed(() => Number(this.selectedPeriod()) || 7);
+
+  operationalTasksInPeriod = computed(() => {
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    const start = new Date(now);
+    start.setDate(start.getDate() - this.operationalDaysWindow() + 1);
+    start.setHours(0, 0, 0, 0);
+    return this.operationalTasks().filter((t) => {
+      const due = new Date(t.dueDate).getTime();
+      return due >= start.getTime() && due <= now.getTime();
+    });
+  });
+
+  operationalOutcome = computed(() => {
+    const list = this.operationalTasks();
+    const total = list.length || 1;
+    const success = list.filter((t) => ['Completada', 'Liberada'].includes(this.workflow.getEffectiveStatus(t))).length;
+    const failed = list.filter((t) => this.workflow.getEffectiveStatus(t) === 'Rechazada').length;
+    const overdue = list.filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length;
+    const blocked = list.filter((t) => this.workflow.getEffectiveStatus(t) === 'En Espera').length;
+    return {
+      success,
+      failed,
+      overdue,
+      blocked,
+      successRate: Math.round((success / total) * 100),
+      failureRate: Math.round(((failed + overdue) / total) * 100)
+    };
+  });
+
+  operationalProjectsSummary = computed(() => {
+    const list = this.operationalTasks();
+    const byProject = new Map<string, Task[]>();
+    for (const t of list) {
+      if (!t.projectId) continue;
+      const arr = byProject.get(t.projectId) ?? [];
+      arr.push(t);
+      byProject.set(t.projectId, arr);
+    }
+    let healthy = 0;
+    let risk = 0;
+    let critical = 0;
+    for (const [, tasks] of byProject) {
+      const total = tasks.length || 1;
+      const done = tasks.filter((t) => ['Completada', 'Liberada'].includes(this.workflow.getEffectiveStatus(t))).length;
+      const overdue = tasks.filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length;
+      const blocked = tasks.filter((t) => this.workflow.getEffectiveStatus(t) === 'En Espera').length;
+      const donePct = (done / total) * 100;
+      const overduePct = (overdue / total) * 100;
+      if (overduePct >= 40 || blocked >= 2) critical++;
+      else if (donePct >= 70 && overduePct < 20) healthy++;
+      else risk++;
+    }
+    return {
+      total: byProject.size,
+      healthy,
+      risk,
+      critical
+    };
+  });
+
+  operationalStatusDonutData = computed<ChartConfiguration<'doughnut'>['data']>(() => {
+    const items = this.operationalStatusBreakdown();
+    const colorMap: Record<string, string> = {
+      Pendiente: '#1976d2',
+      'En Progreso': '#ed6c02',
+      'En Espera': '#8e24aa',
+      Vencida: '#d32f2f',
+      Completada: '#2e7d32',
+      Liberada: '#00897b',
+      Rechazada: '#c62828',
+      Cancelada: '#757575'
+    };
+    return {
+      labels: items.map((x) => x.status),
+      datasets: [{
+        data: items.map((x) => x.count),
+        backgroundColor: items.map((x) => colorMap[x.status] ?? '#90a4ae'),
+        borderWidth: 1
+      }]
+    };
+  });
+
+  operationalStatusDonutOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: { position: 'bottom' }
+    }
+  };
+
+  operationalPriorityBarData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const tasks = this.operationalTasks();
+    const priorities: Array<'Alta' | 'Media' | 'Baja'> = ['Alta', 'Media', 'Baja'];
+    const counts = priorities.map((p) => tasks.filter((t) => t.priority === p).length);
+    return {
+      labels: priorities,
+      datasets: [{
+        label: 'Tareas',
+        data: counts,
+        backgroundColor: ['#d32f2f', '#ed6c02', '#2e7d32'],
+        borderRadius: 6
+      }]
+    };
+  });
+
+  operationalPriorityBarOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      x: { grid: { display: false } }
+    }
+  };
+
+  operationalTrendData = computed<ChartConfiguration<'line'>['data']>(() => {
+    const days = this.operationalDaysWindow();
+    const labels: string[] = [];
+    const done: number[] = [];
+    const overdue: number[] = [];
+    const active: number[] = [];
+    const now = new Date();
+    const tasks = this.operationalTasks();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const key = d.getTime();
+      labels.push(d.toLocaleDateString('es', { weekday: 'short', day: 'numeric' }));
+      let cDone = 0;
+      let cOver = 0;
+      let cActive = 0;
+      for (const t of tasks) {
+        const due = new Date(t.dueDate);
+        due.setHours(0, 0, 0, 0);
+        if (due.getTime() !== key) continue;
+        const st = this.workflow.getEffectiveStatus(t);
+        if (['Completada', 'Liberada'].includes(st)) cDone++;
+        else if (st === 'Vencida') cOver++;
+        else cActive++;
+      }
+      done.push(cDone);
+      overdue.push(cOver);
+      active.push(cActive);
+    }
+    return {
+      labels,
+      datasets: [
+        { label: 'Exitosas', data: done, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.25 },
+        { label: 'Fallidas/Vencidas', data: overdue, borderColor: '#d32f2f', backgroundColor: 'rgba(211,47,47,0.1)', fill: true, tension: 0.25 },
+        { label: 'Activas', data: active, borderColor: '#1976d2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.25 }
+      ]
+    };
+  });
+
+  operationalTrendOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }
+    }
+  };
+
+  operationalProjectHealthData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const s = this.operationalProjectsSummary();
+    return {
+      labels: ['Salud proyectos'],
+      datasets: [
+        { label: 'Saludables', data: [s.healthy], backgroundColor: '#2e7d32', borderRadius: 6 },
+        { label: 'En riesgo', data: [s.risk], backgroundColor: '#ed6c02', borderRadius: 6 },
+        { label: 'Críticos', data: [s.critical], backgroundColor: '#d32f2f', borderRadius: 6 }
+      ]
+    };
+  });
+
+  operationalProjectHealthOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }
+    }
+  };
 
   /** Tablero personal: por defecto muestra tareas asignadas y creadas por el usuario. */
   myTasks = computed(() => {
@@ -891,4 +1191,10 @@ export class TableroComponent {
       y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }
     }
   };
+
+  private getTaskOrgUnitId(task: Task): string | undefined {
+    if (task.orgUnitId) return task.orgUnitId;
+    if (!task.projectId) return undefined;
+    return this.projectService.getProjectById(task.projectId)?.primaryOrgUnitId;
+  }
 }

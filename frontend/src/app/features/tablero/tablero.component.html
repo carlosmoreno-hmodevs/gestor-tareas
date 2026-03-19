@@ -18,178 +18,146 @@
   }
 </div>
 
-@if (isFerretero()) {
-  <!-- Dashboard Ferretero: 3 secciones basadas en FerreteroKpiService -->
-  @let kpi = ferreteroKpi();
-
+@if (isOperationalRoute()) {
   <section class="ferretero-section hoy-riesgo animate-stagger">
-    <h2 class="section-title">Hoy / Riesgo</h2>
+    <h2 class="section-title">Hoy / Riesgo operativo</h2>
     <div class="kpi-row ferretero-kpi-row">
-      @for (card of ferreteroKpiService.riskSummaryCards(); track card.id) {
-        <a [routerLink]="['/tareas']" [queryParams]="getFiltroForCard(card.id)" class="kpi-card-link">
+      @for (card of operationalKpiCards(); track card.id) {
+        <a [routerLink]="['/tareas']" [queryParams]="getOperationalCardQuery(card.id)" class="kpi-card-link">
           <mat-card class="kpi-card ferretero-kpi-card" [class.kpi-warning]="card.variant === 'warning'" [class.kpi-danger]="card.variant === 'danger'">
             <mat-card-content>
-              <span class="kpi-value">{{ card.value }}{{ card.valueSuffix ?? '' }}</span>
-              <span class="kpi-label">{{ card.label || '' }}</span>
-              <span class="kpi-sublabel">{{ card.sublabel || '' }}</span>
-              @if (getTooltipForCard(card.id); as tip) {
-                <mat-icon matTooltip="{{ tip }}" class="kpi-info-icon">info</mat-icon>
-              }
+              <span class="kpi-value">{{ card.value }}</span>
+              <span class="kpi-label">{{ card.label }}</span>
+              <span class="kpi-sublabel">{{ card.sublabel }}</span>
             </mat-card-content>
           </mat-card>
         </a>
       }
     </div>
-  </section>
-
-  <section class="ferretero-section carga-area animate-stagger">
-    <h2 class="section-title">Carga por área</h2>
-    <mat-card class="chart-card chart-bar-h">
-      <mat-card-header>
-        <mat-card-title>Backlog activo por categoría</mat-card-title>
-        <mat-card-subtitle>Top 5 áreas (pendientes + vencidas)</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="chart-container chart-container--backlog">
-          <canvas baseChart [data]="backlogByAreaChartData()" [options]="backlogByAreaChartOptions" [type]="'bar'"></canvas>
-        </div>
-      </mat-card-content>
-    </mat-card>
+    <p class="operational-scope-note">{{ operationalScopeHint() }}</p>
   </section>
 
   <section class="ferretero-section graficos animate-stagger">
-    <h2 class="section-title">Visualizaciones</h2>
-    <div class="ferretero-charts-grid">
+    <h2 class="section-title">Monitoreo operativo</h2>
+    <div class="operational-outcome-cards">
+      <mat-card class="chart-card operational-outcome-card success">
+        <mat-card-content>
+          <span class="kpi-value">{{ operationalOutcome().successRate }}%</span>
+          <span class="kpi-label">Indicador de éxito</span>
+          <span class="kpi-sublabel">{{ operationalOutcome().success }} tareas cerradas con éxito</span>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card operational-outcome-card failure">
+        <mat-card-content>
+          <span class="kpi-value">{{ operationalOutcome().failureRate }}%</span>
+          <span class="kpi-label">Indicador de fallos</span>
+          <span class="kpi-sublabel">{{ operationalOutcome().failed + operationalOutcome().overdue }} tareas con rechazo o vencimiento</span>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card operational-outcome-card neutral">
+        <mat-card-content>
+          <span class="kpi-value">{{ operationalProjectsSummary().total }}</span>
+          <span class="kpi-label">Proyectos operativos</span>
+          <span class="kpi-sublabel">Con actividad en tu alcance actual</span>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="operational-insight-grid">
       <mat-card class="chart-card">
         <mat-card-header>
           <mat-card-title>Distribución por estado</mat-card-title>
-          <mat-card-subtitle>Conteo por estado (scope + período)</mat-card-subtitle>
+          <mat-card-subtitle>Estado de tareas por alcance</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <div class="chart-container chart-container--small">
-            <canvas baseChart [data]="statusDonutChartData()" [options]="statusDonutChartOptions" [type]="'doughnut'"></canvas>
-          </div>
-        </mat-card-content>
-      </mat-card>
-      <mat-card class="chart-card">
-        <mat-card-header>
-          <mat-card-title>Riesgo por vencimiento</mat-card-title>
-          <mat-card-subtitle>Fuera de plazo · 0–24h · 24–48h · 48–72h · &gt;72h</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="chart-container chart-container--small">
-            <canvas baseChart [data]="riskBucketsChartData()" [options]="riskBucketsChartOptions" [type]="'bar'"></canvas>
-          </div>
-        </mat-card-content>
-      </mat-card>
-      <mat-card class="chart-card chart-card--wide">
-        <mat-card-header>
-          <mat-card-title>Tendencia (últimos 7 días)</mat-card-title>
-          <mat-card-subtitle>Liberadas/completadas y vencidas por día</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="chart-container chart-container--trend">
-            <canvas baseChart [data]="trendLineChartData()" [options]="trendLineChartOptions" [type]="'line'"></canvas>
-          </div>
-        </mat-card-content>
-      </mat-card>
-      <mat-card class="chart-card">
-        <mat-card-header>
-          <mat-card-title>Rechazadas por categoría</mat-card-title>
-          <mat-card-subtitle>Top 5 áreas (no liberadas)</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="chart-container chart-container--small">
-            @if (ferreteroKpi().chartsData.rejectedByArea.length) {
-              <canvas baseChart [data]="rejectedByAreaChartData()" [options]="rejectedByAreaChartOptions" [type]="'bar'"></canvas>
-            } @else {
-              <p class="no-data">Sin tareas rechazadas en el período</p>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-      <mat-card class="chart-card">
-        <mat-card-header>
-          <mat-card-title>Motivos de bloqueo</mat-card-title>
-          <mat-card-subtitle>Top motivos (En espera)</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="chart-container chart-container--small">
-            @if (ferreteroKpi().topBlockedReasons.length) {
-              <canvas baseChart [data]="blockedReasonsDonutChartData()" [options]="blockedReasonsDonutChartOptions" [type]="'doughnut'"></canvas>
-            } @else {
-              <p class="no-data">Sin tareas bloqueadas</p>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  </section>
-
-  <section class="ferretero-section calidad-preventivos animate-stagger">
-    <h2 class="section-title">Calidad / Preventivos / Rutinas</h2>
-    <div class="ferretero-calidad-grid">
-      <a [routerLink]="['/tareas']" [queryParams]="getFiltroForCard('preventive')" class="kpi-card-link">
-        <mat-card class="kpi-card ferretero-kpi-card">
-          <mat-card-content>
-            <span class="kpi-value">{{ kpi.preventiveDone }} / {{ kpi.preventiveTotal }}</span>
-            <span class="kpi-label">Preventivos (Mantenimiento)</span>
-            <span class="kpi-sublabel">Liberadas vs total · Vencidas: {{ kpi.preventiveOverdue }}</span>
-            <mat-icon matTooltip="{{ getTooltipForCard('preventive') }}" class="kpi-info-icon">info</mat-icon>
-          </mat-card-content>
-        </mat-card>
-      </a>
-      <mat-card class="kpi-card ferretero-kpi-card">
-        <mat-card-content>
-          <span class="kpi-value">{{ kpi.hasAnyChecklist ? (kpi.checklistCompletionPct | number:'1.1-1') + '%' : '—' }}</span>
-          <span class="kpi-label">Cumplimiento checklists</span>
-          <span class="kpi-sublabel">{{ kpi.hasAnyChecklist ? kpi.checklistItemsDone + ' / ' + kpi.checklistItemsTotal + ' ítems' : 'Sin checklists aún' }}</span>
-        </mat-card-content>
-      </mat-card>
-      <mat-card class="kpi-card ferretero-kpi-card bloqueadas-avg">
-        <mat-card-content>
-          <span class="kpi-value">{{ kpi.avgBlockedTimeHours != null ? (kpi.avgBlockedTimeHours | number:'1.1-1') + ' h' : 'N/A' }}</span>
-          <span class="kpi-label">Tiempo promedio bloqueada</span>
-          <span class="kpi-sublabel">Por tarea (cuando exista blockedAt/unblockedAt)</span>
-        </mat-card-content>
-      </mat-card>
-    </div>
-    <div class="ferretero-tables-row">
-      <mat-card class="table-card">
-        <mat-card-header>
-          <mat-card-title>Top motivos Bloqueada</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          @if (kpi.topBlockedReasons.length) {
-            <table class="mini-table">
-              <thead><tr><th>Motivo</th><th>Cant.</th></tr></thead>
-              <tbody>
-                @for (r of kpi.topBlockedReasons; track r.reason) {
-                  <tr><td>{{ r.reason }}</td><td>{{ r.count }}</td></tr>
-                }
-              </tbody>
-            </table>
+          @if (operationalStatusBreakdown().length > 0) {
+            <div class="chart-container chart-container--small">
+              <canvas baseChart [data]="operationalStatusDonutData()" [options]="operationalStatusDonutOptions" [type]="'doughnut'"></canvas>
+            </div>
           } @else {
-            <p class="no-data">Sin tareas bloqueadas</p>
+            <p class="no-data">Sin datos de estado en el alcance actual</p>
           }
         </mat-card-content>
       </mat-card>
-      <mat-card class="table-card">
+
+      <mat-card class="chart-card">
         <mat-card-header>
-          <mat-card-title>Top motivos Rechazada</mat-card-title>
+          <mat-card-title>Distribución por prioridad</mat-card-title>
+          <mat-card-subtitle>Alta, media y baja en todo el alcance</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          @if (kpi.topRejectedReasons.length) {
-            <table class="mini-table">
-              <thead><tr><th>Motivo</th><th>Cant.</th></tr></thead>
-              <tbody>
-                @for (r of kpi.topRejectedReasons; track r.reason) {
-                  <tr><td>{{ r.reason }}</td><td>{{ r.count }}</td></tr>
-                }
-              </tbody>
-            </table>
+          <div class="chart-container chart-container--small">
+            <canvas baseChart [data]="operationalPriorityBarData()" [options]="operationalPriorityBarOptions" [type]="'bar'"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card chart-card--wide">
+        <mat-card-header>
+          <mat-card-title>Tendencia operativa ({{ selectedPeriod() }} días)</mat-card-title>
+          <mat-card-subtitle>Éxito, fallo y carga activa por día</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container chart-container--trend">
+            <canvas baseChart [data]="operationalTrendData()" [options]="operationalTrendOptions" [type]="'line'"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Salud de proyectos</mat-card-title>
+          <mat-card-subtitle>Clasificación por desempeño operativo</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (operationalProjectsSummary().total > 0) {
+            <div class="chart-container chart-container--small">
+              <canvas baseChart [data]="operationalProjectHealthData()" [options]="operationalProjectHealthOptions" [type]="'bar'"></canvas>
+            </div>
           } @else {
-            <p class="no-data">Sin tareas rechazadas</p>
+            <p class="no-data">Sin proyectos con actividad en este alcance</p>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Carga por responsable</mat-card-title>
+          <mat-card-subtitle>Top responsables con más tareas</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (operationalTopAssignees().length) {
+            <div class="operational-status-list">
+              @for (item of operationalTopAssignees(); track item.name) {
+                <div class="operational-status-row">
+                  <span class="operational-status-name">{{ item.name }}</span>
+                  <span class="operational-status-count">{{ item.count }}</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="no-data">Sin responsables en el alcance actual</p>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card chart-card--wide">
+        <mat-card-header>
+          <mat-card-title>Próximas por vencer</mat-card-title>
+          <mat-card-subtitle>Priorización sugerida de trabajo</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (operationalUpcomingTasks().length) {
+            <div class="operational-upcoming-list">
+              @for (task of operationalUpcomingTasks(); track task.id) {
+                <a class="operational-upcoming-item" [routerLink]="['/tareas', task.id]">
+                  <span class="operational-upcoming-title">{{ task.title }}</span>
+                  <span class="operational-upcoming-meta">{{ task.assignee || 'Sin asignar' }} · {{ task.dueDate | date: 'dd MMM' }}</span>
+                </a>
+              }
+            </div>
+          } @else {
+            <p class="no-data">No hay tareas operativas pendientes en este alcance</p>
           }
         </mat-card-content>
       </mat-card>

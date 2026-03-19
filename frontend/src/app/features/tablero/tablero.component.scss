@@ -338,6 +338,112 @@
   }
 }
 
+.operational-scope-note {
+  margin: $spacing-sm 0 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #616161);
+}
+
+.operational-insight-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+
+  @media (min-width: 800px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.operational-outcome-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+
+  @media (min-width: 800px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.operational-outcome-card {
+  .kpi-value {
+    font-size: 1.9rem;
+    font-weight: $font-weight-bold;
+    line-height: 1.1;
+  }
+  .kpi-label {
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+  }
+  .kpi-sublabel {
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  &.success .kpi-value { color: #2e7d32; }
+  &.failure .kpi-value { color: #d32f2f; }
+  &.neutral .kpi-value { color: #1976d2; }
+}
+
+.operational-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.operational-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-md;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.operational-status-name {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.operational-status-count {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.operational-upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.operational-upcoming-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  color: inherit;
+  padding: $spacing-sm;
+  border-radius: $radius-md;
+  background: rgba(25, 118, 210, 0.06);
+
+  &:hover {
+    background: rgba(25, 118, 210, 0.12);
+  }
+}
+
+.operational-upcoming-title {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.operational-upcoming-meta {
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+}
+
 .chart-card--wide {
   @media (min-width: 600px) {
     grid-column: span 2;

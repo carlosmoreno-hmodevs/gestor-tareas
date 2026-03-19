@@ -20,7 +20,6 @@ interface NavItem {
   label: string;
   shortLabel: string;
   icon: string;
-  adminOnly?: boolean;
 }
 
 @Component({
@@ -64,23 +63,15 @@ export class ShellComponent implements OnInit {
   currentUser = this.currentUserService.currentUser;
   availableUsers = this.currentUserService.availableUsers;
 
-  canAccessOperationalDashboard = computed(() => {
-    const tid = this.tenantContext.currentTenantId();
-    const uid = this.currentUser().id;
-    if (!tid || !uid) return false;
-    const role = this.tenantContext.getGlobalRole(tid, uid);
-    return role === 'OWNER' || role === 'TENANT_ADMIN';
-  });
-
   navItems = computed<NavItem[]>(() => [
     { path: '/tablero', label: 'Mi tablero', shortLabel: 'Inicio', icon: 'task_alt' },
-    { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Operativo', icon: 'dashboard', adminOnly: true },
+    { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Operativo', icon: 'dashboard' },
     { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
     { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
     { path: '/documentos', label: 'Documentos', shortLabel: 'Docs', icon: 'folder' },
     { path: '/admin', label: 'Administración', shortLabel: 'Admin', icon: 'settings' },
     { path: '/ia', label: 'Asistente IA', shortLabel: 'IA', icon: 'auto_awesome' }
-  ].filter((item) => !item.adminOnly || this.canAccessOperationalDashboard()));
+  ]);
 
   isDesktop = computed(() => !this.isMobile());
   isMyBoardRoute = computed(() => this.currentPath() === '/tablero');
