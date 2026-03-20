@@ -3,7 +3,7 @@
     <div class="header-wrapper">
       <header class="app-header">
         <div class="header-left">
-          <a [routerLink]="['/tablero']" class="brand-link">
+          <a [routerLink]="['/tablero-operativo']" class="brand-link">
             <img src="assets/logo-orkesta.png" alt="Logo" class="brand-logo" />
             <span class="brand-text">Gestor de Tareas</span>
           </a>
@@ -11,8 +11,7 @@
             @for (item of navItems(); track item.path) {
               <a
                 [routerLink]="item.path"
-                routerLinkActive="nav-item-active"
-                [routerLinkActiveOptions]="{ exact: item.path === '/tablero' }"
+                [class.nav-item-active]="isNavActive(item)"
                 class="nav-item"
               >
                 <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
@@ -67,7 +66,7 @@
       </div>
     </div>
     <app-offline-banner />
-    <main class="app-content" [class.has-bottom-nav]="!isDesktop()" [class.full-bleed-board]="isMyBoardRoute()">
+    <main class="app-content" [class.has-bottom-nav]="!isDesktop()" [class.full-bleed-board]="fullBleedTasks()">
       <router-outlet />
     </main>
 
@@ -76,8 +75,7 @@
         @for (item of navItems(); track item.path) {
           <a
             [routerLink]="item.path"
-            routerLinkActive="bottom-nav-active"
-            [routerLinkActiveOptions]="{ exact: item.path === '/tablero' }"
+            [class.bottom-nav-active]="isNavActive(item)"
             class="bottom-nav-item"
           >
             <mat-icon class="bottom-nav-icon">{{ item.icon }}</mat-icon>

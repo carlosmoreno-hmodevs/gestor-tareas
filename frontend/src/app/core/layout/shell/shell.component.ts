@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { RouterLink, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +14,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { OrgContextBarComponent } from '../../../shared/components/org-context-bar/org-context-bar.component';
 import { OfflineBannerComponent } from '../../../shared/components/offline-banner/offline-banner.component';
 import { CommonModule } from '@angular/common';
+import { TaskPageLayoutService } from '../../services/task-page-layout.service';
 
 interface NavItem {
   path: string;
@@ -29,7 +30,6 @@ interface NavItem {
     CommonModule,
     RouterOutlet,
     RouterLink,
-    RouterLinkActive,
     MatSidenavModule,
     MatButtonModule,
     MatIconModule,
@@ -49,6 +49,7 @@ export class ShellComponent implements OnInit {
   readonly tenantSettings = inject(TenantSettingsService);
   private readonly tenantContext = inject(TenantContextService);
   private readonly automationService = inject(AutomationService);
+  private readonly taskPageLayout = inject(TaskPageLayoutService);
 
   isMobile = signal(true);
   private readonly currentPath = signal('');
@@ -64,8 +65,8 @@ export class ShellComponent implements OnInit {
   availableUsers = this.currentUserService.availableUsers;
 
   navItems = computed<NavItem[]>(() => [
-    { path: '/tablero', label: 'Mi tablero', shortLabel: 'Inicio', icon: 'task_alt' },
-    { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Operativo', icon: 'dashboard' },
+    { path: '/tareas', label: 'Mi tablero', shortLabel: 'Inicio', icon: 'view_kanban', queryParams: { vista: 'tablero' } },
+    { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Inicio', icon: 'dashboard' },
     { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
     { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
     { path: '/documentos', label: 'Documentos', shortLabel: 'Docs', icon: 'folder' },
@@ -74,13 +75,21 @@ export class ShellComponent implements OnInit {
   ]);
 
   isDesktop = computed(() => !this.isMobile());
-  isMyBoardRoute = computed(() => this.currentPath() === '/tablero');
+
+  /** Ancho completo del main cuando /tareas está en vista Tablero. */
+  fullBleedTasks = computed(() => {
+    const path = this.currentPath();
+    if (path !== '/tareas') return false;
+    return this.taskPageLayout.tasksFullBleed();
+  });
 
   ngOnInit(): void {
-    this.currentPath.set(this.router.url.split('?')[0] ?? '');
+    const url = this.router.url;
+    this.currentPath.set(url.split('?')[0]?.split('#')[0] ?? '');
     this.router.events.subscribe((evt) => {
       if (evt instanceof NavigationEnd) {
-        this.currentPath.set(evt.urlAfterRedirects.split('?')[0] ?? '');
+        const u = evt.urlAfterRedirects;
+        this.currentPath.set(u.split('?')[0]?.split('#')[0] ?? '');
       }
     });
     this.breakpoint.observe('(min-width: 1024px)').subscribe((r) => {
@@ -90,6 +99,10 @@ export class ShellComponent implements OnInit {
 
   switchUser(userId: string): void {
     this.currentUserService.setCurrentUser(userId);
+  }
+
+  isNavActive(item: NavItem): boolean {
+    return this.currentPath() === item.path;
   }
 
   formatUserRole(role: string): string {

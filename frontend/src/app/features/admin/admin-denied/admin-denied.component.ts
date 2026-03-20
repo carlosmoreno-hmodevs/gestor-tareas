@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
       <mat-icon class="denied-icon">lock</mat-icon>
       <h2>Acceso denegado</h2>
       <p>No tienes permisos para acceder a la administración.</p>
-      <button mat-flat-button color="primary" routerLink="/tablero">Volver al tablero</button>
+      <button mat-flat-button color="primary" routerLink="/tablero-operativo">Volver al inicio</button>
     </div>
   `,
   styles: [`

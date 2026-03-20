@@ -301,7 +301,7 @@ export class OrgContextBarComponent {
 
   selectTenant(tenantId: string): void {
     this.tenantContext.setCurrentTenant(tenantId);
-    this.router.navigate(['/tablero']);
+    this.router.navigate(['/tablero-operativo']);
   }
 
   selectAll(): void {

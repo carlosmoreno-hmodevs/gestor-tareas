@@ -1,12 +1,8 @@
-import { Component, inject, computed, signal, effect, OnDestroy } from '@angular/core';
+import { Component, inject, computed, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { BaseChartDirective } from 'ng2-charts';
@@ -22,7 +18,6 @@ import { ProjectService } from '../../core/services/project.service';
 import { FerreteroKpiService } from '../../core/services/ferretero-kpi.service';
 import { AutomationService } from '../../core/services/automation.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
-import { KanbanBoardComponent } from '../../shared/components/kanban-board/kanban-board.component';
 import { FERRETERO_CATEGORIES } from '../../core/data/ferretero-initial';
 import { Chart } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
@@ -64,20 +59,15 @@ Chart.register(centerTotalPlugin);
     CommonModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
-    MatButtonModule,
-    MatButtonToggleModule,
-    MatTooltipModule,
     MatFormFieldModule,
     MatSelectModule,
     PageHeaderComponent,
-    KanbanBoardComponent,
     BaseChartDirective
   ],
   templateUrl: './tablero.component.html',
   styleUrl: './tablero.component.scss'
 })
-export class TableroComponent implements OnDestroy {
+export class TableroComponent implements OnInit, OnDestroy {
   private readonly taskService = inject(TaskService);
   private readonly workflow = inject(TaskWorkflowService);
   private readonly dataService = inject(DataService);
@@ -94,10 +84,8 @@ export class TableroComponent implements OnDestroy {
   /** Estado de KPIs ferretero (solo tiene datos cuando isFerretero). */
   ferreteroKpi = this.ferreteroKpiService.kpiState;
 
-  showDashboardContent = signal(false);
   greetingHour = signal(new Date().getHours());
   greetingComplement = signal('');
-  private greetingRevealTimer: ReturnType<typeof setTimeout> | null = null;
   private greetingClockTimer: ReturnType<typeof setInterval> | null = null;
 
   private readonly greetingComplementsByPeriod: Record<'day' | 'afternoon' | 'night', string[]> = {
@@ -118,23 +106,10 @@ export class TableroComponent implements OnDestroy {
     ]
   };
 
-  ngOnInit(): void {
-    const tid = this.tenantContext.currentTenantId();
-    if (tid) this.automationService.runEngine(tid);
-    this.refreshGreeting();
-    this.greetingRevealTimer = setTimeout(() => this.showDashboardContent.set(true), 1000);
-    this.greetingClockTimer = setInterval(() => this.refreshGreeting(), 60_000);
-  }
-
-  ngOnDestroy(): void {
-    if (this.greetingRevealTimer) clearTimeout(this.greetingRevealTimer);
-    if (this.greetingClockTimer) clearInterval(this.greetingClockTimer);
-  }
-
   greetingTitle = computed(() => {
     const hour = this.greetingHour();
     const period = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
-    const name = this.currentUser().name?.trim();
+    const name = this.currentUserService.currentUser().name?.trim();
     return name ? `${period}, ${name}` : period;
   });
 
@@ -152,6 +127,17 @@ export class TableroComponent implements OnDestroy {
     const periodKey: 'day' | 'afternoon' | 'night' = hour < 12 ? 'day' : hour < 19 ? 'afternoon' : 'night';
     const options = this.greetingComplementsByPeriod[periodKey];
     this.greetingComplement.set(options[Math.floor(Math.random() * options.length)]);
+  }
+
+  ngOnInit(): void {
+    const tid = this.tenantContext.currentTenantId();
+    if (tid) this.automationService.runEngine(tid);
+    this.refreshGreeting();
+    this.greetingClockTimer = setInterval(() => this.refreshGreeting(), 60_000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.greetingClockTimer) clearInterval(this.greetingClockTimer);
   }
 
   /** Gráfico de backlog por área (modo ferretero). */
@@ -348,7 +334,6 @@ export class TableroComponent implements OnDestroy {
   });
 
   readonly isOperationalRoute = computed(() => this.route.snapshot.routeConfig?.path === 'tablero-operativo');
-  canViewGlobalDashboard = computed(() => false);
   private readonly isSupervisorProfile = computed(() =>
     String(this.currentUser().role ?? '').toLowerCase().includes('supervisor')
   );
@@ -648,127 +633,6 @@ export class TableroComponent implements OnDestroy {
       y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }
     }
   };
-
-  /** Tablero personal: por defecto muestra tareas asignadas y creadas por el usuario. */
-  myTasks = computed(() => {
-    const uid = this.currentUser().id;
-    const scope = this.personalTaskScope();
-    if (scope === 'assigned') {
-      return this.taskService.tasks().filter((t) => t.assigneeId === uid);
-    }
-    if (scope === 'created') {
-      return this.taskService.tasks().filter((t) => t.createdBy === uid);
-    }
-    return this.taskService.tasks().filter((t) => t.assigneeId === uid || t.createdBy === uid);
-  });
-
-  selectedProjectId = signal('all');
-  personalTaskScope = signal<'all' | 'assigned' | 'created'>('all');
-  personalQuickFilter = signal<'all' | 'urgent' | 'due48'>('all');
-
-  myProjectOptions = computed(() => {
-    const map = new Map<string, { id: string; name: string; count: number }>();
-    for (const t of this.myTasks()) {
-      const pid = t.projectId;
-      if (!pid) continue;
-      const project = this.projectService.getProjectById(pid);
-      const current = map.get(pid);
-      if (current) {
-        current.count += 1;
-      } else {
-        map.set(pid, { id: pid, name: project?.name ?? pid, count: 1 });
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  });
-
-  myTasksByProject = computed(() => {
-    const pid = this.selectedProjectId();
-    if (pid === 'all') return this.myTasks();
-    return this.myTasks().filter((t) => t.projectId === pid);
-  });
-
-  myTasksFiltered = computed(() => {
-    const quick = this.personalQuickFilter();
-    const base = this.myTasksByProject();
-    if (quick === 'all') return base;
-    if (quick === 'urgent') {
-      return base.filter((t) => {
-        const effective = this.workflow.getEffectiveStatus(t);
-        if (effective === 'Vencida') return true;
-        return t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status);
-      });
-    }
-    const now = Date.now();
-    const maxMs = 48 * 60 * 60 * 1000;
-    return base
-      .filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status))
-      .filter((t) => {
-        const dueMs = new Date(t.dueDate).getTime();
-        const delta = dueMs - now;
-        return delta >= 0 && delta <= maxMs;
-      });
-  });
-
-  setPersonalQuickFilter(filter: 'urgent' | 'due48'): void {
-    this.personalQuickFilter.update((current) => current === filter ? 'all' : filter);
-  }
-
-  personalTaskScopeLabel = computed(() => {
-    const scope = this.personalTaskScope();
-    if (scope === 'assigned') return 'Solo asignadas a mí';
-    if (scope === 'created') return 'Solo creadas por mí';
-    return 'Asignadas a mí + creadas por mí';
-  });
-
-  boardTitle = computed(() => {
-    const pid = this.selectedProjectId();
-    const quick = this.personalQuickFilter();
-    const projectLabel = pid === 'all'
-      ? 'tareas'
-      : (this.myProjectOptions().find((p) => p.id === pid)?.name ?? 'tareas');
-    if (quick === 'urgent') return pid === 'all' ? 'Tareas urgentes' : `Urgentes: ${projectLabel}`;
-    if (quick === 'due48') return pid === 'all' ? 'Tareas próximas 48h' : `Próximas 48h: ${projectLabel}`;
-    if (pid === 'all') return 'Todas mis tareas';
-    const option = this.myProjectOptions().find((p) => p.id === pid);
-    return option ? option.name : 'Todas mis tareas';
-  });
-
-  boardSubtitle = computed(() => {
-    const quick = this.personalQuickFilter();
-    const scopeInfo = this.personalTaskScopeLabel();
-    if (quick === 'urgent') return `Filtro activo: vencidas o prioridad alta · ${scopeInfo}`;
-    if (quick === 'due48') return `Filtro activo: tareas con vencimiento en 48 horas · ${scopeInfo}`;
-    return this.selectedProjectId() === 'all'
-      ? `Vista tipo tablero por estado · ${scopeInfo}`
-      : `Vista tipo tablero del proyecto seleccionado · ${scopeInfo}`;
-  });
-
-  /** Tareas urgentes: vencidas o alta prioridad activa. */
-  myUrgentTasks = computed(() =>
-    this.myTasksByProject()
-      .filter((t) => {
-        const effective = this.workflow.getEffectiveStatus(t);
-        if (effective === 'Vencida') return true;
-        return t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status);
-      })
-      .slice(0, 6)
-  );
-
-  /** Próximas por vencer en 48h, ordenadas por fecha. */
-  myDueSoonTasks = computed(() => {
-    const now = Date.now();
-    const maxMs = 48 * 60 * 60 * 1000;
-    return this.myTasksByProject()
-      .filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status))
-      .filter((t) => {
-        const dueMs = new Date(t.dueDate).getTime();
-        const delta = dueMs - now;
-        return delta >= 0 && delta <= maxMs;
-      })
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-      .slice(0, 6);
-  });
 
   /** Modo ferretero: tareas agrupadas por categoría operativa (nombre + color). */
   loadByCategoryFerretero = computed(() => {

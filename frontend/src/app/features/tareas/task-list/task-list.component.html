@@ -1,5 +1,6 @@
-<div class="task-list-layout">
+<div class="task-list-layout" [class.task-list-layout--board]="viewMode() === 'board'">
   <!-- Sidebar filtros -->
+  @if (viewMode() !== 'board') {
   <aside class="filters-sidebar">
     <div class="sidebar-header">
       <mat-icon>task_alt</mat-icon>
@@ -105,10 +106,12 @@
       </div>
     </div>
   </aside>
+  }
 
   <!-- Área principal -->
   <main class="task-main">
     <div class="main-toolbar">
+      @if (viewMode() !== 'board') {
       <mat-form-field appearance="outline" class="search-field">
         <mat-label>Buscar</mat-label>
         <input
@@ -141,7 +144,8 @@
           <mat-option value="sin-asignar">Sin asignar</mat-option>
         </mat-select>
       </mat-form-field>
-      <mat-button-toggle-group [value]="viewMode()" (valueChange)="viewMode.set($event)" class="view-toggle">
+      }
+      <mat-button-toggle-group [value]="viewMode()" (valueChange)="setViewMode($event)" class="view-toggle">
         <mat-button-toggle value="list">
           <mat-icon>view_list</mat-icon>
           <span class="view-toggle-label">Lista</span>
@@ -150,8 +154,13 @@
           <mat-icon>calendar_month</mat-icon>
           <span class="view-toggle-label">Calendario</span>
         </mat-button-toggle>
+        <mat-button-toggle value="board">
+          <mat-icon>view_kanban</mat-icon>
+          <span class="view-toggle-label">Tablero</span>
+        </mat-button-toggle>
       </mat-button-toggle-group>
       <div class="toolbar-actions">
+        @if (viewMode() !== 'board') {
         <button mat-stroked-button [disabled]="!connectivity.isOnline()" [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''">
           <mat-icon>upload</mat-icon>
           Exportar
@@ -160,6 +169,7 @@
           <mat-icon>add</mat-icon>
           Nueva tarea
         </button>
+        }
       </div>
     </div>
 
@@ -190,6 +200,7 @@
       </button>
     </div>
 
+    @if (viewMode() === 'list') {
     <div class="results-header">
       <span class="results-count">Resultados ({{ displayedTasks().length }})</span>
       <mat-form-field appearance="outline" class="sort-field">
@@ -204,13 +215,66 @@
         </mat-select>
       </mat-form-field>
     </div>
+    }
 
-    @if (displayedTasks().length === 0) {
-      <app-empty-state
-        icon="search_off"
-        title="Sin resultados"
-        message="Ajusta los filtros o crea una nueva tarea"
-      />
+    @if (viewMode() === 'board') {
+      <section class="personal-board-section task-personal-board animate-stagger" aria-label="Tablero personal">
+        <div class="board-scope-toolbar">
+          <mat-button-toggle-group
+            class="owner-scope-toggle"
+            [value]="personalTaskScope()"
+            (change)="personalTaskScope.set($event.value)"
+            aria-label="Ámbito de tareas en tablero"
+          >
+            <mat-button-toggle value="all">Todas</mat-button-toggle>
+            <mat-button-toggle value="assigned">
+              <span class="label-desktop">Asignadas a mí</span>
+              <span class="label-mobile">Asignadas</span>
+            </mat-button-toggle>
+            <mat-button-toggle value="created">
+              <span class="label-desktop">Creadas por mí</span>
+              <span class="label-mobile">Creadas</span>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="project-filter board-project-field">
+            <mat-label>Proyecto (mis tareas)</mat-label>
+            <mat-select [value]="boardProjectId()" (selectionChange)="boardProjectId.set($event.value)">
+              <mat-option value="all">Todos mis proyectos</mat-option>
+              @for (p of myProjectOptions(); track p.id) {
+                <mat-option [value]="p.id">{{ p.name }} ({{ p.count }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-card class="chart-card personal-board-card">
+          <mat-card-header>
+            <div class="board-header-text">
+              <mat-card-title>{{ boardTitle() }}</mat-card-title>
+              <mat-card-subtitle>{{ boardSubtitle() }}</mat-card-subtitle>
+            </div>
+            <div class="board-header-actions">
+              <button mat-flat-button color="primary" [routerLink]="['/tareas/nueva']">
+                <mat-icon>add</mat-icon>
+                Nueva tarea
+              </button>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            @if (myTasksFiltered().length) {
+              <app-kanban-board
+                [tasks]="myTasksFiltered()"
+                [draggable]="true"
+                [layoutMode]="'trello'"
+                [highlightOwnership]="true"
+                [currentUserId]="currentUser().id"
+              />
+            } @else {
+              <p class="no-data">No hay tareas para el filtro seleccionado.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+      </section>
     } @else if (viewMode() === 'calendar') {
       <section class="task-calendar animate-stagger" aria-label="Vista calendario de tareas">
         <header class="calendar-toolbar">
@@ -236,6 +300,33 @@
             <button mat-stroked-button type="button" (click)="goToCurrentDate()">Hoy</button>
           </div>
         </header>
+
+        <div class="calendar-scope-row">
+          <span class="calendar-scope-label">Ámbito</span>
+          <mat-button-toggle-group
+            class="calendar-owner-scope-toggle"
+            [value]="calendarTaskScope()"
+            (change)="calendarTaskScope.set($event.value)"
+            aria-label="Filtrar tareas del calendario por responsabilidad"
+          >
+            <mat-button-toggle value="all">Todas</mat-button-toggle>
+            <mat-button-toggle value="assigned">
+              <span class="label-desktop">Asignadas a mí</span>
+              <span class="label-mobile">Asignadas</span>
+            </mat-button-toggle>
+            <mat-button-toggle value="created">
+              <span class="label-desktop">Creadas por mí</span>
+              <span class="label-mobile">Creadas</span>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+          <span class="calendar-scope-hint">{{ calendarTaskScopeLabel() }}</span>
+        </div>
+
+        @if (displayedTasks().length > 0 && tasksForCalendar().length === 0) {
+          <p class="calendar-scope-empty-hint" role="status">
+            No hay tareas en el calendario con este ámbito. Hay {{ displayedTasks().length }} en la lista con los filtros actuales.
+          </p>
+        }
 
         @if (calendarGranularity() !== 'day') {
           <div class="calendar-grid calendar-grid-weekdays">
@@ -307,6 +398,12 @@
           </section>
         }
       </section>
+    } @else if (displayedTasks().length === 0) {
+      <app-empty-state
+        icon="search_off"
+        title="Sin resultados"
+        message="Ajusta los filtros o crea una nueva tarea"
+      />
     } @else {
       <div class="task-cards-list animate-stagger">
         @for (task of displayedTasks(); track task.id) {

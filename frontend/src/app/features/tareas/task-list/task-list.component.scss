@@ -9,6 +9,17 @@
   @media (min-width: 992px) {
     flex-direction: row;
   }
+
+  &.task-list-layout--board {
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+
+    .task-main {
+      max-width: none;
+      width: 100%;
+    }
+  }
 }
 
 .filters-sidebar {
@@ -344,6 +355,101 @@
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   text-transform: capitalize;
+}
+
+.calendar-scope-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm $spacing-md;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  background: rgba(25, 118, 210, 0.05);
+  border: 1px solid rgba(25, 118, 210, 0.12);
+}
+
+[data-theme='dark'] .calendar-scope-row {
+  background: rgba(66, 165, 245, 0.08);
+  border-color: rgba(66, 165, 245, 0.2);
+}
+
+.calendar-scope-label {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary, #616161);
+}
+
+/* No crecer en la fila: si el grupo ocupa todo el ancho, Material reparte espacio y el último toggle se alarga */
+.calendar-owner-scope-toggle {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  height: 40px;
+  border-radius: 10px;
+  overflow: hidden;
+  align-self: center;
+
+  &.mat-button-toggle-group {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+
+  .mat-button-toggle {
+    flex: 0 0 auto !important;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .label-desktop,
+  .label-mobile {
+    white-space: nowrap;
+  }
+
+  .label-mobile {
+    display: none;
+  }
+}
+
+:host ::ng-deep .calendar-owner-scope-toggle .mat-button-toggle-label-content {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.calendar-scope-hint {
+  flex: 1 1 100%;
+  font-size: $font-size-xs;
+  color: var(--color-text-secondary, #757575);
+  line-height: 1.35;
+
+  @media (min-width: 720px) {
+    flex: 0 1 220px;
+    margin-left: auto;
+    text-align: right;
+  }
+
+  @media (min-width: 960px) {
+    flex: 0 1 280px;
+  }
+}
+
+.calendar-scope-empty-hint {
+  margin: 0 0 $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #616161);
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: $radius-md;
+  border-left: 3px solid $color-primary;
+}
+
+[data-theme='dark'] .calendar-scope-empty-hint {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .calendar-grid {
@@ -923,6 +1029,30 @@
     justify-content: space-between;
   }
 
+  .calendar-scope-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendar-owner-scope-toggle {
+    width: 100%;
+    height: 36px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    .label-desktop {
+      display: none;
+    }
+
+    .label-mobile {
+      display: inline;
+    }
+  }
+
+  .calendar-scope-hint {
+    margin-left: 0;
+  }
+
   .calendar-day {
     min-height: 105px;
   }
@@ -959,4 +1089,150 @@
   .calendar-mode-toggle {
     width: 100%;
   }
+}
+
+// —— Vista Tablero (Kanban en /tareas) ——
+.personal-board-section {
+  margin-top: $spacing-sm;
+
+  @media (max-width: 700px) {
+    margin-top: 0;
+  }
+}
+
+.board-scope-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  .owner-scope-toggle {
+    height: 40px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .label-mobile {
+      display: none;
+    }
+  }
+
+  .board-project-field {
+    min-width: 220px;
+    width: 280px;
+    margin: 0;
+  }
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .owner-scope-toggle {
+      width: 100%;
+      height: 36px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+
+      .label-desktop {
+        display: none;
+      }
+
+      .label-mobile {
+        display: inline;
+      }
+    }
+
+    .board-project-field {
+      width: 100%;
+    }
+  }
+}
+
+.personal-board-card {
+  border-radius: $radius-lg !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+
+  mat-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  .board-header-text {
+    text-align: left;
+    margin-right: auto;
+    min-width: 0;
+  }
+
+  mat-card-title {
+    font-size: 1.25rem !important;
+    font-weight: $font-weight-bold !important;
+    color: var(--color-text, #111111);
+    letter-spacing: 0.2px;
+  }
+
+  mat-card-subtitle {
+    font-size: $font-size-sm !important;
+    font-weight: $font-weight-semibold !important;
+    color: var(--color-text-secondary, #555555);
+    margin-top: 2px;
+  }
+
+  .board-header-actions {
+    flex-shrink: 0;
+  }
+
+  mat-card-content {
+    overflow-x: auto;
+  }
+
+  @media (max-width: 700px) {
+    mat-card-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: $spacing-sm;
+      padding-bottom: $spacing-xs;
+    }
+
+    .board-header-text {
+      margin-right: 0;
+    }
+
+    .board-header-actions {
+      width: 100%;
+
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    mat-card-title {
+      font-size: 1.15rem !important;
+      line-height: 1.25;
+    }
+
+    mat-card-subtitle {
+      line-height: 1.25;
+      margin-top: 1px;
+    }
+
+    mat-card-content {
+      padding-top: $spacing-xs !important;
+    }
+  }
+
+  @media (max-width: 430px) {
+    mat-card-title {
+      font-size: 1.08rem !important;
+    }
+  }
+}
+
+.task-personal-board .no-data {
+  margin: $spacing-md 0;
+  font-size: $font-size-sm;
+  color: var(--color-text-secondary, #757575);
 }

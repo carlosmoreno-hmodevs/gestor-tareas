@@ -13,8 +13,11 @@ export const routes: Routes = [
     component: ShellComponent,
     canActivate: [tenantGuard],
     children: [
-      { path: '', redirectTo: 'tablero', pathMatch: 'full' },
-      { path: 'tablero', loadComponent: () => import('./features/tablero/tablero.component').then((m) => m.TableroComponent) },
+      { path: '', pathMatch: 'full', redirectTo: 'tablero-operativo' },
+      {
+        path: 'tablero',
+        loadComponent: () => import('./core/redirect/tasks-board-redirect.component').then((m) => m.TasksBoardRedirectComponent)
+      },
       { path: 'tablero-operativo', loadComponent: () => import('./features/tablero/tablero.component').then((m) => m.TableroComponent) },
       { path: 'tareas', loadComponent: () => import('./features/tareas/task-list/task-list.component').then((m) => m.TaskListComponent) },
       { path: 'tareas/nueva', loadComponent: () => import('./features/tareas/task-create/task-create.component').then((m) => m.TaskCreateComponent) },
@@ -61,5 +64,5 @@ export const routes: Routes = [
       { path: 'offline', loadComponent: () => import('./features/offline/offline.component').then((m) => m.OfflineComponent) }
     ]
   },
-  { path: '**', redirectTo: 'tablero' }
+  { path: '**', redirectTo: 'tablero-operativo' }
 ];

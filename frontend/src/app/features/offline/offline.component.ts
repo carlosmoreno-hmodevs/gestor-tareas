@@ -19,7 +19,7 @@ import { RouterLink } from '@angular/router';
         Cuando recuperes la conexión, la aplicación se actualizará automáticamente. Las acciones que
         requieren internet (crear tarea, exportar, etc.) estarán deshabilitadas hasta entonces.
       </p>
-      <a mat-flat-button color="primary" routerLink="/tablero">Ver tablero</a>
+      <a mat-flat-button color="primary" routerLink="/tablero-operativo">Tablero operativo</a>
       <a mat-button routerLink="/tareas">Ver tareas</a>
     </div>
   `,

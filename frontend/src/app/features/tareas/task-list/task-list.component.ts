@@ -1,4 +1,5 @@
-import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, OnDestroy, effect, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,13 +11,18 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { Router } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../../core/services/task.service';
 import { DataService } from '../../../core/services/data.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { TaskWorkflowService } from '../../../core/services/task-workflow.service';
 import { AutomationService } from '../../../core/services/automation.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
+import { CurrentUserService } from '../../../core/services/current-user.service';
+import { ProjectService } from '../../../core/services/project.service';
+import { TaskPageLayoutService } from '../../../core/services/task-page-layout.service';
+import { KanbanBoardComponent } from '../../../shared/components/kanban-board/kanban-board.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { TaskCardComponent } from '../../../shared/components/task-card/task-card.component';
 import { StatusChipComponent } from '../../../shared/components/status-chip/status-chip.component';
@@ -40,36 +46,208 @@ import type { TaskStatus, Priority, Task } from '../../../shared/models';
     MatSelectModule,
     MatTableModule,
     MatButtonToggleModule,
+    MatCardModule,
+    KanbanBoardComponent,
     EmptyStateComponent,
     AvatarComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrl: './task-list.component.scss'
 })
-export class TaskListComponent implements OnInit {
+export class TaskListComponent implements OnInit, OnDestroy {
   readonly taskService = inject(TaskService);
   private readonly dataService = inject(DataService);
+  private readonly projectService = inject(ProjectService);
+  private readonly taskPageLayout = inject(TaskPageLayoutService);
   readonly connectivity = inject(ConnectivityService);
   readonly workflow = inject(TaskWorkflowService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly automationService = inject(AutomationService);
   private readonly tenantContext = inject(TenantContextService);
+  private readonly currentUserService = inject(CurrentUserService);
+  readonly currentUser = this.currentUserService.currentUser;
 
   searchText = signal('');
   selectedProjectId = signal('all');
 
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    effect(
+      () => {
+        this.taskPageLayout.setTasksFullBleed(this.viewMode() === 'board');
+      },
+      { allowSignalWrites: true }
+    );
+    this.route.queryParamMap.pipe(takeUntilDestroyed(destroyRef)).subscribe((params) => {
+      const v = params.get('vista');
+      if (v === 'tablero' || v === 'board') {
+        this.viewMode.set('board');
+      } else if (this.viewMode() === 'board') {
+        this.viewMode.set('list');
+      }
+    });
+  }
+
   ngOnInit(): void {
     const tid = this.tenantContext.currentTenantId();
     if (tid) this.automationService.runEngine(tid);
+  }
+
+  ngOnDestroy(): void {
+    this.taskPageLayout.setTasksFullBleed(false);
+  }
+
+  /** Cambia vista y sincroniza query (?vista=tablero) para enlaces del menú. */
+  setViewMode(mode: 'list' | 'calendar' | 'board'): void {
+    this.viewMode.set(mode);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: mode === 'board' ? { vista: 'tablero' } : { vista: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
   quickFilter = signal<'all' | 'hoy' | 'vencidas' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar'>('all');
   /** Estados seleccionados (varios se combinan con OR). Vacío = sin filtro por estado. */
   statusFilter = signal<(TaskStatus | 'completadas')[]>([]);
   /** Prioridades seleccionadas (varias se combinan con OR). Vacío = sin filtro por prioridad. */
   priorityFilter = signal<Priority[]>([]);
-  viewMode = signal<'list' | 'calendar'>('list');
+  viewMode = signal<'list' | 'calendar' | 'board'>('list');
+
+  /** Filtro de proyecto solo para la vista Tablero (mis tareas). */
+  boardProjectId = signal('all');
+  personalTaskScope = signal<'all' | 'assigned' | 'created'>('all');
+
+  /** Tablero Kanban: mismas reglas que en Mi tablero. */
+  myTasks = computed(() => {
+    const uid = this.currentUser().id;
+    const scope = this.personalTaskScope();
+    if (scope === 'assigned') {
+      return this.taskService.tasks().filter((t) => t.assigneeId === uid);
+    }
+    if (scope === 'created') {
+      return this.taskService.tasks().filter((t) => t.createdBy === uid);
+    }
+    return this.taskService.tasks().filter((t) => t.assigneeId === uid || t.createdBy === uid);
+  });
+
+  myProjectOptions = computed(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>();
+    for (const t of this.myTasks()) {
+      const pid = t.projectId;
+      if (!pid) continue;
+      const project = this.projectService.getProjectById(pid);
+      const current = map.get(pid);
+      if (current) {
+        current.count += 1;
+      } else {
+        map.set(pid, { id: pid, name: project?.name ?? pid, count: 1 });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  myTasksByProject = computed(() => {
+    const pid = this.boardProjectId();
+    if (pid === 'all') return this.myTasks();
+    return this.myTasks().filter((t) => t.projectId === pid);
+  });
+
+  /** Kanban personal: ámbito/proyecto + mismos criterios que la lista (filtro rápido, estado KPI/sidebar). */
+  myTasksFiltered = computed(() => {
+    let list = this.myTasksByProject();
+    const search = this.searchText().toLowerCase();
+    const qf = this.quickFilter();
+    const sfList = this.statusFilter();
+    const pfList = this.priorityFilter();
+    const w = this.workflow;
+
+    if (search) {
+      list = list.filter(
+        (t) =>
+          t.title.toLowerCase().includes(search) ||
+          t.folio.toLowerCase().includes(search) ||
+          t.assignee.toLowerCase().includes(search)
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (qf === 'hoy') {
+      list = list.filter((t) => {
+        const d = new Date(t.dueDate);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === today.getTime();
+      });
+    } else if (qf === 'vencidas') {
+      list = list.filter((t) => w.getEffectiveStatus(t) === 'Vencida');
+    } else if (qf === 'por-vencer') {
+      list = list.filter(
+        (t) =>
+          t.riskIndicator === 'por-vencer' &&
+          !['Completada', 'Liberada', 'Cancelada'].includes(w.getEffectiveStatus(t))
+      );
+    } else if (qf === 'esta-semana') {
+      const weekStart = new Date(today);
+      const day = weekStart.getDay();
+      const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+      weekStart.setDate(diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      const startT = weekStart.getTime();
+      const endT = weekEnd.getTime();
+      list = list.filter((t) => {
+        const d = new Date(t.dueDate).getTime();
+        return d >= startT && d <= endT;
+      });
+    } else if (qf === 'alta') {
+      list = list.filter((t) => t.priority === 'Alta');
+    } else if (qf === 'sin-asignar') {
+      list = list.filter((t) => !t.assignee || t.assignee === 'Sin asignar');
+    }
+
+    if (sfList.length > 0) {
+      list = list.filter((t) => {
+        const eff = w.getEffectiveStatus(t);
+        return sfList.some((sf) =>
+          sf === 'completadas' ? ['Completada', 'Liberada'].includes(eff) : eff === sf
+        );
+      });
+    }
+    if (pfList.length > 0) {
+      list = list.filter((t) => pfList.includes(t.priority));
+    }
+    return list;
+  });
+
+  personalTaskScopeLabel = computed(() => {
+    const scope = this.personalTaskScope();
+    if (scope === 'assigned') return 'Solo asignadas a mí';
+    if (scope === 'created') return 'Solo creadas por mí';
+    return 'Asignadas a mí + creadas por mí';
+  });
+
+  boardTitle = computed(() => {
+    const pid = this.boardProjectId();
+    if (pid === 'all') return 'Todas mis tareas';
+    const option = this.myProjectOptions().find((p) => p.id === pid);
+    return option ? option.name : 'Todas mis tareas';
+  });
+
+  boardSubtitle = computed(() => {
+    const scopeInfo = this.personalTaskScopeLabel();
+    return this.boardProjectId() === 'all'
+      ? `Vista tipo tablero por estado · ${scopeInfo}`
+      : `Vista tipo tablero del proyecto seleccionado · ${scopeInfo}`;
+  });
+
   calendarGranularity = signal<'month' | 'week' | 'day'>('month');
   calendarCursor = signal(new Date());
+  /** Mismo criterio que en Mi tablero: Todas = asignadas o creadas por mí. */
+  calendarTaskScope = signal<'all' | 'assigned' | 'created'>('all');
   /** Orden de la lista (como en detalle de proyecto). */
   sortOrder = signal<'default' | 'vencidas-primero' | 'fecha' | 'estado' | 'prioridad' | 'recientes'>('default');
 
@@ -338,8 +516,29 @@ export class TaskListComponent implements OnInit {
     return 999;
   });
 
+  /** Tareas que ve el calendario (lista ya filtrada + ámbito personal como en /tablero). */
+  tasksForCalendar = computed(() => {
+    const list = this.displayedTasks();
+    const uid = this.currentUser().id;
+    const scope = this.calendarTaskScope();
+    if (scope === 'assigned') {
+      return list.filter((t) => t.assigneeId === uid);
+    }
+    if (scope === 'created') {
+      return list.filter((t) => t.createdBy === uid);
+    }
+    return list.filter((t) => t.assigneeId === uid || t.createdBy === uid);
+  });
+
+  calendarTaskScopeLabel = computed(() => {
+    const scope = this.calendarTaskScope();
+    if (scope === 'assigned') return 'Solo asignadas a ti';
+    if (scope === 'created') return 'Solo creadas por ti';
+    return 'Asignadas a ti y creadas por ti';
+  });
+
   calendarDays = computed(() => {
-    const source = this.displayedTasks();
+    const source = this.tasksForCalendar();
     const cursor = this.calendarCursor();
     const granularity = this.calendarGranularity();
     const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -408,7 +607,7 @@ export class TaskListComponent implements OnInit {
 
   focusedDayTasks = computed(() => {
     const key = this.toDateKey(this.calendarCursor());
-    return this.displayedTasks()
+    return this.tasksForCalendar()
       .filter((t) => this.toDateKey(t.dueDate) === key)
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
   });
