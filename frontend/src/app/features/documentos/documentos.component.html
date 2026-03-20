@@ -1,20 +1,33 @@
 <app-page-header
   title="Documentos / Evidencias"
-  subtitle="Repositorio de archivos y evidencias asociadas a tareas"
+  subtitle="Explorador por proyecto y tarea: carpetas como en un directorio"
   icon="folder"
 />
 
 <mat-card class="documents-card">
   <mat-card-header>
     <div class="card-header-content">
-      <div>
-        <mat-card-title>Archivos</mat-card-title>
-        <mat-card-subtitle>{{ filteredDocuments().length }} documento(s)</mat-card-subtitle>
+      <div class="header-titles">
+        <mat-card-title>Repositorio</mat-card-title>
+        <mat-card-subtitle>
+          @if (atRoot()) {
+            {{ projectFolders().length }} proyecto(s) con archivos · {{ filteredDocuments().length }} documento(s) en total
+          } @else if (atProject()) {
+            Carpeta de proyecto · {{ taskFolders().length }} tarea(s) con archivos
+          } @else {
+            {{ filesInFolder().length }} archivo(s) en esta carpeta
+          }
+        </mat-card-subtitle>
       </div>
       <div class="toolbar">
         <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Filtrar por tarea</mat-label>
-          <input matInput placeholder="Ej: TASK-008" [ngModel]="taskFilter()" (ngModelChange)="taskFilter.set($event)" />
+          <mat-label>Buscar</mat-label>
+          <input
+            matInput
+            placeholder="Nombre, tarea, proyecto…"
+            [ngModel]="searchText()"
+            (ngModelChange)="searchText.set($event)"
+          />
           <mat-icon matPrefix>search</mat-icon>
         </mat-form-field>
         <button mat-flat-button color="primary" class="upload-btn" disabled matTooltip="Próximamente">
@@ -24,110 +37,179 @@
       </div>
     </div>
   </mat-card-header>
-  <mat-card-content>
-    @if (filteredDocuments().length > 0) {
-      @if (isMobile()) {
-        <div class="doc-cards">
-          @for (doc of filteredDocuments(); track doc.id) {
-            <div class="doc-card">
-              <div class="doc-card-main">
-                <mat-icon class="file-icon" [class]="'file-icon--' + getFileType(doc.name)">{{ getFileIcon(doc.name) }}</mat-icon>
-                <div class="doc-card-info">
-                  <span class="doc-card-name">{{ doc.name }}</span>
-                  <div class="doc-card-meta">
-                    <span>{{ formatSize(doc.size) }}</span>
-                    @if (doc.taskId) {
-                      <span>·</span>
-                      <span>{{ formatTaskId(doc.taskId) }}</span>
-                    }
-                    <span>·</span>
-                    <span>{{ doc.uploadedAt | dateFormat: 'short' }}</span>
-                    <span>·</span>
-                    <span>{{ doc.uploadedBy }}</span>
-                  </div>
-                </div>
-              </div>
-              <button mat-icon-button [matMenuTriggerFor]="docCardMenu" (click)="menuDoc.set(doc)" class="doc-card-menu">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-            </div>
-          }
-        </div>
-        <mat-menu #docCardMenu="matMenu">
-          @if (menuDoc(); as doc) {
-            <button mat-menu-item disabled>
-              <mat-icon>visibility</mat-icon>
-              Ver
-            </button>
-            <button mat-menu-item disabled>
-              <mat-icon>download</mat-icon>
-              Descargar
-            </button>
-          }
-        </mat-menu>
-      } @else {
-      <table mat-table [dataSource]="filteredDocuments()" class="documents-table">
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Nombre</th>
-          <td mat-cell *matCellDef="let doc">
-            <div class="file-cell">
-              <mat-icon class="file-icon" [class]="'file-icon--' + getFileType(doc.name)">{{ getFileIcon(doc.name) }}</mat-icon>
-              <span class="file-name">{{ doc.name }}</span>
-            </div>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="size">
-          <th mat-header-cell *matHeaderCellDef>Tamaño</th>
-          <td mat-cell *matCellDef="let doc">
-            <span class="meta-cell">{{ formatSize(doc.size) }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="taskId">
-          <th mat-header-cell *matHeaderCellDef>Tarea</th>
-          <td mat-cell *matCellDef="let doc">
-            <span class="meta-cell">{{ formatTaskId(doc.taskId) }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="uploadedAt">
-          <th mat-header-cell *matHeaderCellDef>Fecha</th>
-          <td mat-cell *matCellDef="let doc">
-            <span class="meta-cell">{{ doc.uploadedAt | dateFormat: 'full' }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="uploadedBy">
-          <th mat-header-cell *matHeaderCellDef>Subido por</th>
-          <td mat-cell *matCellDef="let doc">
-            <span class="meta-cell">{{ doc.uploadedBy }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let doc">
-            <button mat-icon-button [matMenuTriggerFor]="docMenu" matTooltip="Acciones">
-              <mat-icon>more_vert</mat-icon>
-            </button>
-            <mat-menu #docMenu="matMenu">
-              <button mat-menu-item disabled>
-                <mat-icon>visibility</mat-icon>
-                Ver
-              </button>
-              <button mat-menu-item disabled>
-                <mat-icon>download</mat-icon>
-                Descargar
-              </button>
-            </mat-menu>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns" class="doc-row"></tr>
-      </table>
+
+  <mat-divider />
+
+  <mat-card-content class="explorer-body">
+    <!-- Migas + volver -->
+    <nav class="explorer-toolbar" aria-label="Ruta">
+      @if (!atRoot()) {
+        <button mat-icon-button type="button" (click)="goUp()" matTooltip="Carpeta superior" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
       }
-    } @else {
+      <ol class="breadcrumbs">
+        <li>
+          <button type="button" class="crumb crumb-link" (click)="goToRoot()">Documentos</button>
+        </li>
+        @if (folderProjectId(); as pid) {
+          <li class="crumb-sep" aria-hidden="true">/</li>
+          <li>
+            @if (projectDetailLink(pid); as plink) {
+              <a [routerLink]="plink" class="crumb crumb-link">{{ currentProjectLabel() }}</a>
+            } @else {
+              <span class="crumb">{{ currentProjectLabel() }}</span>
+            }
+          </li>
+        }
+        @if (folderTaskKey(); as tk) {
+          <li class="crumb-sep" aria-hidden="true">/</li>
+          <li>
+            @if (taskDetailLink(tk); as tlink) {
+              <a [routerLink]="tlink" class="crumb crumb-link">{{ currentTaskLabel() }}</a>
+            } @else {
+              <span class="crumb">{{ currentTaskLabel() }}</span>
+            }
+          </li>
+        }
+      </ol>
+    </nav>
+
+    @if (filteredDocuments().length === 0) {
       <div class="empty-state">
         <mat-icon>folder_open</mat-icon>
-        <p>No hay documentos que coincidan con el filtro</p>
-        <span class="empty-hint">Sube archivos o ajusta el criterio de búsqueda</span>
+        <p>No hay documentos que coincidan</p>
+        <span class="empty-hint">Ajusta la búsqueda o sube archivos cuando esté disponible</span>
+      </div>
+    } @else if (atRoot()) {
+      <p class="explorer-hint">Elegí un proyecto para ver las carpetas de cada tarea.</p>
+      <ul class="explorer-list" role="list">
+        @for (row of projectFolders(); track row.projectId) {
+          <li>
+            <button type="button" class="explorer-row explorer-row--folder" (click)="openProject(row.projectId)">
+              <span class="row-icon-wrap row-icon-wrap--project">
+                <mat-icon class="folder-icon">folder</mat-icon>
+              </span>
+              <span class="row-main">
+                <span class="row-title">{{ row.project?.name ?? 'Sin proyecto' }}</span>
+                <span class="row-subtitle">
+                  @if (row.projectId !== orphanProjectId) {
+                    <span class="mono">{{ row.projectId }}</span>
+                    <span class="dot">·</span>
+                  }
+                  {{ row.docCount }} archivo(s)
+                </span>
+              </span>
+              <mat-icon class="row-chevron">chevron_right</mat-icon>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else if (atProject()) {
+      <p class="explorer-hint">Abrí una tarea para ver sus evidencias y archivos.</p>
+      <ul class="explorer-list" role="list">
+        @for (t of taskFolders(); track t.taskKey) {
+          <li>
+            <button type="button" class="explorer-row explorer-row--folder" (click)="openTaskFolder(t.taskKey)">
+              <span class="row-icon-wrap row-icon-wrap--task">
+                <mat-icon class="folder-icon">folder_special</mat-icon>
+              </span>
+              <span class="row-main">
+                @if (t.taskKey === orphanTaskKey) {
+                  <span class="row-title">Sin tarea vinculada</span>
+                  <span class="row-subtitle">Archivos asociados solo al proyecto</span>
+                } @else if (t.task) {
+                  <span class="row-title">{{ t.task.title }}</span>
+                  <span class="row-subtitle">
+                    <span class="mono">{{ t.task.folio }}</span>
+                    <span class="dot">·</span>
+                    {{ t.docCount }} archivo(s)
+                  </span>
+                } @else {
+                  <span class="row-title">{{ formatTaskId(t.taskKey) }}</span>
+                  <span class="row-subtitle">{{ t.docCount }} archivo(s)</span>
+                }
+              </span>
+              <mat-icon class="row-chevron">chevron_right</mat-icon>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else if (filesInFolder().length === 0) {
+      <div class="empty-state empty-state--soft">
+        <mat-icon>search_off</mat-icon>
+        <p>Nada coincide en esta carpeta</p>
+        <span class="empty-hint">Probá otra búsqueda o subí un nivel</span>
+        <button mat-stroked-button type="button" color="primary" (click)="goUp()">Subir un nivel</button>
+      </div>
+    } @else {
+      <div class="files-section">
+        @if (isMobile()) {
+          <ul class="file-cards" role="list">
+            @for (doc of filesInFolder(); track doc.id) {
+              <li class="file-card">
+                <div class="file-card-main">
+                  <mat-icon class="file-icon" [class]="'file-icon--' + getFileType(doc.name)">{{ getFileIcon(doc.name) }}</mat-icon>
+                  <div class="file-card-info">
+                    <span class="file-card-name">{{ doc.name }}</span>
+                    <div class="file-card-meta">
+                      <span>{{ formatSize(doc.size) }}</span>
+                      <span>·</span>
+                      <span>{{ doc.uploadedAt | dateFormat: 'short' }}</span>
+                      <span>·</span>
+                      <span>{{ doc.uploadedBy }}</span>
+                    </div>
+                  </div>
+                </div>
+                <button mat-icon-button [matMenuTriggerFor]="docExplorerMenu" (click)="menuDoc.set(doc)" class="file-card-menu">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="files-table-head" role="row">
+            <span class="col-name">Nombre</span>
+            <span class="col-size">Tamaño</span>
+            <span class="col-date">Fecha</span>
+            <span class="col-by">Subido por</span>
+            <span class="col-actions"></span>
+          </div>
+          <ul class="files-table-body" role="list">
+            @for (doc of filesInFolder(); track doc.id) {
+              <li class="files-table-row" role="row">
+                <span class="col-name">
+                  <span class="file-cell">
+                    <mat-icon class="file-icon" [class]="'file-icon--' + getFileType(doc.name)">{{ getFileIcon(doc.name) }}</mat-icon>
+                    <span class="file-name">{{ doc.name }}</span>
+                  </span>
+                </span>
+                <span class="col-size meta-cell">{{ formatSize(doc.size) }}</span>
+                <span class="col-date meta-cell">{{ doc.uploadedAt | dateFormat: 'full' }}</span>
+                <span class="col-by meta-cell">{{ doc.uploadedBy }}</span>
+                <span class="col-actions">
+                  <button mat-icon-button [matMenuTriggerFor]="docExplorerMenu" (click)="menuDoc.set(doc)" matTooltip="Acciones">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
       </div>
     }
   </mat-card-content>
 </mat-card>
+
+<mat-menu #docExplorerMenu="matMenu">
+  @if (menuDoc(); as doc) {
+    <button mat-menu-item disabled>
+      <mat-icon>visibility</mat-icon>
+      Ver
+    </button>
+    <button mat-menu-item disabled>
+      <mat-icon>download</mat-icon>
+      Descargar
+    </button>
+  }
+</mat-menu>

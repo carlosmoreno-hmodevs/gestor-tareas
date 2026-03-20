@@ -88,13 +88,30 @@ function createDemoTask001(): Task {
 function tasksForTenant1(): Task[] {
   return [
   createDemoTask001(),
-  createTask('TASK-002', 'Actualizar inventario de almacén', 'Carlos López', 'user-2', 'Pendiente', 'Media', addDays(now, 1), { categoryId: 'cat-2', categoryName: 'Logística' }),
-  createTask('TASK-003', 'Auditoría interna ISO 9001', 'Ana Martínez', 'user-3', 'Completada', 'Alta', addDays(now, -2), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-002', 'Actualizar inventario de almacén', 'Carlos López', 'user-2', 'Pendiente', 'Media', addDays(now, 1), {
+    categoryId: 'cat-2',
+    categoryName: 'Logística',
+    projectId: 'proj-2'
+  }),
+  createTask('TASK-003', 'Auditoría interna ISO 9001', 'Ana Martínez', 'user-3', 'Completada', 'Alta', addDays(now, -2), {
+    categoryId: 'cat-1',
+    categoryName: 'Calidad',
+    projectId: 'proj-1'
+  }),
   createTask('TASK-004', 'Reunión de planificación semanal', 'Pedro Sánchez', 'user-4', 'En Espera', 'Baja', addDays(now, 3), { categoryId: 'cat-3', categoryName: 'Producción', blockedReason: { code: 'MANAGER_APPROVAL', label: 'Autorización de gerencia', source: 'catalog' } as TaskBlockedReason, blockedAt: addHours(now, -18).toISOString() }),
-  createTask('TASK-005', 'Corregir no conformidad NC-2024-001', 'María García', 'user-1', 'Vencida', 'Alta', addDays(now, -1), { commentsCount: 5, categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-005', 'Corregir no conformidad NC-2024-001', 'María García', 'user-1', 'Vencida', 'Alta', addDays(now, -1), {
+    commentsCount: 5,
+    categoryId: 'cat-1',
+    categoryName: 'Calidad',
+    projectId: 'proj-1'
+  }),
   createTask('TASK-006', 'Capacitación nuevo personal', 'Laura Rodríguez', 'user-5', 'Pendiente', 'Media', addDays(now, 5), { categoryId: 'cat-3', categoryName: 'Producción' }),
   createTask('TASK-007', 'Revisar proveedores críticos', 'Carlos López', 'user-2', 'En Progreso', 'Alta', addHours(now, 36), { categoryId: 'cat-2', categoryName: 'Logística' }),
-  createTask('TASK-008', 'Elaborar informe mensual', 'Ana Martínez', 'user-3', 'Liberada', 'Media', addDays(now, -3), { categoryId: 'cat-1', categoryName: 'Calidad' }),
+  createTask('TASK-008', 'Elaborar informe mensual', 'Ana Martínez', 'user-3', 'Liberada', 'Media', addDays(now, -3), {
+    categoryId: 'cat-1',
+    categoryName: 'Calidad',
+    projectId: 'proj-1'
+  }),
   createTask('TASK-009', 'Mantenimiento preventivo equipo A', 'Pedro Sánchez', 'user-4', 'Pendiente', 'Baja', addDays(now, 7), { categoryId: 'cat-3', categoryName: 'Producción' }),
   createTask('TASK-010', 'Investigación root cause defecto', 'María García', 'user-1', 'En Progreso', 'Alta', addDays(now, 2), { categoryId: 'cat-1', categoryName: 'Calidad' }),
   createTask('TASK-011', 'Cerrar orden de compra OC-4421', 'Carlos López', 'user-2', 'Pendiente', 'Media', addHours(now, 24), { categoryId: 'cat-2', categoryName: 'Logística' }),
@@ -844,9 +861,51 @@ export const ALERT_RULES: AlertRule[] = [
 ];
 
 export const DOCUMENTS: Document[] = [
-  { id: 'doc-1', name: 'Informe_Q1.pdf', size: 245000, taskId: 'task-TASK-008', uploadedAt: addDays(now, -1), uploadedBy: 'Ana Martínez' },
-  { id: 'doc-2', name: 'NC-2024-001.pdf', size: 120000, taskId: 'task-TASK-005', uploadedAt: addDays(now, -2), uploadedBy: 'María García' },
-  { id: 'doc-3', name: 'Evidencia_auditoria.docx', size: 56000, taskId: 'task-TASK-003', uploadedAt: addDays(now, -3), uploadedBy: 'Ana Martínez' }
+  {
+    id: 'doc-1',
+    name: 'Informe_Q1.pdf',
+    size: 245000,
+    taskId: 'task-TASK-008',
+    projectId: 'proj-1',
+    uploadedAt: addDays(now, -1),
+    uploadedBy: 'Ana Martínez'
+  },
+  {
+    id: 'doc-2',
+    name: 'NC-2024-001.pdf',
+    size: 120000,
+    taskId: 'task-TASK-005',
+    projectId: 'proj-1',
+    uploadedAt: addDays(now, -2),
+    uploadedBy: 'María García'
+  },
+  {
+    id: 'doc-3',
+    name: 'Evidencia_auditoria.docx',
+    size: 56000,
+    taskId: 'task-TASK-003',
+    projectId: 'proj-1',
+    uploadedAt: addDays(now, -3),
+    uploadedBy: 'Ana Martínez'
+  },
+  {
+    id: 'doc-4',
+    name: 'Rutas_piloto_Q1.xlsx',
+    size: 88000,
+    taskId: 'task-TASK-002',
+    projectId: 'proj-2',
+    uploadedAt: addDays(now, -4),
+    uploadedBy: 'Carlos López'
+  },
+  /** Evidencia sin tarea (queda bajo “Sin tarea” del proyecto indicado) */
+  {
+    id: 'doc-5',
+    name: 'Notas_generales_proyecto.pdf',
+    size: 32000,
+    projectId: 'proj-1',
+    uploadedAt: addDays(now, -5),
+    uploadedBy: 'Maria'
+  }
 ];
 
 export const CATEGORIES: Category[] = [
