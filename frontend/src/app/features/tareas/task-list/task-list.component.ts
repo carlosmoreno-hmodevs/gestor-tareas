@@ -71,7 +71,7 @@ export class TaskListComponent implements OnInit {
   calendarGranularity = signal<'month' | 'week' | 'day'>('month');
   calendarCursor = signal(new Date());
   /** Orden de la lista (como en detalle de proyecto). */
-  sortOrder = signal<'default' | 'vencidas-primero' | 'fecha' | 'estado' | 'prioridad'>('default');
+  sortOrder = signal<'default' | 'vencidas-primero' | 'fecha' | 'estado' | 'prioridad' | 'recientes'>('default');
 
   kanbanColumns: { status: TaskStatus; label: string }[] = [
     { status: 'Pendiente', label: 'Pendiente' },
@@ -303,6 +303,11 @@ export class TaskListComponent implements OnInit {
         const pa = a.priority === 'Alta' ? 3 : a.priority === 'Media' ? 2 : 1;
         const pb = b.priority === 'Alta' ? 3 : b.priority === 'Media' ? 2 : 1;
         return pb - pa;
+      }
+      if (order === 'recientes') {
+        const ca = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const cb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return cb - ca;
       }
       return 0;
     });
@@ -537,6 +542,11 @@ export class TaskListComponent implements OnInit {
 
   setCalendarGranularity(mode: 'month' | 'week' | 'day'): void {
     this.calendarGranularity.set(mode);
+  }
+
+  openCalendarDay(date: Date): void {
+    this.calendarCursor.set(new Date(date.getFullYear(), date.getMonth(), date.getDate()));
+    this.calendarGranularity.set('day');
   }
 
   private startOfWeek(date: Date): Date {

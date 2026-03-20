@@ -96,7 +96,7 @@ export const INITIAL_ROLES: Role[] = [
 export const INITIAL_ADMIN_USERS: AdminUser[] = [
   {
     id: 'user-owner',
-    name: 'Super Admin',
+    name: 'Elvis',
     email: 'owner@empresa.com',
     roleId: 'role-owner',
     teamId: 'team-1',
@@ -106,7 +106,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-1',
-    name: 'María García',
+    name: 'Maria',
     email: 'maria@empresa.com',
     roleId: 'role-admin',
     teamId: 'team-1',
@@ -116,7 +116,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-2',
-    name: 'Carlos López',
+    name: 'Carlos',
     email: 'carlos@empresa.com',
     roleId: 'role-supervisor',
     teamId: 'team-2',
@@ -126,7 +126,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-3',
-    name: 'Ana Martínez',
+    name: 'Karen',
     email: 'ana@empresa.com',
     roleId: 'role-member',
     teamId: 'team-3',
@@ -136,7 +136,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-4',
-    name: 'Pedro Sánchez',
+    name: 'Felipe',
     email: 'pedro@empresa.com',
     roleId: 'role-member',
     teamId: 'team-4',
@@ -146,7 +146,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-5',
-    name: 'Laura Rodríguez',
+    name: 'Elvis',
     email: 'laura@empresa.com',
     roleId: 'role-supervisor',
     teamId: 'team-1',
@@ -156,7 +156,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-6',
-    name: 'Eva Torres',
+    name: 'Nora',
     email: 'eva@empresa.com',
     roleId: 'role-viewer',
     teamId: 'team-3',
@@ -166,7 +166,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-7',
-    name: 'Ricardo Mora',
+    name: 'Diego',
     email: 'ricardo@empresa.com',
     roleId: 'role-member',
     teamId: 'team-2',
@@ -176,7 +176,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'user-8',
-    name: 'Elena Vega',
+    name: 'Sofia',
     email: 'elena@empresa.com',
     roleId: 'role-member',
     teamId: 'team-2',

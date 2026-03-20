@@ -92,4 +92,18 @@ export class ShellComponent implements OnInit {
     this.currentUserService.setCurrentUser(userId);
   }
 
+  formatUserRole(role: string): string {
+    const normalized = String(role ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '');
+    // "superadmin" contiene "admin": comprobar antes
+    if (normalized.includes('owner') || normalized.includes('superadmin')) return 'Propietario';
+    if (normalized.includes('admin')) return 'Admin';
+    if (normalized.includes('supervisor')) return 'Supervisor';
+    if (normalized.includes('member') || normalized.includes('miembro')) return 'Miembro';
+    if (normalized.includes('viewer') || normalized.includes('lectura')) return 'Lector';
+    return role?.trim() ? role : '—';
+  }
+
 }

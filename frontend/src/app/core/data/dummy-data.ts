@@ -45,23 +45,23 @@ function createTask(
     commentsCount: 0,
     createdAt: addDays(now, -7),
     createdBy: 'user-1',
-    createdByName: 'María García',
+    createdByName: 'Maria',
     history: [] as Task['history'],
     ...overrides
   };
 }
 
 export const USERS: User[] = [
-  { id: 'user-1', name: 'María García', email: 'maria@empresa.com', role: 'Admin', team: 'Operaciones' },
-  { id: 'user-2', name: 'Carlos López', email: 'carlos@empresa.com', role: 'Supervisor', team: 'Logística' },
-  { id: 'user-3', name: 'Ana Martínez', email: 'ana@empresa.com', role: 'Operador', team: 'Calidad' },
-  { id: 'user-4', name: 'Pedro Sánchez', email: 'pedro@empresa.com', role: 'Operador', team: 'Producción' },
-  { id: 'user-5', name: 'Laura Rodríguez', email: 'laura@empresa.com', role: 'Supervisor', team: 'Operaciones' }
+  { id: 'user-1', name: 'Maria', email: 'maria@empresa.com', role: 'Admin', team: 'Operaciones' },
+  { id: 'user-2', name: 'Carlos', email: 'carlos@empresa.com', role: 'Supervisor', team: 'Logística' },
+  { id: 'user-3', name: 'Karen', email: 'karen@empresa.com', role: 'Operador', team: 'Calidad' },
+  { id: 'user-4', name: 'Felipe', email: 'felipe@empresa.com', role: 'Operador', team: 'Producción' },
+  { id: 'user-5', name: 'Elvis', email: 'elvis@empresa.com', role: 'Supervisor', team: 'Operaciones' }
 ];
 
 // Demo task with full history and attachments for task-detail UI
 function createDemoTask001(): Task {
-  const base = createTask('TASK-001', 'Revisar documentación de calidad', 'María García', 'user-1', 'En Progreso', 'Alta', addHours(now, 12), {
+  const base = createTask('TASK-001', 'Revisar documentación de calidad', 'Maria', 'user-1', 'En Progreso', 'Alta', addHours(now, 12), {
     commentsCount: 2,
     attachmentsCount: 2,
     categoryId: 'cat-1',
@@ -70,16 +70,16 @@ function createDemoTask001(): Task {
     tags: ['ISO 9001', 'Auditoría'],
     description: 'Revisar y actualizar la documentación de calidad para la próxima auditoría interna. Incluir procedimientos actualizados y evidencias del último trimestre.',
     attachments: [
-      { id: 'att-1', name: 'Procedimiento_Calidad_v2.pdf', size: 245000, type: 'application/pdf', uploadedAt: addHours(now, -48), uploadedBy: 'María García', uploadedById: 'user-1' },
-      { id: 'att-2', name: 'Evidencias_Q1.xlsx', size: 56000, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', uploadedAt: addHours(now, -24), uploadedBy: 'Carlos López', uploadedById: 'user-2' }
+      { id: 'att-1', name: 'Procedimiento_Calidad_v2.pdf', size: 245000, type: 'application/pdf', uploadedAt: addHours(now, -48), uploadedBy: 'Maria', uploadedById: 'user-1' },
+      { id: 'att-2', name: 'Evidencias_Q1.xlsx', size: 56000, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', uploadedAt: addHours(now, -24), uploadedBy: 'Carlos', uploadedById: 'user-2' }
     ],
     history: [
-      { id: 'h-1', type: 'CREATED', timestamp: addDays(now, -7), userId: 'user-1', userName: 'María García', details: { newValue: '{}' } },
-      { id: 'h-2', type: 'STATUS_CHANGED', timestamp: addDays(now, -5), userId: 'user-1', userName: 'María García', details: { fromStatus: 'Pendiente', toStatus: 'En Progreso' } },
-      { id: 'h-3', type: 'ATTACHMENT_ADDED', timestamp: addHours(now, -48), userId: 'user-1', userName: 'María García', details: { fileNames: ['Procedimiento_Calidad_v2.pdf'] } },
-      { id: 'h-4', type: 'COMMENT_ADDED', timestamp: addHours(now, -36), userId: 'user-2', userName: 'Carlos López', details: { comment: 'He revisado el procedimiento, falta la sección 4.2. Sugerencia: incluir el checklist de verificación.' } },
-      { id: 'h-5', type: 'ATTACHMENT_ADDED', timestamp: addHours(now, -24), userId: 'user-2', userName: 'Carlos López', details: { fileNames: ['Evidencias_Q1.xlsx'] } },
-      { id: 'h-6', type: 'COMMENT_ADDED', timestamp: addHours(now, -2), userId: 'user-1', userName: 'María García', details: { comment: 'Listo, añadí la sección 4.2. Revisar por favor.' } }
+      { id: 'h-1', type: 'CREATED', timestamp: addDays(now, -7), userId: 'user-1', userName: 'Maria', details: { newValue: '{}' } },
+      { id: 'h-2', type: 'STATUS_CHANGED', timestamp: addDays(now, -5), userId: 'user-1', userName: 'Maria', details: { fromStatus: 'Pendiente', toStatus: 'En Progreso' } },
+      { id: 'h-3', type: 'ATTACHMENT_ADDED', timestamp: addHours(now, -48), userId: 'user-1', userName: 'Maria', details: { fileNames: ['Procedimiento_Calidad_v2.pdf'] } },
+      { id: 'h-4', type: 'COMMENT_ADDED', timestamp: addHours(now, -36), userId: 'user-2', userName: 'Carlos', details: { comment: 'He revisado el procedimiento, falta la sección 4.2. Sugerencia: incluir el checklist de verificación.' } },
+      { id: 'h-5', type: 'ATTACHMENT_ADDED', timestamp: addHours(now, -24), userId: 'user-2', userName: 'Carlos', details: { fileNames: ['Evidencias_Q1.xlsx'] } },
+      { id: 'h-6', type: 'COMMENT_ADDED', timestamp: addHours(now, -2), userId: 'user-1', userName: 'Maria', details: { comment: 'Listo, añadí la sección 4.2. Revisar por favor.' } }
     ]
   } as Task);
   return base;
@@ -117,9 +117,16 @@ function tasksForTenant1(): Task[] {
   createTask('TASK-028', 'Revisar KPIs del trimestre', 'Pedro Sánchez', 'user-4', 'Completada', 'Baja', addDays(now, -7), { categoryId: 'cat-2', categoryName: 'Logística' }),
   createTask('TASK-029', 'Sin asignar - Urgente', 'Sin asignar', '', 'Pendiente', 'Alta', addHours(now, 4), { categoryId: 'cat-1', categoryName: 'Calidad' }),
   createTask('TASK-030', 'Actualizar certificaciones equipo', 'Laura Rodríguez', 'user-5', 'Liberada', 'Media', addDays(now, -2), { categoryId: 'cat-3', categoryName: 'Producción' }),
-  createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Pedro Sánchez', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { categoryId: 'cat-1', categoryName: 'Calidad', rejectionComment: 'Faltan evidencias de la última auditoría.', rejectedReason: { code: 'MISSING_EVIDENCE', label: 'Falta evidencia (foto/comprobante)', source: 'catalog' } as TaskRejectedReason }),
+  createTask('TASK-031', 'Revisión rechazada - Documentación incompleta', 'Felipe', 'user-4', 'Rechazada', 'Alta', addDays(now, 2), { categoryId: 'cat-1', categoryName: 'Calidad', rejectionComment: 'Faltan evidencias de la última auditoría.', rejectedReason: { code: 'MISSING_EVIDENCE', label: 'Falta evidencia (foto/comprobante)', source: 'catalog' } as TaskRejectedReason }),
   createTask('TASK-032', 'Revisión de reportes (solo lectura)', 'Eva Torres', 'user-6', 'Pendiente', 'Baja', addDays(now, 5), { categoryId: 'cat-2', categoryName: 'Logística' }),
-  createTask('TASK-033', 'Auditoría general del sistema', 'Super Admin', 'user-owner', 'En Progreso', 'Alta', addDays(now, 3), { categoryId: 'cat-1', categoryName: 'Calidad' })
+  createTask('TASK-033', 'Auditoría general del sistema', 'Elvis', 'user-owner', 'En Progreso', 'Alta', addDays(now, 3), { categoryId: 'cat-1', categoryName: 'Calidad', createdBy: 'user-owner', createdByName: 'Elvis' }),
+  createTask('TASK-034', 'Revisión ejecutiva de cumplimiento semanal', 'Elvis', 'user-owner', 'Pendiente', 'Alta', addDays(now, 2), { categoryId: 'cat-1', categoryName: 'Calidad', createdBy: 'user-owner', createdByName: 'Elvis' }),
+  createTask('TASK-035', 'Aprobación de plan operativo trimestral', 'Elvis', 'user-owner', 'En Progreso', 'Alta', addDays(now, 4), { categoryId: 'cat-3', categoryName: 'Producción', createdBy: 'user-owner', createdByName: 'Elvis' }),
+  createTask('TASK-036', 'Validación de indicadores críticos del tablero', 'Carlos', 'user-2', 'Pendiente', 'Media', addDays(now, 1), { categoryId: 'cat-2', categoryName: 'Logística', createdBy: 'user-owner', createdByName: 'Elvis' }),
+  createTask('TASK-037', 'Seguimiento de tareas estratégicas por área', 'Karen', 'user-3', 'En Espera', 'Media', addDays(now, 5), { categoryId: 'cat-1', categoryName: 'Calidad', createdBy: 'user-owner', createdByName: 'Elvis', blockedReason: { code: 'MANAGER_APPROVAL', label: 'Autorización de gerencia', source: 'catalog' } as TaskBlockedReason, blockedAt: addHours(now, -6).toISOString() }),
+  createTask('TASK-038', 'Auditoría de cierre mensual de proyectos', 'Elvis', 'user-owner', 'Pendiente', 'Media', addDays(now, 6), { categoryId: 'cat-1', categoryName: 'Calidad', createdBy: 'user-owner', createdByName: 'Elvis' }),
+  createTask('TASK-039', 'Definición de metas de mejora continua', 'Felipe', 'user-4', 'En Progreso', 'Baja', addDays(now, 7), { categoryId: 'cat-3', categoryName: 'Producción', createdBy: 'user-owner', createdByName: 'Elvis' }),
+  createTask('TASK-040', 'Revisión final de backlog operativo', 'Elvis', 'user-owner', 'Pendiente', 'Alta', addHours(now, 30), { categoryId: 'cat-2', categoryName: 'Logística', createdBy: 'user-owner', createdByName: 'Elvis' })
   ];
 }
 
@@ -171,11 +178,11 @@ function bscProjectTasks(
   const rejectedCount = options?.rejectedCount ?? 0;
   const rest = total - liberadas - completadas - overdue - rejectedCount;
   const users = [
-    { id: 'user-1', name: 'María García' },
-    { id: 'user-2', name: 'Carlos López' },
-    { id: 'user-3', name: 'Ana Martínez' },
-    { id: 'user-4', name: 'Pedro Sánchez' },
-    { id: 'user-5', name: 'Laura Rodríguez' }
+    { id: 'user-1', name: 'Maria' },
+    { id: 'user-2', name: 'Carlos' },
+    { id: 'user-3', name: 'Karen' },
+    { id: 'user-4', name: 'Felipe' },
+    { id: 'user-5', name: 'Elvis' }
   ];
   const pickUser = (i: number) => users[i % users.length];
   const past = (d: number) => addDays(now, -d);

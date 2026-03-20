@@ -11,6 +11,7 @@ export const INITIAL_TENANT_USERS: TenantUser[] = [
   { tenantId: 'tenant-1', userId: 'user-1', globalRole: 'TENANT_ADMIN' },
   { tenantId: 'tenant-1', userId: 'user-2', globalRole: 'MEMBER' },
   { tenantId: 'tenant-1', userId: 'user-3', globalRole: 'MEMBER' },
+  { tenantId: 'tenant-1', userId: 'user-4', globalRole: 'MEMBER' },
   { tenantId: 'tenant-1', userId: 'user-7', globalRole: 'MEMBER' },
   { tenantId: 'tenant-1', userId: 'user-8', globalRole: 'MEMBER' },
   { tenantId: 'tenant-2', userId: 'user-owner', globalRole: 'OWNER' },

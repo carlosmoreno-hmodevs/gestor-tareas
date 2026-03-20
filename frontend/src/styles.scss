@@ -133,3 +133,84 @@ p, span, a, button, input, label, select, textarea {
     animation: fade-in 0.3s ease-out;
   }
 }
+
+// Menú "Cambiar usuario": el panel vive en el overlay (fuera del host del shell).
+// Material envuelve el contenido en .mat-mdc-menu-item-text sin flex en fila → avatar arriba y nombre+rol pegados ("ElvisOwner").
+.user-switch-menu.mat-mdc-menu-panel {
+  min-width: 280px;
+  max-width: min(360px, calc(100vw - 24px)) !important;
+}
+
+.user-switch-menu .user-menu-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  .user-menu-title {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text, #212121);
+  }
+
+  .user-menu-subtitle {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #757575);
+    margin-top: 2px;
+  }
+}
+
+[data-theme='dark'] .user-switch-menu .user-menu-header {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.user-switch-menu .mat-mdc-menu-item .mat-mdc-menu-item-text {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.user-switch-menu .mat-mdc-menu-item app-avatar {
+  display: block;
+  flex-shrink: 0;
+}
+
+.user-switch-menu .mat-mdc-menu-item .user-menu-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 3px;
+  line-height: 1.25;
+}
+
+.user-switch-menu .mat-mdc-menu-item .user-menu-name,
+.user-switch-menu .mat-mdc-menu-item .user-menu-role {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.user-switch-menu .mat-mdc-menu-item .user-menu-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-switch-menu .mat-mdc-menu-item .user-menu-role {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #757575);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-switch-menu .mat-mdc-menu-item.selected {
+  background: rgba(25, 118, 210, 0.1);
+}

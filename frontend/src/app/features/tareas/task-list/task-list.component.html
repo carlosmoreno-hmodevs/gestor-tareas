@@ -164,6 +164,10 @@
     </div>
 
     <div class="kpi-strip animate-stagger">
+      <button type="button" class="kpi-card kpi-card-clickable kpi-pending" [class.active]="isStatusFilterActive('Pendiente')" (click)="applyStatusFilter('Pendiente')">
+        <span class="kpi-value">{{ pendingCount() }}</span>
+        <span class="kpi-label">Pendiente</span>
+      </button>
       <button type="button" class="kpi-card kpi-card-clickable kpi-inprogress" [class.active]="isStatusFilterActive('En Progreso')" (click)="applyStatusFilter('En Progreso')">
         <span class="kpi-value">{{ inProgressCount() }}</span>
         <span class="kpi-label">En progreso</span>
@@ -194,6 +198,7 @@
           <mat-option value="default">Por defecto</mat-option>
           <mat-option value="vencidas-primero">Vencidas primero</mat-option>
           <mat-option value="fecha">Por fecha vencimiento</mat-option>
+          <mat-option value="recientes">Más recientes primero</mat-option>
           <mat-option value="estado">Por estado</mat-option>
           <mat-option value="prioridad">Por prioridad</mat-option>
         </mat-select>
@@ -248,6 +253,11 @@
               [class.is-today]="day.isToday"
               [class.week-view]="calendarGranularity() === 'week'"
               [class.day-view]="calendarGranularity() === 'day'"
+              role="button"
+              tabindex="0"
+              (click)="openCalendarDay(day.date)"
+              (keydown.enter)="openCalendarDay(day.date)"
+              (keydown.space)="openCalendarDay(day.date); $event.preventDefault()"
             >
               <header class="calendar-day-header">
                 <span class="calendar-day-number">{{ day.dayNumber }}</span>
@@ -258,7 +268,7 @@
 
               <div class="calendar-day-tasks">
                 @for (task of day.tasks.slice(0, maxCalendarTasksPerDay()); track task.id) {
-                  <a class="calendar-task-pill" [routerLink]="['/tareas', task.id]" [title]="task.title">
+                  <a class="calendar-task-pill" [routerLink]="['/tareas', task.id]" [title]="task.title" (click)="$event.stopPropagation()">
                     <span class="calendar-task-dot" [attr.data-prio]="task.priority"></span>
                     <span class="calendar-task-text">{{ task.title }}</span>
                     @if (calendarGranularity() !== 'month') {
