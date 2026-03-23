@@ -65,7 +65,6 @@ export class ShellComponent implements OnInit {
   availableUsers = this.currentUserService.availableUsers;
 
   navItems = computed<NavItem[]>(() => [
-    { path: '/tareas', label: 'Mi tablero', shortLabel: 'Inicio', icon: 'view_kanban', queryParams: { vista: 'tablero' } },
     { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Inicio', icon: 'dashboard' },
     { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
     { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
