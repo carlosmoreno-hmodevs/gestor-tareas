@@ -17,6 +17,46 @@
   margin-bottom: $spacing-sm;
 }
 
+.status-reason {
+  font-size: $font-size-sm;
+  margin: 0 0 $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  strong {
+    display: block;
+    margin-bottom: $spacing-xs;
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary, #757575);
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.45;
+    color: var(--color-text, #212121);
+  }
+
+  .reason-detail {
+    margin-top: $spacing-xs;
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #757575);
+  }
+}
+
+.status-reason--rejected {
+  background: rgba(198, 40, 40, 0.06);
+  border-color: rgba(198, 40, 40, 0.2);
+}
+
+.status-reason--released {
+  background: rgba(0, 137, 123, 0.08);
+  border-color: rgba(0, 137, 123, 0.22);
+}
+
 .transition-buttons {
   display: flex;
   flex-wrap: wrap;

@@ -55,6 +55,37 @@
   &[data-status='Liberada'] .kanban-column-title::before { background: #0288d1; }
   &[data-status='Rechazada'] .kanban-column-title::before { background: #c62828; }
   &[data-status='Cancelada'] .kanban-column-title::before { background: #616161; }
+
+  &.kanban-column--drop-allowed {
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    background: linear-gradient(
+      180deg,
+      rgba(46, 125, 50, 0.1) 0%,
+      var(--color-bg-card, #f8f9fa) 28%
+    );
+    transition: background 0.2s ease, filter 0.2s ease;
+
+    /* Anillo interior: el box-shadow exterior se recorta con overflow del tablero; así el borde llega hasta arriba */
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 2px solid rgba(46, 125, 50, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+      z-index: 2;
+    }
+  }
+
+  &.kanban-column--drop-blocked {
+    opacity: 0.45;
+    filter: grayscale(0.4);
+    transition: opacity 0.2s ease, filter 0.2s ease;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .kanban-board--trello .kanban-column {

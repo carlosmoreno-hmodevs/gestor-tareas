@@ -447,6 +447,21 @@
   &.neutral .kpi-value { color: #1976d2; }
 }
 
+.operational-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(25, 118, 210, 0.45);
+    outline-offset: 2px;
+  }
+}
+
 .operational-status-list {
   display: flex;
   flex-direction: column;
@@ -463,6 +478,17 @@
   background: rgba(0, 0, 0, 0.03);
 }
 
+.operational-status-row--clickable {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(25, 118, 210, 0.12);
+  }
+}
+
 .operational-status-name {
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
@@ -472,6 +498,80 @@
   font-size: $font-size-sm;
   font-weight: $font-weight-bold;
   color: $color-primary;
+}
+
+.operational-assignee-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-md;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.operational-assignee-name {
+  flex: 0 1 38%;
+  min-width: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 2px 0;
+  border-radius: $radius-sm;
+
+  &:hover {
+    color: $color-primary;
+    text-decoration: underline;
+  }
+}
+
+.operational-assignee-bar {
+  flex: 1 1 0;
+  min-width: 72px;
+  display: flex;
+  height: 18px;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.operational-assignee-seg {
+  min-width: 4px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+  position: relative;
+
+  &:hover {
+    filter: brightness(1.12) saturate(1.05);
+    z-index: 1;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(25, 118, 210, 0.8);
+    outline-offset: 1px;
+    z-index: 2;
+  }
+}
+
+.operational-assignee-total {
+  flex: 0 0 auto;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--color-text-secondary, #757575);
+  min-width: 1.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .operational-upcoming-list {

@@ -13,7 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
-import type { Task, Priority, TaskChecklistItem } from '../../../shared/models';
+import type { Task, Priority, TaskChecklistItem, User } from '../../../shared/models';
 import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -120,6 +120,37 @@ export class TaskCreateComponent implements OnInit {
   get usersForSubAssignees() {
     const assigneeId = this.form.get('assigneeId')?.value;
     return this.users().filter((u) => u.id !== assigneeId);
+  }
+
+  getUserById(id: string): User | undefined {
+    return this.users().find((u) => u.id === id);
+  }
+
+  /** Texto del disparador del select (sin iniciales del avatar; nombre + puesto). */
+  assigneeTriggerLabel(): string {
+    const id = this.form.get('assigneeId')?.value as string | undefined;
+    if (!id?.trim()) return 'Sin asignar';
+    const u = this.getUserById(id);
+    if (!u) return 'Sin asignar';
+    return this.formatUserDisplay(u);
+  }
+
+  /** Lista en el campo multi-select: solo nombres, sin duplicar iniciales. */
+  subAssigneesTriggerLabel(): string {
+    const ids = (this.form.get('subAssigneeIds')?.value ?? []) as string[];
+    if (!ids.length) return '';
+    return ids
+      .map((id) => {
+        const u = this.getUserById(id);
+        return u ? (u.name ?? '').trim() || id : id;
+      })
+      .join(', ');
+  }
+
+  formatUserDisplay(u: User): string {
+    const name = (u.name ?? '').trim() || '—';
+    const pos = (u.position ?? '').trim();
+    return pos ? `${name} · ${pos}` : name;
   }
 
   ngOnInit(): void {

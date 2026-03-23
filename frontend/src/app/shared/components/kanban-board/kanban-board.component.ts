@@ -1,15 +1,18 @@
-import { Component, input, computed, inject, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, input, computed, inject, signal, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TaskService } from '../../../core/services/task.service';
 import { TaskWorkflowService } from '../../../core/services/task-workflow.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { DataService } from '../../../core/services/data.service';
+import { TransitionFeedbackService } from '../../../core/services/transition-feedback.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { AvatarComponent } from '../avatar/avatar.component';
 import type { Task, TaskStatus } from '../../../shared/models';
+import { ReasonDialogComponent, type ReasonDialogResult } from '../reason-dialog/reason-dialog.component';
 
 const KANBAN_COLUMNS: { status: TaskStatus; label: string }[] = [
   { status: 'Pendiente', label: 'Pendiente' },
@@ -25,7 +28,15 @@ const KANBAN_COLUMNS: { status: TaskStatus; label: string }[] = [
 @Component({
   selector: 'app-kanban-board',
   standalone: true,
-  imports: [CommonModule, RouterLink, DragDropModule, MatIconModule, AvatarComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    DragDropModule,
+    MatDialogModule,
+    MatIconModule,
+    AvatarComponent,
+    ReasonDialogComponent
+  ],
   templateUrl: './kanban-board.component.html',
   styleUrl: './kanban-board.component.scss'
 })
@@ -35,6 +46,8 @@ export class KanbanBoardComponent implements AfterViewInit, OnDestroy {
   private readonly connectivity = inject(ConnectivityService);
   private readonly dataService = inject(DataService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly transitionFeedback = inject(TransitionFeedbackService);
 
   tasks = input.required<Task[]>();
   draggable = input(true);
@@ -138,6 +151,32 @@ export class KanbanBoardComponent implements AfterViewInit, OnDestroy {
 
   canDrop = (): boolean => this.draggable() && this.connectivity.isOnline();
 
+  /** Tarea cuyo arrastre está activo; sirve para resaltar columnas válidas / bloqueadas. */
+  readonly draggedTask = signal<Task | null>(null);
+
+  /**
+   * Coincide con la lógica de `onDrop`: misma columna (reordenar) o transición sin comentario/fecha obligatorios.
+   */
+  isDropTargetAllowedForStatus(toStatus: TaskStatus): boolean {
+    const task = this.draggedTask();
+    if (!task) return false;
+    const fromStatus = this.workflow.getEffectiveStatus(task);
+    if (fromStatus === toStatus) return true;
+    const transition = this.workflow.getTransition(task, toStatus);
+    if (!transition) return false;
+    if (transition.requiresComment || transition.requiresNewDueDate) return false;
+    return true;
+  }
+
+  onDragStarted(event: { source: { data: unknown } }): void {
+    if (!this.canDrop()) return;
+    this.draggedTask.set(event.source.data as Task);
+  }
+
+  onDragEnded(): void {
+    this.draggedTask.set(null);
+  }
+
   getEffectiveStatus(task: Task): TaskStatus {
     return this.workflow.getEffectiveStatus(task);
   }
@@ -198,12 +237,61 @@ export class KanbanBoardComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const needsReasonFromCompletada =
+      fromStatus === 'Completada' && (toStatus === 'Liberada' || toStatus === 'Rechazada');
+
+    if (needsReasonFromCompletada) {
+      const isLiberar = toStatus === 'Liberada';
+      try {
+        transferArrayItem(fromList, toList, event.previousIndex, event.currentIndex);
+        this.taskService.applyTransition(task.id, toStatus, {});
+        this.persistColumnOrder(fromList);
+        this.persistColumnOrder(toList);
+      } catch (e) {
+        transferArrayItem(toList, fromList, event.currentIndex, event.previousIndex);
+        this.snackBar.open((e as Error).message || 'Error al cambiar estado', 'Cerrar', {
+          duration: 3000
+        });
+        return;
+      }
+
+      const taskAfter = this.taskService.getById(task.id) ?? task;
+      const ref = this.dialog.open(ReasonDialogComponent, {
+        data: {
+          kind: isLiberar ? 'released' : 'rejected',
+          task: taskAfter,
+          dialogTitle: isLiberar ? 'Liberar tarea' : 'Rechazar tarea',
+          confirmLabel: isLiberar ? 'Liberar' : 'Rechazar',
+          optionalReason: true
+        },
+        width: '90vw',
+        maxWidth: '440px'
+      });
+      ref.afterClosed().subscribe((result: ReasonDialogResult | null | undefined) => {
+        const reasonPatch = isLiberar ? result?.releaseReason : result?.rejectedReason;
+        if (reasonPatch) {
+          if (isLiberar) {
+            this.taskService.updateTask(task.id, { releaseReason: reasonPatch });
+          } else {
+            this.taskService.updateTask(task.id, {
+              rejectedReason: reasonPatch,
+              correctedReason: reasonPatch.label || reasonPatch.customText || undefined
+            });
+          }
+        }
+        this.transitionFeedback.playAfterDelay(isLiberar ? 'release' : 'reject');
+        this.snackBar.open(`Estado: ${transition.label}`, 'Cerrar', { duration: 2000 });
+      });
+      return;
+    }
+
     try {
       // Mantiene el arreglo visual del CDK en sync en el mismo frame del drop.
       transferArrayItem(fromList, toList, event.previousIndex, event.currentIndex);
       this.taskService.applyTransition(task.id, toStatus, {});
       this.persistColumnOrder(fromList);
       this.persistColumnOrder(toList);
+      this.transitionFeedback.playForStatus(toStatus);
       this.snackBar.open(`Estado: ${transition.label}`, 'Cerrar', { duration: 2000 });
     } catch (e) {
       // Revierte movimiento visual si la transición falla.

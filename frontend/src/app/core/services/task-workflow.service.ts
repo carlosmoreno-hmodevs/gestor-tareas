@@ -7,6 +7,8 @@ export interface TransitionPayload {
   newDueDate?: Date;
   blockedReason?: TaskBlockedReason;
   rejectedReason?: TaskRejectedReason;
+  /** Motivo opcional al liberar (Completada → Liberada). */
+  releaseReason?: TaskRejectedReason;
 }
 
 export interface Transition {
@@ -131,6 +133,14 @@ export class TaskWorkflowService {
       }
       if (payload.comment) updated.rejectionComment = payload.comment;
     }
+    if (toStatus === 'Liberada') {
+      if (payload.releaseReason) {
+        updated.releaseReason = payload.releaseReason;
+      }
+      if (!updated.liberatedAt) {
+        updated.liberatedAt = new Date().toISOString();
+      }
+    }
     updated.riskIndicator = this.computeRiskIndicator({ ...updated, status: toStatus });
 
     const history = [...(task.history || [])];
@@ -160,6 +170,18 @@ export class TaskWorkflowService {
           comment: payload.comment,
           fromStatus: prevStatus,
           toStatus
+        })
+      );
+    } else if (toStatus === 'Liberada') {
+      const comment =
+        payload.releaseReason?.detail ||
+        payload.releaseReason?.customText ||
+        payload.releaseReason?.label;
+      history.push(
+        this.createHistoryEntry('STATUS_CHANGED', userId, userName, {
+          fromStatus: prevStatus,
+          toStatus,
+          ...(comment ? { comment } : {})
         })
       );
     } else {

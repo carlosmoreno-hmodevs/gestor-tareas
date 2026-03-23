@@ -32,6 +32,7 @@
           [currentStatus]="effStatus"
           [allowedTransitions]="allowedTransitions()"
           [isOnline]="connectivity.isOnline()"
+          [task]="t"
           (transitionClicked)="executeTransition($event)"
         />
         <app-task-detail-form

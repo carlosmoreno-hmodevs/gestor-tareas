@@ -3,6 +3,8 @@
     @for (col of columns; track col.status) {
       <div
         class="kanban-column"
+        [class.kanban-column--drop-allowed]="draggedTask() && isDropTargetAllowedForStatus(col.status)"
+        [class.kanban-column--drop-blocked]="draggedTask() && !isDropTargetAllowedForStatus(col.status)"
         [attr.data-status]="col.status"
         cdkDropList
         [id]="'drop-' + col.status.replace(/\s+/g, '-')"
@@ -21,6 +23,8 @@
               cdkDrag
               [cdkDragData]="task"
               [cdkDragDisabled]="!canDrop()"
+              (cdkDragStarted)="onDragStarted($event)"
+              (cdkDragEnded)="onDragEnded()"
             >
               <div
                 class="kanban-card"

@@ -4,6 +4,35 @@
   gap: 0.5rem;
 }
 
+.assignee-option--rich {
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 2px 0;
+}
+
+.assignee-option-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.assignee-line-name {
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.assignee-line-position {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #757575);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
 .full-width {
   width: 100%;
 }

@@ -173,6 +173,15 @@
       </div>
     </div>
 
+    @if (operationalFilterHint()) {
+      <div class="operational-filter-banner" role="status">
+        <span>{{ operationalFilterHint() }}</span>
+        <button type="button" class="clear-operational-filter" (click)="clearOperationalFilterContext()">
+          Limpiar filtro
+        </button>
+      </div>
+    }
+
     <div class="kpi-strip animate-stagger">
       <button type="button" class="kpi-card kpi-card-clickable kpi-pending" [class.active]="isStatusFilterActive('Pendiente')" (click)="applyStatusFilter('Pendiente')">
         <span class="kpi-value">{{ pendingCount() }}</span>

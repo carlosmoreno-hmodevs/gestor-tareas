@@ -42,21 +42,21 @@
   <section class="ferretero-section graficos animate-stagger">
     <h2 class="section-title">Monitoreo operativo</h2>
     <div class="operational-outcome-cards">
-      <mat-card class="chart-card operational-outcome-card success">
+      <mat-card class="chart-card operational-outcome-card success operational-clickable" role="button" tabindex="0" (click)="goToOperationalFilteredTasks({ opLabel: 'Indicador de éxito', status: 'completadas' })" (keydown.enter)="goToOperationalFilteredTasks({ opLabel: 'Indicador de éxito', status: 'completadas' })">
         <mat-card-content>
           <span class="kpi-value">{{ operationalOutcome().successRate }}%</span>
           <span class="kpi-label">Indicador de éxito</span>
           <span class="kpi-sublabel">{{ operationalOutcome().success }} tareas cerradas con éxito</span>
         </mat-card-content>
       </mat-card>
-      <mat-card class="chart-card operational-outcome-card failure">
+      <mat-card class="chart-card operational-outcome-card failure operational-clickable" role="button" tabindex="0" (click)="goToOperationalFilteredTasks({ opLabel: 'Indicador de fallos', quick: 'vencidas' })" (keydown.enter)="goToOperationalFilteredTasks({ opLabel: 'Indicador de fallos', quick: 'vencidas' })">
         <mat-card-content>
           <span class="kpi-value">{{ operationalOutcome().failureRate }}%</span>
           <span class="kpi-label">Indicador de fallos</span>
           <span class="kpi-sublabel">{{ operationalOutcome().failed + operationalOutcome().overdue }} tareas con rechazo o vencimiento</span>
         </mat-card-content>
       </mat-card>
-      <mat-card class="chart-card operational-outcome-card neutral">
+      <mat-card class="chart-card operational-outcome-card neutral operational-clickable" role="button" tabindex="0" (click)="goToOperationalFilteredTasks({ opLabel: 'Proyectos operativos', quick: 'all' })" (keydown.enter)="goToOperationalFilteredTasks({ opLabel: 'Proyectos operativos', quick: 'all' })">
         <mat-card-content>
           <span class="kpi-value">{{ operationalProjectsSummary().total }}</span>
           <span class="kpi-label">Proyectos operativos</span>
@@ -74,7 +74,7 @@
         <mat-card-content>
           @if (operationalStatusBreakdown().length > 0) {
             <div class="chart-container chart-container--small">
-              <canvas baseChart [data]="operationalStatusDonutData()" [options]="operationalStatusDonutOptions" [type]="'doughnut'"></canvas>
+              <canvas baseChart [data]="operationalStatusDonutData()" [options]="operationalStatusDonutOptions" [type]="'doughnut'" (chartClick)="onOperationalStatusChartClick($event)"></canvas>
             </div>
           } @else {
             <p class="no-data">Sin datos de estado en el alcance actual</p>
@@ -89,7 +89,7 @@
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container chart-container--small">
-            <canvas baseChart [data]="operationalPriorityBarData()" [options]="operationalPriorityBarOptions" [type]="'bar'"></canvas>
+            <canvas baseChart [data]="operationalPriorityBarData()" [options]="operationalPriorityBarOptions" [type]="'bar'" (chartClick)="onOperationalPriorityChartClick($event)"></canvas>
           </div>
         </mat-card-content>
       </mat-card>
@@ -101,7 +101,7 @@
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container chart-container--trend">
-            <canvas baseChart [data]="operationalTrendData()" [options]="operationalTrendOptions" [type]="'line'"></canvas>
+            <canvas baseChart [data]="operationalTrendData()" [options]="operationalTrendOptions" [type]="'line'" (chartClick)="onOperationalTrendChartClick($event)"></canvas>
           </div>
         </mat-card-content>
       </mat-card>
@@ -114,7 +114,7 @@
         <mat-card-content>
           @if (operationalProjectsSummary().total > 0) {
             <div class="chart-container chart-container--small">
-              <canvas baseChart [data]="operationalProjectHealthData()" [options]="operationalProjectHealthOptions" [type]="'bar'"></canvas>
+              <canvas baseChart [data]="operationalProjectHealthData()" [options]="operationalProjectHealthOptions" [type]="'bar'" (chartClick)="onOperationalProjectHealthChartClick($event)"></canvas>
             </div>
           } @else {
             <p class="no-data">Sin proyectos con actividad en este alcance</p>
@@ -128,12 +128,33 @@
           <mat-card-subtitle>Top responsables con más tareas</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          @if (operationalTopAssignees().length) {
+          @if (operationalAssigneeLoad().length) {
             <div class="operational-status-list">
-              @for (item of operationalTopAssignees(); track item.name) {
-                <div class="operational-status-row">
-                  <span class="operational-status-name">{{ item.name }}</span>
-                  <span class="operational-status-count">{{ item.count }}</span>
+              @for (row of operationalAssigneeLoad(); track row.name) {
+                <div class="operational-assignee-row">
+                  <button
+                    type="button"
+                    class="operational-assignee-name operational-status-row--clickable"
+                    (click)="filterByOperationalAssignee(row.name)"
+                    [attr.aria-label]="'Ver todas las tareas de ' + row.name"
+                  >
+                    {{ row.name }}
+                  </button>
+                  <div class="operational-assignee-bar" role="group" [attr.aria-label]="'Distribución por estado: ' + row.name">
+                    @for (seg of row.segments; track seg.status) {
+                      <button
+                        type="button"
+                        class="operational-assignee-seg"
+                        [style.flex]="seg.count + ' 1 0%'"
+                        [style.background]="operationalStatusColorMap[seg.status]"
+                        [matTooltip]="seg.status + ': ' + seg.count + (seg.count === 1 ? ' tarea' : ' tareas')"
+                        matTooltipShowDelay="200"
+                        (click)="filterAssigneeByStatus(row.name, seg.status)"
+                        [attr.aria-label]="seg.status + ', ' + seg.count + ' tareas'"
+                      ></button>
+                    }
+                  </div>
+                  <span class="operational-assignee-total" [attr.title]="'Total: ' + row.total + ' tareas'">{{ row.total }}</span>
                 </div>
               }
             </div>
@@ -152,7 +173,7 @@
           @if (operationalUpcomingTasks().length) {
             <div class="operational-upcoming-list">
               @for (task of operationalUpcomingTasks(); track task.id) {
-                <a class="operational-upcoming-item" [routerLink]="['/tareas', task.id]">
+                <a class="operational-upcoming-item" [routerLink]="['/tareas']" [queryParams]="{ from: 'operativo', opLabel: 'Coincidencias de ' + task.folio, search: task.folio }">
                   <span class="operational-upcoming-title">{{ task.title }}</span>
                   <span class="operational-upcoming-meta">{{ task.assignee || 'Sin asignar' }} · {{ task.dueDate | date: 'dd MMM' }}</span>
                 </a>

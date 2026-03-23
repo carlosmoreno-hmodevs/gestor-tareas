@@ -10,7 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
-import type { Task, Priority } from '../../../shared/models';
+import type { Task, Priority, User } from '../../../shared/models';
 import { normalizeDateToNoonLocal, minDueDateValidator } from '../../../shared/utils/date.utils';
 import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
@@ -64,6 +64,35 @@ export class TaskFormDialogComponent {
   get usersForSubAssignees() {
     const assigneeId = this.form.get('assigneeId')?.value;
     return this.users().filter((u) => u.id !== assigneeId);
+  }
+
+  getUserById(id: string): User | undefined {
+    return this.users().find((u) => u.id === id);
+  }
+
+  assigneeTriggerLabel(): string {
+    const id = this.form.get('assigneeId')?.value as string | undefined;
+    if (!id?.trim()) return 'Sin asignar';
+    const u = this.getUserById(id);
+    if (!u) return 'Sin asignar';
+    return this.formatUserDisplay(u);
+  }
+
+  subAssigneesTriggerLabel(): string {
+    const ids = (this.form.get('subAssigneeIds')?.value ?? []) as string[];
+    if (!ids.length) return '';
+    return ids
+      .map((id) => {
+        const u = this.getUserById(id);
+        return u ? (u.name ?? '').trim() || id : id;
+      })
+      .join(', ');
+  }
+
+  formatUserDisplay(u: User): string {
+    const name = (u.name ?? '').trim() || '—';
+    const pos = (u.position ?? '').trim();
+    return pos ? `${name} · ${pos}` : name;
   }
 
   private readonly today = new Date();

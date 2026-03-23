@@ -70,6 +70,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   searchText = signal('');
   selectedProjectId = signal('all');
+  operationalFilterHint = signal('');
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -80,6 +81,12 @@ export class TaskListComponent implements OnInit, OnDestroy {
       { allowSignalWrites: true }
     );
     this.route.queryParamMap.pipe(takeUntilDestroyed(destroyRef)).subscribe((params) => {
+      const fromOperational = params.get('from') === 'operativo';
+      if (fromOperational) {
+        this.applyOperationalFiltersFromQuery(params);
+      } else {
+        this.operationalFilterHint.set('');
+      }
       const v = params.get('vista');
       if (v === 'tablero' || v === 'board') {
         this.viewMode.set('board');
@@ -104,6 +111,94 @@ export class TaskListComponent implements OnInit, OnDestroy {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: mode === 'board' ? { vista: 'tablero' } : { vista: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  private applyOperationalFiltersFromQuery(params: { get(key: string): string | null }): void {
+    // Base limpia antes de aplicar el filtro venido de /tablero-operativo.
+    this.quickFilter.set('all');
+    this.statusFilter.set([]);
+    this.priorityFilter.set([]);
+    this.searchText.set('');
+    this.selectedProjectId.set('all');
+    this.personalTaskScope.set('all');
+
+    const quick = params.get('quick');
+    const status = params.get('status');
+    const priority = params.get('priority');
+    const search = params.get('search');
+    const project = params.get('project');
+    const scope = params.get('scope');
+    const label = params.get('opLabel');
+
+    const validQuick: Array<'all' | 'hoy' | 'vencidas' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar'> = [
+      'all',
+      'hoy',
+      'vencidas',
+      'por-vencer',
+      'esta-semana',
+      'alta',
+      'sin-asignar'
+    ];
+    const validStatuses: Array<TaskStatus | 'completadas'> = [
+      'Pendiente',
+      'En Progreso',
+      'En Espera',
+      'Vencida',
+      'Completada',
+      'Liberada',
+      'Rechazada',
+      'Cancelada',
+      'completadas'
+    ];
+    const validPriorities: Priority[] = ['Alta', 'Media', 'Baja'];
+
+    if (quick && validQuick.includes(quick as (typeof validQuick)[number])) {
+      this.quickFilter.set(quick as 'all' | 'hoy' | 'vencidas' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar');
+    }
+    if (status && validStatuses.includes(status as TaskStatus | 'completadas')) {
+      this.statusFilter.set([status as TaskStatus | 'completadas']);
+    }
+    if (priority && validPriorities.includes(priority as Priority)) {
+      this.priorityFilter.set([priority as Priority]);
+    }
+    if (search?.trim()) {
+      this.searchText.set(search.trim());
+    }
+    if (project?.trim()) {
+      this.selectedProjectId.set(project.trim());
+    }
+    if (scope === 'assigned' || scope === 'created' || scope === 'all') {
+      this.personalTaskScope.set(scope);
+    }
+
+    this.operationalFilterHint.set(
+      label?.trim() ? `Filtro aplicado desde Tablero operativo: ${label}` : 'Filtro aplicado desde Tablero operativo'
+    );
+  }
+
+  clearOperationalFilterContext(): void {
+    this.operationalFilterHint.set('');
+    this.quickFilter.set('all');
+    this.statusFilter.set([]);
+    this.priorityFilter.set([]);
+    this.searchText.set('');
+    this.selectedProjectId.set('all');
+    this.personalTaskScope.set('all');
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        from: null,
+        opLabel: null,
+        quick: null,
+        status: null,
+        priority: null,
+        search: null,
+        project: null,
+        scope: null
+      },
       queryParamsHandling: 'merge',
       replaceUrl: true
     });

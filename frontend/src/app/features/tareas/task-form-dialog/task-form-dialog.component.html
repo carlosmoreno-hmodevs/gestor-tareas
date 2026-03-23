@@ -46,12 +46,30 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ uiCopy.label('assignee') }} principal</mat-label>
       <mat-select formControlName="assigneeId">
+        <mat-select-trigger>{{ assigneeTriggerLabel() }}</mat-select-trigger>
         <mat-option value="">
-          <span class="assignee-option"><app-avatar name="Sin asignar" [size]="28" /><span>Sin asignar</span></span>
+          <span class="assignee-option assignee-option--rich">
+            <span class="assignee-option-avatar" aria-hidden="true">
+              <app-avatar name="Sin asignar" [size]="28" />
+            </span>
+            <span class="assignee-option-stack">
+              <span class="assignee-line-name">Sin asignar</span>
+            </span>
+          </span>
         </mat-option>
         @for (u of users(); track u.id) {
           <mat-option [value]="u.id">
-            <span class="assignee-option"><app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="28" /><span>{{ u.name }}</span></span>
+            <span class="assignee-option assignee-option--rich">
+              <span class="assignee-option-avatar" aria-hidden="true">
+                <app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="28" />
+              </span>
+              <span class="assignee-option-stack">
+                <span class="assignee-line-name">{{ u.name }}</span>
+                @if (u.position?.trim()) {
+                  <span class="assignee-line-position">{{ u.position }}</span>
+                }
+              </span>
+            </span>
           </mat-option>
         }
       </mat-select>
@@ -63,9 +81,20 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Subresponsables</mat-label>
       <mat-select formControlName="subAssigneeIds" multiple>
+        <mat-select-trigger>{{ subAssigneesTriggerLabel() }}</mat-select-trigger>
         @for (u of usersForSubAssignees; track u.id) {
           <mat-option [value]="u.id">
-            <span class="assignee-option"><app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="24" /><span>{{ u.name }}</span></span>
+            <span class="assignee-option assignee-option--rich">
+              <span class="assignee-option-avatar" aria-hidden="true">
+                <app-avatar [name]="u.name" [avatarUrl]="u.avatarUrl" [size]="24" />
+              </span>
+              <span class="assignee-option-stack">
+                <span class="assignee-line-name">{{ u.name }}</span>
+                @if (u.position?.trim()) {
+                  <span class="assignee-line-position">{{ u.position }}</span>
+                }
+              </span>
+            </span>
           </mat-option>
         }
       </mat-select>

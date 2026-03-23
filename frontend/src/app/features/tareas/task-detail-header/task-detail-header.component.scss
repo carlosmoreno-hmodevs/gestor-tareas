@@ -136,3 +136,31 @@
     border-left-color: #7b1fa2;
   }
 }
+
+/** Liberada: tonos verde/teal, no confundir con rechazo */
+.release-reason-block {
+  width: 100%;
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: rgba(0, 137, 123, 0.09);
+  border-left: 4px solid #00897b;
+  border-radius: 0 $radius-md $radius-md 0;
+  color: var(--color-text, #212121);
+
+  strong {
+    font-size: $font-size-sm;
+    color: #00695c;
+    font-weight: $font-weight-semibold;
+  }
+
+  p {
+    margin: $spacing-xs 0 0;
+    font-size: $font-size-sm;
+  }
+
+  .reason-detail {
+    margin-top: $spacing-xs;
+    font-size: $font-size-xs;
+    color: var(--color-text-secondary, #616161);
+  }
+}

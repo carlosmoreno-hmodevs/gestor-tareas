@@ -1,10 +1,11 @@
 import { Component, inject, computed, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { BaseChartDirective } from 'ng2-charts';
 import { TaskService } from '../../core/services/task.service';
 import { TaskWorkflowService } from '../../core/services/task-workflow.service';
@@ -61,6 +62,7 @@ Chart.register(centerTotalPlugin);
     MatCardModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatTooltipModule,
     PageHeaderComponent,
     BaseChartDirective
   ],
@@ -78,6 +80,7 @@ export class TableroComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly orgService = inject(OrgService);
   private readonly projectService = inject(ProjectService);
+  private readonly router = inject(Router);
   readonly ferreteroKpiService = inject(FerreteroKpiService);
   private readonly automationService = inject(AutomationService);
 
@@ -415,16 +418,50 @@ export class TableroComponent implements OnInit, OnDestroy {
       .filter((x) => x.count > 0);
   });
 
-  operationalTopAssignees = computed(() => {
-    const map = new Map<string, number>();
+  /** Colores alineados con el donut de estados operativo */
+  readonly operationalStatusColorMap: Record<TaskStatus, string> = {
+    Pendiente: '#1976d2',
+    'En Progreso': '#ed6c02',
+    'En Espera': '#8e24aa',
+    Vencida: '#d32f2f',
+    Completada: '#2e7d32',
+    Liberada: '#00897b',
+    Rechazada: '#c62828',
+    Cancelada: '#757575'
+  };
+
+  private readonly assigneeStatusOrder: TaskStatus[] = [
+    'Pendiente',
+    'En Progreso',
+    'En Espera',
+    'Vencida',
+    'Completada',
+    'Liberada',
+    'Rechazada',
+    'Cancelada'
+  ];
+
+  operationalAssigneeLoad = computed(() => {
+    const byAssignee = new Map<string, Task[]>();
     for (const t of this.operationalTasks()) {
       const key = t.assignee || 'Sin asignar';
-      map.set(key, (map.get(key) ?? 0) + 1);
+      const list = byAssignee.get(key) ?? [];
+      list.push(t);
+      byAssignee.set(key, list);
     }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([name, count]) => ({ name, count }));
+    return Array.from(byAssignee.entries())
+      .map(([name, list]) => {
+        const segments = this.assigneeStatusOrder
+          .map((status) => ({
+            status,
+            count: list.filter((x) => this.workflow.getEffectiveStatus(x) === status).length
+          }))
+          .filter((s) => s.count > 0);
+        const total = list.length;
+        return { name, total, segments };
+      })
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
   });
 
   operationalUpcomingTasks = computed(() =>
@@ -436,13 +473,77 @@ export class TableroComponent implements OnInit, OnDestroy {
 
   getOperationalCardQuery(cardId: string): Record<string, string> {
     const map: Record<string, Record<string, string>> = {
-      overdue: { filtro: 'vencidas' },
-      dueSoon: { filtro: 'por-vencer' },
-      blocked: { estado: 'En Espera' },
-      inProgress: { estado: 'En Progreso' }
+      active: { opLabel: 'Operativas activas', quick: 'all' },
+      overdue: { opLabel: 'Fuera de plazo', quick: 'vencidas' },
+      dueSoon: { opLabel: 'Próximas 48h', quick: 'por-vencer' },
+      blocked: { opLabel: 'En espera', status: 'En Espera' },
+      inProgress: { opLabel: 'En progreso', status: 'En Progreso' },
+      done: { opLabel: 'Cerradas (completadas/liberadas)', status: 'completadas' }
     };
-    return map[cardId] ?? {};
+    return { from: 'operativo', ...(map[cardId] ?? {}) };
   }
+
+  goToOperationalFilteredTasks(query: Record<string, string>): void {
+    void this.router.navigate(['/tareas'], {
+      queryParams: {
+        from: 'operativo',
+        ...query
+      }
+    });
+  }
+
+  onOperationalStatusChartClick(event: { active?: Array<{ index?: number }> }): void {
+    const idx = event.active?.[0]?.index;
+    if (idx === undefined) return;
+    const status = this.operationalStatusBreakdown()[idx]?.status;
+    if (!status) return;
+    this.goToOperationalFilteredTasks({ opLabel: `Estado: ${status}`, status });
+  }
+
+  onOperationalPriorityChartClick(event: { active?: Array<{ index?: number }> }): void {
+    const idx = event.active?.[0]?.index;
+    const priorities: Array<'Alta' | 'Media' | 'Baja'> = ['Alta', 'Media', 'Baja'];
+    const priority = idx === undefined ? null : priorities[idx] ?? null;
+    if (!priority) return;
+    this.goToOperationalFilteredTasks({ opLabel: `Prioridad ${priority}`, priority });
+  }
+
+  onOperationalTrendChartClick(event: { active?: Array<{ datasetIndex?: number }> }): void {
+    const datasetIndex = event.active?.[0]?.datasetIndex;
+    if (datasetIndex === undefined) return;
+    if (datasetIndex === 0) {
+      this.goToOperationalFilteredTasks({ opLabel: 'Tareas exitosas (completadas/liberadas)', status: 'completadas' });
+      return;
+    }
+    if (datasetIndex === 1) {
+      this.goToOperationalFilteredTasks({ opLabel: 'Tareas fallidas o vencidas', quick: 'vencidas' });
+      return;
+    }
+    this.goToOperationalFilteredTasks({ opLabel: 'Tareas activas', quick: 'all' });
+  }
+
+  onOperationalProjectHealthChartClick(event: { active?: Array<{ datasetIndex?: number }> }): void {
+    const datasetIndex = event.active?.[0]?.datasetIndex;
+    if (datasetIndex === undefined) return;
+    if (datasetIndex === 0) {
+      this.goToOperationalFilteredTasks({ opLabel: 'Proyectos saludables (tareas cerradas)', status: 'completadas' });
+      return;
+    }
+    if (datasetIndex === 1) {
+      this.goToOperationalFilteredTasks({ opLabel: 'Proyectos en riesgo', quick: 'por-vencer' });
+      return;
+    }
+    this.goToOperationalFilteredTasks({ opLabel: 'Proyectos críticos', quick: 'vencidas' });
+  }
+
+  filterByOperationalAssignee(name: string): void {
+    this.goToOperationalFilteredTasks({ opLabel: `Responsable: ${name}`, search: name });
+  }
+
+  filterAssigneeByStatus(name: string, status: TaskStatus): void {
+    this.goToOperationalFilteredTasks({ opLabel: `${name} · ${status}`, search: name, status });
+  }
+
 
   private readonly operationalDaysWindow = computed(() => Number(this.selectedPeriod()) || 7);
 
@@ -533,7 +634,14 @@ export class TableroComponent implements OnInit, OnDestroy {
     maintainAspectRatio: false,
     cutout: '62%',
     plugins: {
-      legend: { position: 'bottom' }
+      legend: {
+        position: 'bottom',
+        onClick: (_event, legendItem) => {
+          const label = String(legendItem.text ?? '').trim();
+          if (!label) return;
+          this.goToOperationalFilteredTasks({ opLabel: `Estado: ${label}`, status: label });
+        }
+      }
     }
   };
 
@@ -605,7 +713,23 @@ export class TableroComponent implements OnInit, OnDestroy {
   operationalTrendOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom' } },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        onClick: (_event, legendItem) => {
+          const text = String(legendItem.text ?? '').trim().toLowerCase();
+          if (text.includes('exit')) {
+            this.goToOperationalFilteredTasks({ opLabel: 'Tareas exitosas', status: 'completadas' });
+            return;
+          }
+          if (text.includes('fallid') || text.includes('venc')) {
+            this.goToOperationalFilteredTasks({ opLabel: 'Tareas fallidas o vencidas', quick: 'vencidas' });
+            return;
+          }
+          this.goToOperationalFilteredTasks({ opLabel: 'Tareas activas', quick: 'all' });
+        }
+      }
+    },
     scales: {
       x: { grid: { display: false } },
       y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }
@@ -627,7 +751,23 @@ export class TableroComponent implements OnInit, OnDestroy {
   operationalProjectHealthOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom' } },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        onClick: (_event, legendItem) => {
+          const text = String(legendItem.text ?? '').trim().toLowerCase();
+          if (text.includes('salud')) {
+            this.goToOperationalFilteredTasks({ opLabel: 'Proyectos saludables', status: 'completadas' });
+            return;
+          }
+          if (text.includes('riesgo')) {
+            this.goToOperationalFilteredTasks({ opLabel: 'Proyectos en riesgo', quick: 'por-vencer' });
+            return;
+          }
+          this.goToOperationalFilteredTasks({ opLabel: 'Proyectos críticos', quick: 'vencidas' });
+        }
+      }
+    },
     scales: {
       x: { stacked: true, grid: { display: false } },
       y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }

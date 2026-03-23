@@ -1,6 +1,24 @@
 <section class="workflow-actions">
   <h3 class="section-title">ACCIONES</h3>
   <p class="current-status">Estado actual: <strong>{{ currentStatus() }}</strong></p>
+  @if (currentStatus() === 'Rechazada' && hasRejectedReasonBlock()) {
+    <div class="status-reason status-reason--rejected">
+      <strong>Motivo de rechazo</strong>
+      <p>{{ rejectedReasonText() }}</p>
+      @if (rejectedReasonDetail()) {
+        <p class="reason-detail">Detalle: {{ rejectedReasonDetail() }}</p>
+      }
+    </div>
+  }
+  @if (currentStatus() === 'Liberada' && hasReleaseReasonBlock()) {
+    <div class="status-reason status-reason--released">
+      <strong>Motivo de liberación</strong>
+      <p>{{ releaseReasonText() }}</p>
+      @if (releaseReasonDetail()) {
+        <p class="reason-detail">Detalle: {{ releaseReasonDetail() }}</p>
+      }
+    </div>
+  }
   <div class="transition-buttons">
     @for (tr of allowedTransitions(); track tr.to + tr.label) {
       <button

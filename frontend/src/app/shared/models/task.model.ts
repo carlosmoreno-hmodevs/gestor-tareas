@@ -106,6 +106,8 @@ export interface Task {
   correctedReason?: string;
   /** Motivo de rechazo (no liberada). Catalog/custom; si falta, se usa correctedReason. */
   rejectedReason?: TaskRejectedReason;
+  /** Motivo opcional al pasar a Liberada (misma forma que rechazo, catálogo). */
+  releaseReason?: TaskRejectedReason;
   /** Fecha en que pasó a Liberada/Validada (para tiempo de ciclo). */
   liberatedAt?: string;
   /** Modo ferretero: ID del TaskTemplate usado para generar esta tarea. */

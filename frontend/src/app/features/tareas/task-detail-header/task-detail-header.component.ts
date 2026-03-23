@@ -67,15 +67,43 @@ export class TaskDetailHeaderComponent {
   /** Texto del motivo de rechazo (catálogo, custom o legacy correctedReason/rejectionComment). */
   rejectedReasonText(t: Task): string {
     const r = t.rejectedReason;
-    if (r != null && typeof r === 'object')
-      return (r as TaskRejectedReason).label ?? (r as TaskRejectedReason).customText ?? '';
+    if (r != null && typeof r === 'object') {
+      const o = r as TaskRejectedReason;
+      return o.label ?? o.customText ?? o.detail ?? '';
+    }
     return t.correctedReason ?? t.rejectionComment ?? '';
   }
 
-  /** Detalle del motivo de rechazo (solo formato catálogo). */
+  /** Detalle del motivo de rechazo (si añade información adicional al label). */
   rejectedReasonDetail(t: Task): string | undefined {
     const r = t.rejectedReason;
     if (r == null || typeof r !== 'object') return undefined;
-    return (r as TaskRejectedReason).detail;
+    const o = r as TaskRejectedReason;
+    const primary = (o.label ?? o.customText ?? '').trim();
+    const det = o.detail?.trim();
+    if (!det) return undefined;
+    if (!primary) return undefined;
+    if (det === primary) return undefined;
+    return det;
+  }
+
+  /** Motivo opcional al liberar (misma forma que rechazo). */
+  releaseReasonText(t: Task): string {
+    const r = t.releaseReason;
+    if (r == null || typeof r !== 'object') return '';
+    const o = r as TaskRejectedReason;
+    return o.label ?? o.customText ?? o.detail ?? '';
+  }
+
+  releaseReasonDetail(t: Task): string | undefined {
+    const r = t.releaseReason;
+    if (r == null || typeof r !== 'object') return undefined;
+    const o = r as TaskRejectedReason;
+    const primary = (o.label ?? o.customText ?? '').trim();
+    const det = o.detail?.trim();
+    if (!det) return undefined;
+    if (!primary) return undefined;
+    if (det === primary) return undefined;
+    return det;
   }
 }

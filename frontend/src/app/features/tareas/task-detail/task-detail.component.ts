@@ -11,6 +11,7 @@ import { DataService } from '../../../core/services/data.service';
 import { TaskWorkflowService } from '../../../core/services/task-workflow.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
+import { TransitionFeedbackService } from '../../../core/services/transition-feedback.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { TaskDetailHeaderComponent } from '../task-detail-header/task-detail-header.component';
 import { TaskDetailFormComponent } from '../task-detail-form/task-detail-form.component';
@@ -20,7 +21,7 @@ import { TaskWorkflowActionsComponent } from '../task-workflow-actions/task-work
 import { TaskRelationsPanelComponent } from '../task-relations-panel/task-relations-panel.component';
 import { TaskChecklistSectionComponent } from '../task-checklist-section/task-checklist-section.component';
 import { RejectDialogComponent } from '../reject-dialog/reject-dialog.component';
-import { ReasonDialogComponent } from '../reason-dialog/reason-dialog.component';
+import { ReasonDialogComponent, type ReasonDialogResult } from '../../../shared/components/reason-dialog/reason-dialog.component';
 import { RescheduleDialogComponent } from '../reschedule-dialog/reschedule-dialog.component';
 import type { Task, TaskStatus } from '../../../shared/models';
 import type { Transition } from '../../../core/services/task-workflow.service';
@@ -40,7 +41,8 @@ import type { Transition } from '../../../core/services/task-workflow.service';
     TaskDetailFormComponent,
     TaskEvidencePanelComponent,
     TaskTimelineComponent,
-    TaskWorkflowActionsComponent
+    TaskWorkflowActionsComponent,
+    ReasonDialogComponent
   ],
   templateUrl: './task-detail.component.html',
   styleUrl: './task-detail.component.scss'
@@ -54,6 +56,7 @@ export class TaskDetailComponent {
   readonly connectivity = inject(ConnectivityService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly transitionFeedback = inject(TransitionFeedbackService);
 
   taskId = input.required<string>({ alias: 'id' });
   /** Usa la lista filtrada por org para que al cambiar de organización la tarea desaparezca si está fuera de scope */
@@ -147,18 +150,48 @@ export class TaskDetailComponent {
           kind: 'rejected',
           task: t,
           dialogTitle: 'Rechazar tarea',
-          confirmLabel: 'Rechazar'
+          confirmLabel: 'Rechazar',
+          optionalReason: true
         },
         width: '90vw',
         maxWidth: '440px'
       });
-      ref.afterClosed().subscribe((result) => {
+      ref.afterClosed().subscribe((result: ReasonDialogResult | null) => {
         if (result != null) {
           try {
             this.taskService.applyTransition(t.id, 'Rechazada', {
               rejectedReason: result.rejectedReason
             });
+            this.transitionFeedback.playAfterDelay('reject');
             this.snackBar.open('Tarea rechazada', 'Cerrar', { duration: 2000 });
+          } catch (e) {
+            this.snackBar.open((e as Error).message || 'Error', 'Cerrar', { duration: 3000 });
+          }
+        }
+      });
+      return;
+    }
+
+    if (transition.to === 'Liberada') {
+      const ref = this.dialog.open(ReasonDialogComponent, {
+        data: {
+          kind: 'released' as const,
+          task: t,
+          dialogTitle: 'Liberar tarea',
+          confirmLabel: 'Liberar',
+          optionalReason: true
+        },
+        width: '90vw',
+        maxWidth: '440px'
+      });
+      ref.afterClosed().subscribe((result: ReasonDialogResult | null) => {
+        if (result != null) {
+          try {
+            this.taskService.applyTransition(t.id, 'Liberada', {
+              releaseReason: result.releaseReason
+            });
+            this.transitionFeedback.playAfterDelay('release');
+            this.snackBar.open('Tarea liberada', 'Cerrar', { duration: 2000 });
           } catch (e) {
             this.snackBar.open((e as Error).message || 'Error', 'Cerrar', { duration: 3000 });
           }
@@ -265,6 +298,7 @@ export class TaskDetailComponent {
         const comment = result?.comment ?? '';
         try {
           this.taskService.applyTransition(t.id, transition.to, { comment });
+          this.transitionFeedback.playForStatus(transition.to);
           this.snackBar.open(`Estado: ${transition.label}`, 'Cerrar', { duration: 2000 });
         } catch (e) {
           this.snackBar.open((e as Error).message || 'Error', 'Cerrar', { duration: 3000 });
@@ -275,6 +309,7 @@ export class TaskDetailComponent {
 
     try {
       this.taskService.applyTransition(t.id, transition.to, {});
+      this.transitionFeedback.playForStatus(transition.to);
       this.snackBar.open(`Estado: ${transition.label}`, 'Cerrar', { duration: 2000 });
     } catch (e) {
       this.snackBar.open((e as Error).message || 'Error', 'Cerrar', { duration: 3000 });

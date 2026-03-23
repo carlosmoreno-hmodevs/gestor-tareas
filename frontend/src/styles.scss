@@ -214,3 +214,16 @@ p, span, a, button, input, label, select, textarea {
 .user-switch-menu .mat-mdc-menu-item.selected {
   background: rgba(25, 118, 210, 0.1);
 }
+
+/* Micro-feedback al completar / liberar / rechazar tareas */
+.transition-feedback-backdrop {
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(5px);
+}
+
+.transition-feedback-panel .mat-mdc-dialog-container {
+  --mdc-dialog-container-shape: 16px;
+  padding: 0;
+  overflow: visible;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+}

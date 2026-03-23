@@ -67,6 +67,15 @@
         }
       </div>
     }
+    @if (effectiveStatus() === 'Liberada' && releaseReasonText(t)) {
+      <div class="release-reason-block">
+        <strong>Motivo de liberación (opcional):</strong>
+        <p>{{ releaseReasonText(t) }}</p>
+        @if (releaseReasonDetail(t)) {
+          <p class="reason-detail">Detalle: {{ releaseReasonDetail(t) }}</p>
+        }
+      </div>
+    }
     @if (effectiveStatus() === 'En Espera' && blockedReasonText(t)) {
       <div class="rejection-block blocked-reason">
         <strong>Motivo de bloqueo:</strong>

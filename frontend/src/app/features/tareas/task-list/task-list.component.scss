@@ -275,6 +275,31 @@
   }
 }
 
+.operational-filter-banner {
+  margin: -$spacing-xs 0 $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid rgba(25, 118, 210, 0.22);
+  background: rgba(25, 118, 210, 0.08);
+  color: var(--color-text, #1f2937);
+  font-size: $font-size-sm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.clear-operational-filter {
+  border: none;
+  border-radius: 999px;
+  background: rgba(25, 118, 210, 0.16);
+  color: #0f4c9b;
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-xs;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
 .kpi-strip {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
