@@ -34,8 +34,7 @@ const KANBAN_COLUMNS: { status: TaskStatus; label: string }[] = [
     DragDropModule,
     MatDialogModule,
     MatIconModule,
-    AvatarComponent,
-    ReasonDialogComponent
+    AvatarComponent
   ],
   templateUrl: './kanban-board.component.html',
   styleUrl: './kanban-board.component.scss'

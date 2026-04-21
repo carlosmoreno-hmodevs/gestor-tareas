@@ -41,8 +41,7 @@ import type { Transition } from '../../../core/services/task-workflow.service';
     TaskDetailFormComponent,
     TaskEvidencePanelComponent,
     TaskTimelineComponent,
-    TaskWorkflowActionsComponent,
-    ReasonDialogComponent
+    TaskWorkflowActionsComponent
   ],
   templateUrl: './task-detail.component.html',
   styleUrl: './task-detail.component.scss'
