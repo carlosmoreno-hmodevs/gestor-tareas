@@ -11,7 +11,9 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   font-family: 'Outfit', $font-family-base !important;
   min-height: 100%;
   position: relative;
-  padding-bottom: $spacing-2xl;
+  padding-bottom: max(#{$spacing-2xl}, env(safe-area-inset-bottom, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
 
   h1, h2, p, span, button:not(.mat-icon), .ia-chip, .ia-response-text {
     font-family: 'Outfit', $font-family-base !important;
@@ -57,12 +59,12 @@ $ia-glow: rgba(139, 92, 246, 0.4);
     linear-gradient(90deg, rgba($ia-violet, 0.06) 1px, transparent 1px);
 }
 
-// Hero
+// Hero (mobile first: menos aire; escritorio en breakpoint abajo)
 .ia-hero {
   position: relative;
   text-align: center;
-  padding: $spacing-xl 0 $spacing-2xl;
-  margin-bottom: $spacing-lg;
+  padding: $spacing-lg 0 $spacing-xl;
+  margin-bottom: $spacing-md;
   z-index: 1;
 }
 
@@ -87,17 +89,17 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin-bottom: $spacing-md;
+  width: 52px;
+  height: 52px;
+  margin-bottom: $spacing-sm;
   background: linear-gradient(135deg, $ia-violet 0%, $ia-cyan 100%);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: 0 8px 32px rgba($ia-violet, 0.35);
 
   mat-icon {
-    font-size: 36px;
-    width: 36px;
-    height: 36px;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
     color: white;
   }
 }
@@ -118,14 +120,15 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   color: var(--color-text-secondary, #64748b);
 }
 
-// Grid de cards
+// Grid de cards (ancho completo en móvil)
 .ia-grid {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: $spacing-xl;
-  max-width: 720px;
+  gap: $spacing-lg;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -163,7 +166,7 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 
 .ia-card-body {
   position: relative;
-  padding: $spacing-xl;
+  padding: 14px 16px;
 }
 
 .ia-card-header {
@@ -190,8 +193,9 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 
 .ia-card-title {
   margin: 0 0 $spacing-xs;
-  font-size: $font-size-lg;
+  font-size: clamp(1.05rem, 3.8vw, 1.125rem);
   font-weight: 600;
+  line-height: 1.3;
   color: var(--color-text, #1e293b);
 }
 
@@ -222,7 +226,9 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 
 .ia-execute-col {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
+  justify-content: stretch;
+  width: 100%;
   margin-bottom: $spacing-md;
 }
 
@@ -263,9 +269,10 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 
 .ia-suggest-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   width: 100%;
+  min-height: 48px;
   text-align: left;
   padding: 10px 12px;
   margin: 0 0 4px;
@@ -345,8 +352,8 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 }
 
 .ia-result-block {
-  margin: $spacing-lg 0 $spacing-md;
-  padding: $spacing-lg;
+  margin: $spacing-md 0;
+  padding: $spacing-md;
   border-radius: $radius-md;
   background: linear-gradient(135deg, rgba($ia-violet, 0.06) 0%, rgba($ia-cyan, 0.05) 100%);
   border: 1px solid rgba($ia-violet, 0.12);
@@ -372,9 +379,9 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 
 .ia-result-headline {
   margin: 0 0 $spacing-sm;
-  font-size: $font-size-base;
+  font-size: clamp(0.95rem, 3.5vw, 1.0625rem);
   font-weight: 600;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--color-text, #1e293b);
 }
 
@@ -391,14 +398,14 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 }
 
 .ia-result-tasks {
-  margin-top: $spacing-lg;
+  margin-top: $spacing-md;
 }
 
 .ia-result-bars {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: $spacing-md;
+  gap: 12px;
+  padding: 12px;
   border-radius: $radius-md;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba($ia-violet, 0.12);
@@ -409,22 +416,37 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   border-color: rgba($ia-violet-light, 0.22);
 }
 
+// Barras: en móvil etiqueta + valor arriba, barra ancho completo abajo
 .ia-bar-row {
   display: grid;
-  grid-template-columns: minmax(88px, 1fr) minmax(0, 3fr) 40px;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 6px;
   align-items: center;
-  gap: 10px;
   font-size: $font-size-sm;
 }
 
 .ia-bar-label {
+  grid-column: 1;
+  grid-row: 1;
   color: var(--color-text-secondary, #64748b);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.ia-bar-value {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: 600;
+  text-align: right;
+  color: var(--color-text, #1e293b);
 }
 
 .ia-bar-track {
+  grid-column: 1 / -1;
+  grid-row: 2;
   height: 10px;
   border-radius: 999px;
   background: rgba($ia-violet, 0.1);
@@ -439,10 +461,16 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   transition: width 0.35s ease;
 }
 
-.ia-bar-value {
-  font-weight: 600;
-  text-align: right;
-  color: var(--color-text, #1e293b);
+.ia-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+  padding: 0 4px 2px;
+  scrollbar-width: thin;
+}
+
+.ia-table-scroll .ia-data-table {
+  min-width: 520px;
 }
 
 .ia-data-table {
@@ -524,8 +552,17 @@ $ia-glow: rgba(139, 92, 246, 0.4);
 
 .ia-result-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
   gap: 10px;
+  align-items: stretch;
+}
+
+.ia-result-actions .ia-result-link {
+  width: 100%;
+  justify-content: center !important;
+  box-sizing: border-box;
+  min-height: 48px;
 }
 
 .ia-result-link {
@@ -716,13 +753,13 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   }
 }
 
-// Form field
+// Form field (móvil: menos alto para ver más contexto)
 .ia-textarea-field {
   width: 100%;
   margin-bottom: 0;
 
   textarea {
-    min-height: 100px;
+    min-height: 88px;
   }
 }
 
@@ -735,10 +772,14 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   background: rgba(255, 255, 255, 0.03);
 }
 
-// Botón generar
+// Botón generar (móvil: ancho completo y área táctil ≥48px)
 .ia-btn-generate {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
   gap: $spacing-sm;
   padding: 12px 24px !important;
   font-weight: 600 !important;
@@ -773,18 +814,21 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   }
 }
 
-// Chips de consultas
+// Chips de consultas (móvil: columna táctil; tablet+ rejilla)
 .ia-quick-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-md;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .ia-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: $spacing-sm;
-  padding: 12px 20px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
   font-family: inherit;
   font-size: $font-size-sm;
   font-weight: 500;
@@ -882,5 +926,141 @@ $ia-glow: rgba(139, 92, 246, 0.4);
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// Tablet: consultas rápidas en 2 columnas
+@media (min-width: 480px) and (max-width: 719.98px) {
+  .ia-quick-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ia-chip {
+    width: auto;
+  }
+}
+
+// Escritorio / pantallas anchas: recuperar layout original
+@media (min-width: 720px) {
+  .ia-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .ia-hero {
+    padding: $spacing-xl 0 $spacing-2xl;
+    margin-bottom: $spacing-lg;
+  }
+
+  .ia-hero-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: $spacing-md;
+    border-radius: 16px;
+
+    mat-icon {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+    }
+  }
+
+  .ia-grid {
+    max-width: 720px;
+    gap: $spacing-xl;
+  }
+
+  .ia-card-body {
+    padding: $spacing-xl;
+  }
+
+  .ia-execute-col {
+    width: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .ia-btn-generate {
+    width: auto;
+    min-height: 0;
+  }
+
+  .ia-result-block {
+    margin: $spacing-lg 0 $spacing-md;
+    padding: $spacing-lg;
+  }
+
+  .ia-result-headline {
+    font-size: $font-size-base;
+    line-height: 1.45;
+  }
+
+  .ia-result-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .ia-result-actions .ia-result-link {
+    width: auto;
+    min-height: 0;
+  }
+
+  .ia-result-bars {
+    padding: $spacing-md;
+    gap: 10px;
+  }
+
+  .ia-bar-row {
+    grid-template-columns: minmax(88px, 1fr) minmax(0, 3fr) 40px;
+    grid-template-rows: none;
+    gap: 10px;
+  }
+
+  .ia-bar-label {
+    grid-column: auto;
+    grid-row: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ia-bar-value {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .ia-bar-track {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .ia-table-scroll .ia-data-table {
+    min-width: 0;
+  }
+
+  .ia-result-tasks {
+    margin-top: $spacing-lg;
+  }
+
+  .ia-quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  .ia-chip {
+    width: auto;
+    min-height: 0;
+    padding: 12px 20px;
+  }
+
+  .ia-textarea-field textarea {
+    min-height: 100px;
+  }
+
+  .ia-card-title {
+    font-size: $font-size-lg;
+    line-height: inherit;
   }
 }

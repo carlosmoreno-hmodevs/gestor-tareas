@@ -2,6 +2,8 @@
 
 :host {
   display: block;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .ia-task-cards-list.task-cards-list {
@@ -11,6 +13,9 @@
 }
 
 .task-card-link {
+  display: block;
+  max-width: 100%;
+  box-sizing: border-box;
   text-decoration: none;
   color: inherit;
 }
@@ -18,6 +23,9 @@
 .task-card-v2 {
   display: flex;
   align-items: stretch;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--color-bg-card, #fff);
   border-radius: $radius-lg;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -34,6 +42,10 @@
 
   &.por-vencer {
     background: linear-gradient(90deg, rgba(237, 108, 2, 0.04) 0%, var(--color-bg-card, #fff) 15%);
+  }
+
+  &.vencida .task-due-label {
+    display: none;
   }
 }
 
@@ -63,7 +75,7 @@
 
 .task-card-body {
   flex: 1;
-  padding: $spacing-md $spacing-lg;
+  padding: 10px 12px;
   position: relative;
   min-width: 0;
 }
@@ -116,7 +128,9 @@
 
 .task-details {
   margin: 0 0 $spacing-sm;
-  font-size: $font-size-sm;
+  font-size: 12px;
+  line-height: 1.35;
+  word-break: break-word;
   color: var(--color-text-secondary, #757575);
 }
 
@@ -124,7 +138,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: $spacing-md;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .task-card-right {
@@ -188,7 +203,7 @@
 }
 
 .task-actions {
-  display: flex;
+  display: none;
   gap: 0;
 
   button {
@@ -210,4 +225,24 @@
 
 [data-theme='dark'] .task-card-v2 {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 720px) {
+  .task-card-body {
+    padding: $spacing-md $spacing-lg;
+  }
+
+  .task-details {
+    font-size: $font-size-sm;
+    line-height: normal;
+  }
+
+  .task-card-footer {
+    flex-wrap: nowrap;
+    gap: $spacing-md;
+  }
+
+  .task-actions {
+    display: flex;
+  }
 }

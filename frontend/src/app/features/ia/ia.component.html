@@ -91,12 +91,6 @@
               <p class="ia-result-body">{{ res.body }}</p>
             }
 
-            @if (res.taskPreviews?.length) {
-              <div class="ia-result-visual ia-result-tasks">
-                <app-ia-task-cards [tasks]="res.taskPreviews!" />
-              </div>
-            }
-
             @if (res.statusBars?.length) {
               <div class="ia-result-visual ia-result-bars" aria-label="Indicadores">
                 @for (row of res.statusBars; track row.label) {
@@ -112,7 +106,7 @@
             }
 
             @if (res.workloadTable?.length) {
-              <div class="ia-result-visual">
+              <div class="ia-result-visual ia-table-scroll">
                 <table class="ia-data-table" aria-label="Carga por responsable">
                   <thead>
                     <tr>
@@ -156,7 +150,7 @@
             }
 
             @if (res.projectTable?.length) {
-              <div class="ia-result-visual">
+              <div class="ia-result-visual ia-table-scroll">
                 <table class="ia-data-table" aria-label="Proyectos">
                   <thead>
                     <tr>
@@ -186,6 +180,12 @@
                     }
                   </tbody>
                 </table>
+              </div>
+            }
+
+            @if (res.taskPreviews?.length) {
+              <div class="ia-result-visual ia-result-tasks">
+                <app-ia-task-cards [tasks]="res.taskPreviews!" />
               </div>
             }
 
