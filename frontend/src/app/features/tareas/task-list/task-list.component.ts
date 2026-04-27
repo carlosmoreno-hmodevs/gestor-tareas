@@ -71,6 +71,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   searchText = signal('');
   selectedProjectId = signal('all');
   operationalFilterHint = signal('');
+  /** Filtro por responsable (enlaces desde Asistente IA u otros deep links). */
+  assigneeFilterId = signal<string | null>(null);
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -81,11 +83,12 @@ export class TaskListComponent implements OnInit, OnDestroy {
       { allowSignalWrites: true }
     );
     this.route.queryParamMap.pipe(takeUntilDestroyed(destroyRef)).subscribe((params) => {
-      const fromOperational = params.get('from') === 'operativo';
-      if (fromOperational) {
+      const from = params.get('from');
+      if (from === 'operativo' || from === 'ia') {
         this.applyOperationalFiltersFromQuery(params);
       } else {
         this.operationalFilterHint.set('');
+        this.assigneeFilterId.set(null);
       }
       const v = params.get('vista');
       if (v === 'tablero' || v === 'board') {
@@ -117,13 +120,14 @@ export class TaskListComponent implements OnInit, OnDestroy {
   }
 
   private applyOperationalFiltersFromQuery(params: { get(key: string): string | null }): void {
-    // Base limpia antes de aplicar el filtro venido de /tablero-operativo.
+    // Base limpia antes de aplicar el filtro venido de /tablero-operativo o Asistente IA.
     this.quickFilter.set('all');
     this.statusFilter.set([]);
     this.priorityFilter.set([]);
     this.searchText.set('');
     this.selectedProjectId.set('all');
     this.personalTaskScope.set('all');
+    this.assigneeFilterId.set(null);
 
     const quick = params.get('quick');
     const status = params.get('status');
@@ -132,6 +136,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
     const project = params.get('project');
     const scope = params.get('scope');
     const label = params.get('opLabel');
+    const assigneeId = params.get('assigneeId');
+    const from = params.get('from');
 
     const validQuick: Array<'all' | 'hoy' | 'vencidas' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar'> = [
       'all',
@@ -173,9 +179,18 @@ export class TaskListComponent implements OnInit, OnDestroy {
     if (scope === 'assigned' || scope === 'created' || scope === 'all') {
       this.personalTaskScope.set(scope);
     }
+    if (assigneeId?.trim()) {
+      this.assigneeFilterId.set(assigneeId.trim());
+    }
 
     this.operationalFilterHint.set(
-      label?.trim() ? `Filtro aplicado desde Tablero operativo: ${label}` : 'Filtro aplicado desde Tablero operativo'
+      label?.trim()
+        ? from === 'ia'
+          ? `Desde Asistente IA: ${label}`
+          : `Filtro aplicado desde Tablero operativo: ${label}`
+        : from === 'ia'
+          ? 'Filtro aplicado desde Asistente IA'
+          : 'Filtro aplicado desde Tablero operativo'
     );
   }
 
@@ -187,6 +202,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     this.searchText.set('');
     this.selectedProjectId.set('all');
     this.personalTaskScope.set('all');
+    this.assigneeFilterId.set(null);
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
@@ -197,12 +213,14 @@ export class TaskListComponent implements OnInit, OnDestroy {
         priority: null,
         search: null,
         project: null,
-        scope: null
+        scope: null,
+        assigneeId: null
       },
       queryParamsHandling: 'merge',
       replaceUrl: true
     });
   }
+
   quickFilter = signal<'all' | 'hoy' | 'vencidas' | 'por-vencer' | 'esta-semana' | 'alta' | 'sin-asignar'>('all');
   /** Estados seleccionados (varios se combinan con OR). Vacío = sin filtro por estado. */
   statusFilter = signal<(TaskStatus | 'completadas')[]>([]);
@@ -488,9 +506,14 @@ export class TaskListComponent implements OnInit, OnDestroy {
     const sfList = this.statusFilter();
     const pfList = this.priorityFilter();
     const projectId = this.selectedProjectId();
+    const assigneeOnly = this.assigneeFilterId();
 
     if (projectId !== 'all') {
       list = list.filter((t) => t.projectId === projectId);
+    }
+
+    if (assigneeOnly) {
+      list = list.filter((t) => t.assigneeId === assigneeOnly);
     }
 
     if (search) {

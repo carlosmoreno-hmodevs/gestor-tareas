@@ -1,0 +1,93 @@
+<div class="task-cards-list ia-task-cards-list">
+  @for (task of tasks(); track task.id) {
+    <a class="task-card-link" [routerLink]="['/tareas', task.id]">
+      <div
+        class="task-card-v2"
+        [class.vencida]="getEffectiveStatus(task) === 'Vencida'"
+        [class.por-vencer]="task.riskIndicator === 'por-vencer' && getEffectiveStatus(task) !== 'Vencida'"
+      >
+        <span class="task-card-prio-dot" [attr.data-prio]="task.priority"></span>
+        <app-avatar
+          class="task-card-avatar"
+          [name]="task.assignee || 'Sin asignar'"
+          [avatarUrl]="getUserById(task.assigneeId)?.avatarUrl ?? getUserByName(task.assignee)?.avatarUrl"
+          [size]="36"
+        />
+        <div class="task-card-body">
+          <div class="task-title-row">
+            <h4 class="task-title">{{ task.title }}</h4>
+            <div class="task-relation-indicators">
+              @if (task.parentTaskId) {
+                <mat-icon class="rel-icon subtask" matTooltip="Subtarea">subdirectory_arrow_right</mat-icon>
+              }
+              @if (taskService.getSubtasks(task.id).length) {
+                <span class="rel-chip" matTooltip="{{ taskService.getSubtasks(task.id).length }} subtarea(s)">
+                  {{ taskService.getSubtasks(task.id).length }} subt.
+                </span>
+              }
+              @if (taskService.isBlocked(task.id)) {
+                <mat-icon class="rel-icon blocked" matTooltip="Bloqueada">block</mat-icon>
+              }
+            </div>
+          </div>
+          <p class="task-details">
+            {{ task.folio }} • {{ task.assignee || 'Sin asignar' }} • {{ task.priority }} •
+            {{
+              getEffectiveStatus(task) === 'Vencida'
+                ? 'Venció'
+                : task.riskIndicator === 'por-vencer'
+                  ? 'Por vencer'
+                  : (task.dueDate | date: 'dd/MM/yyyy')
+            }}
+          </p>
+          <div class="task-card-footer">
+            <span
+              class="status-badge"
+              [class.vencida]="getEffectiveStatus(task) === 'Vencida'"
+              [class.en-progreso]="getEffectiveStatus(task) === 'En Progreso'"
+              [class.pendiente]="getEffectiveStatus(task) === 'Pendiente'"
+              [class.en-espera]="getEffectiveStatus(task) === 'En Espera'"
+              [class.rechazada]="getEffectiveStatus(task) === 'Rechazada'"
+              [class.completada]="getEffectiveStatus(task) === 'Completada'"
+              [class.liberada]="getEffectiveStatus(task) === 'Liberada'"
+              [class.cancelada]="getEffectiveStatus(task) === 'Cancelada'"
+            >
+              {{ getEffectiveStatus(task) | uppercase }}
+            </span>
+            <div class="task-card-right">
+              <span class="task-due-label">
+                {{ getEffectiveStatus(task) === 'Vencida' ? 'Venció' : (task.dueDate | date: 'dd MMM') }}
+              </span>
+              <div class="task-actions">
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="$event.preventDefault(); $event.stopPropagation()"
+                  tabindex="-1"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="$event.preventDefault(); $event.stopPropagation()"
+                  tabindex="-1"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="$event.preventDefault(); $event.stopPropagation()"
+                  tabindex="-1"
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </a>
+  }
+</div>

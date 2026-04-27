@@ -13,71 +13,226 @@
   <div class="ia-grid">
     <section class="ia-card ia-card-capture">
       <div class="ia-card-border"></div>
-      <div class="ia-card-body">
+      <div class="ia-card-body ia-capture-body">
+        @if (aiPhase()) {
+          <div class="ia-ai-overlay" aria-live="polite" aria-busy="true">
+            <div class="ia-ai-glass">
+              <mat-progress-spinner diameter="44" mode="indeterminate" />
+              <p class="ia-ai-phase">{{ aiPhase() }}</p>
+              <div class="ia-ai-shimmer" aria-hidden="true"></div>
+              <div class="ia-ai-dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        }
         <div class="ia-card-header">
           <span class="ia-card-badge">Captura asistida</span>
-          <h2 class="ia-card-title">Genera tareas desde texto libre</h2>
-          <p class="ia-card-desc">Escribe en lenguaje natural y la IA extraerá título, prioridad y detalles</p>
+          <h2 class="ia-card-title">Pide a la IA con frases guiadas</h2>
+          <p class="ia-card-desc">
+            Escribe tu consulta y elige una sugerencia para ejecutar al instante, o usa
+            <strong>Ejecutar con IA</strong>.
+          </p>
         </div>
-        <mat-form-field appearance="outline" class="ia-textarea-field">
-          <mat-label>Descripción de la tarea</mat-label>
-          <textarea
-            matInput
-            [ngModel]="freeText()"
-            (ngModelChange)="freeText.set($event)"
-            rows="4"
-            placeholder="Ej: Revisar informe trimestral urgente para el jueves"
-          ></textarea>
-        </mat-form-field>
-        <button class="ia-btn-generate" mat-flat-button (click)="generateTask()">
-          <mat-icon>auto_awesome</mat-icon>
-          <span>Generar tarea</span>
-        </button>
-      </div>
-    </section>
-
-    <section class="ia-card ia-card-queries">
-      <div class="ia-card-border"></div>
-      <div class="ia-card-body">
-        <div class="ia-card-header">
-          <span class="ia-card-badge">Consultas rápidas</span>
-          <h2 class="ia-card-title">Respuestas instantáneas</h2>
-        </div>
-        <div class="ia-quick-chips">
-          <button class="ia-chip" (click)="quickQuery('por-vencer')">
-            <mat-icon>schedule</mat-icon>
-            Por vencer
-          </button>
-          <button class="ia-chip" (click)="quickQuery('vencidas')">
-            <mat-icon>warning</mat-icon>
-            Vencidas
-          </button>
-          <button class="ia-chip" (click)="quickQuery('carga')">
-            <mat-icon>people</mat-icon>
-            Carga por responsable
-          </button>
-        </div>
-      </div>
-    </section>
-
-    @if (responses().length) {
-      <section class="ia-card ia-card-responses">
-        <div class="ia-card-border"></div>
-        <div class="ia-card-body">
-          <div class="ia-card-header">
-            <span class="ia-card-badge">Respuestas</span>
-            <h2 class="ia-card-title">Resultados de la IA</h2>
+        <div
+          class="ia-suggest-wrap"
+          (focusin)="onCaptureFocusIn()"
+          (focusout)="scheduleCaptureBlur()"
+        >
+          <div class="ia-input-toolbar">
+            <mat-form-field appearance="outline" class="ia-textarea-field">
+              <mat-label>Tu petición a la IA</mat-label>
+              <textarea
+                matInput
+                [ngModel]="draftText()"
+                (ngModelChange)="onDraftChange($event)"
+                rows="4"
+                placeholder="Toca el campo para ver sugerencias, o escribe para filtrar…"
+                autocomplete="off"
+                spellcheck="false"
+              ></textarea>
+            </mat-form-field>
           </div>
-          <div class="ia-responses">
-            @for (r of responses(); track $index) {
-              <div class="ia-response-item">
-                <span class="ia-response-prompt">›</span>
-                <span class="ia-response-text">{{ r }}</span>
+          <div class="ia-execute-col">
+            <button class="ia-btn-generate" mat-flat-button [disabled]="!canRunIa()" (click)="runIaDemo()">
+              <mat-icon>auto_awesome</mat-icon>
+              <span>Ejecutar con IA</span>
+            </button>
+          </div>
+          @if (showSuggestPanel()) {
+            <div class="ia-suggest-panel" role="listbox" aria-label="Sugerencias de la IA">
+              @for (s of filteredSuggestions(); track s.id) {
+                <button
+                  type="button"
+                  class="ia-suggest-item"
+                  role="option"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="pickSuggestion(s)"
+                >
+                  <mat-icon class="ia-suggest-icon">{{ s.icon }}</mat-icon>
+                  <span class="ia-suggest-text">
+                    <span class="ia-suggest-preview">{{ s.preview }}</span>
+                    <span class="ia-suggest-kind" [class.ia-suggest-kind--accion]="s.kind === 'accion'">{{
+                      s.kind === 'accion' ? 'Acción' : 'Consulta'
+                    }}</span>
+                  </span>
+                  <mat-icon class="ia-suggest-chevron">north_west</mat-icon>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        @if (lastResult(); as res) {
+          <div class="ia-result-block">
+            <div class="ia-result-label">Respuesta</div>
+            <p class="ia-result-headline">{{ res.headline }}</p>
+            @if (res.body) {
+              <p class="ia-result-body">{{ res.body }}</p>
+            }
+
+            @if (res.taskPreviews?.length) {
+              <div class="ia-result-visual ia-result-tasks">
+                <app-ia-task-cards [tasks]="res.taskPreviews!" />
+              </div>
+            }
+
+            @if (res.statusBars?.length) {
+              <div class="ia-result-visual ia-result-bars" aria-label="Indicadores">
+                @for (row of res.statusBars; track row.label) {
+                  <div class="ia-bar-row">
+                    <span class="ia-bar-label">{{ row.label }}</span>
+                    <div class="ia-bar-track" role="presentation">
+                      <div class="ia-bar-fill" [style.width.%]="barPercent(row, res.statusBars!)"></div>
+                    </div>
+                    <span class="ia-bar-value">{{ row.value }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (res.workloadTable?.length) {
+              <div class="ia-result-visual">
+                <table class="ia-data-table" aria-label="Carga por responsable">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Responsable</th>
+                      <th scope="col" class="ia-col-num">Abiertas</th>
+                      <th scope="col" class="ia-col-action">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of res.workloadTable; track r.assigneeId ?? r.name + '-' + $index) {
+                      <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ r.name }}</td>
+                        <td class="ia-col-num">{{ r.open }}</td>
+                        <td class="ia-col-action">
+                          @if (r.assigneeId) {
+                            <a
+                              mat-stroked-button
+                              class="ia-result-link ia-result-link--compact"
+                              [routerLink]="['/tareas']"
+                              [queryParams]="{
+                                from: 'ia',
+                                opLabel: 'Carga: ' + r.name,
+                                assigneeId: r.assigneeId,
+                                quick: null
+                              }"
+                            >
+                              <mat-icon>arrow_outward</mat-icon>
+                              Tareas
+                            </a>
+                          } @else {
+                            <span class="ia-table-muted">—</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            @if (res.projectTable?.length) {
+              <div class="ia-result-visual">
+                <table class="ia-data-table" aria-label="Proyectos">
+                  <thead>
+                    <tr>
+                      <th scope="col">Proyecto</th>
+                      <th scope="col">Estado</th>
+                      <th scope="col" class="ia-col-action">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of res.projectTable; track p.id) {
+                      <tr>
+                        <td>
+                          <a class="ia-table-link" [routerLink]="['/proyectos', p.id]">{{ p.name }}</a>
+                        </td>
+                        <td>{{ p.status }}</td>
+                        <td class="ia-col-action">
+                          <a
+                            mat-stroked-button
+                            class="ia-result-link ia-result-link--compact"
+                            [routerLink]="['/proyectos', p.id]"
+                          >
+                            <mat-icon>arrow_outward</mat-icon>
+                            Abrir
+                          </a>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            @if (res.links.length) {
+              <div class="ia-result-actions">
+                @for (link of res.links; track $index) {
+                  <a
+                    mat-stroked-button
+                    class="ia-result-link"
+                    [routerLink]="link.routerLink"
+                    [queryParams]="link.queryParams ?? {}"
+                  >
+                    <mat-icon>arrow_outward</mat-icon>
+                    {{ link.label }}
+                  </a>
+                }
               </div>
             }
           </div>
+        }
+
+        <div class="ia-quick-inline">
+          <span class="ia-quick-inline-label">Consultas rápidas</span>
+          <div class="ia-quick-chips">
+            <button type="button" class="ia-chip" (click)="quickQuery('por-vencer')">
+              <mat-icon>schedule</mat-icon>
+              Por vencer
+            </button>
+            <button type="button" class="ia-chip" (click)="quickQuery('vencidas')">
+              <mat-icon>warning</mat-icon>
+              Vencidas
+            </button>
+            <button type="button" class="ia-chip" (click)="quickQuery('carga')">
+              <mat-icon>groups</mat-icon>
+              Top responsables
+            </button>
+            <button type="button" class="ia-chip" (click)="quickQuery('snapshot')">
+              <mat-icon>grid_view</mat-icon>
+              Snapshot del tablero
+            </button>
+            <button type="button" class="ia-chip" (click)="quickQuery('proyectos')">
+              <mat-icon>folder</mat-icon>
+              Proyectos activos
+            </button>
+          </div>
         </div>
-      </section>
-    }
+      </div>
+    </section>
   </div>
 </div>
