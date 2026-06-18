@@ -203,8 +203,14 @@ export class TaskDetailFormComponent {
   }
 
   getAssigneeName(id: string): string {
-    if (!id) return 'Sin asignar';
-    return this.users().find((u) => u.id === id)?.name ?? 'Sin asignar';
+    const taskAssignee = this.task()?.assignee?.trim();
+    if (!id) {
+      return taskAssignee && taskAssignee !== 'Sin asignar' ? taskAssignee : 'Sin asignar';
+    }
+    const userName = this.users().find((u) => u.id === id)?.name;
+    if (userName) return userName;
+    if (taskAssignee && taskAssignee !== 'Sin asignar') return taskAssignee;
+    return 'Sin asignar';
   }
 
   getAssigneePosition(id: string): string | undefined {

@@ -1,5 +1,6 @@
 import { ApplicationConfig, APP_INITIALIZER, provideBrowserGlobalErrorListeners, isDevMode, inject } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import { provideHttpClient, withFetch } from '@angular/common/http';
 import { TenantContextService } from './core/services/tenant-context.service';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -11,6 +12,7 @@ import { INITIAL_TENANTS } from './core/data/tenant-initial';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideHttpClient(withFetch()),
     // Si no hay tenant guardado, elegir el primero por defecto (evita pasar por /select-tenant al recargar)
     {
       provide: APP_INITIALIZER,

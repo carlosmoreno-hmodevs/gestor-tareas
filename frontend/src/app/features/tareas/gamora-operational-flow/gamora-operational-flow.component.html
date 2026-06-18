@@ -1,0 +1,56 @@
+<section class="operational-flow" aria-label="Progreso operativo de la tarea">
+  <h3 class="section-title">FLUJO DE LA TAREA</h3>
+
+  <div class="flow-steps" role="list">
+    @for (step of mainSteps; track step.key) {
+      <div class="flow-step" [class]="'flow-step--' + stepState(step.key)" role="listitem">
+        <span class="flow-step-marker" aria-hidden="true">
+          @if (stepState(step.key) === 'completed') {
+            <mat-icon>check_circle</mat-icon>
+          } @else if (stepState(step.key) === 'current') {
+            <mat-icon>radio_button_checked</mat-icon>
+          } @else {
+            <mat-icon>radio_button_unchecked</mat-icon>
+          }
+        </span>
+        <span class="flow-step-label">{{ step.label }}</span>
+      </div>
+      @if (!$last) {
+        <span class="flow-connector" [class.flow-connector--done]="stepState(step.key) === 'completed'" aria-hidden="true"></span>
+      }
+    }
+  </div>
+
+  @if (showCorrectionBranch()) {
+    <div class="correction-branch">
+      <span class="correction-label">Rama de corrección</span>
+      <div class="flow-steps flow-steps--compact">
+        @for (step of correctionSteps; track step.key) {
+          <div class="flow-step" [class]="'flow-step--' + stepState(step.key)" role="listitem">
+            <span class="flow-step-marker" aria-hidden="true">
+              @if (stepState(step.key) === 'completed') {
+                <mat-icon>check_circle</mat-icon>
+              } @else if (stepState(step.key) === 'current') {
+                <mat-icon>radio_button_checked</mat-icon>
+              } @else {
+                <mat-icon>radio_button_unchecked</mat-icon>
+              }
+            </span>
+            <span class="flow-step-label">{{ step.label }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="flow-guidance">
+    <p class="flow-guidance-status">
+      <strong>Estado actual:</strong> {{ guidance().statusLabel }}
+    </p>
+    <p class="flow-guidance-summary">{{ guidance().summary }}</p>
+    <p class="flow-guidance-next">
+      <mat-icon>arrow_forward</mat-icon>
+      <span><strong>Siguiente paso:</strong> {{ guidance().nextStep }}</span>
+    </p>
+  </div>
+</section>

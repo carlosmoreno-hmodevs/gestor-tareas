@@ -22,6 +22,149 @@
   }
 }
 
+.gamora-simulator-panel {
+  background: var(--color-bg-card, #fff);
+  border: 1px solid rgba(25, 118, 210, 0.25);
+  border-radius: $radius-lg;
+  padding: $spacing-md $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+}
+
+.gamora-simulator-header {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+
+  mat-icon {
+    color: #1976d2;
+    margin-top: 2px;
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #616161);
+  }
+
+  button {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+.gamora-simulator-field {
+  width: 100%;
+}
+
+.gamora-simulator-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.gamora-simulator-reply {
+  margin: 0;
+  padding: $spacing-sm $spacing-md;
+  background: #e8f5e9;
+  border-radius: $radius-md;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+.gamora-chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: $spacing-sm;
+  background: #fafafa;
+  border-radius: $radius-md;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.gamora-chat-bubble {
+  max-width: 92%;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  font-size: 0.875rem;
+
+  p {
+    margin: 4px 0 0;
+    white-space: pre-wrap;
+  }
+
+  &--user {
+    align-self: flex-end;
+    background: #e3f2fd;
+  }
+
+  &--gamora {
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+}
+
+.gamora-chat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #757575;
+}
+
+.gamora-mode-toggle {
+  margin-bottom: $spacing-sm;
+}
+
+.gamora-chat-audio-label {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+.gamora-chat-transcript {
+  margin: 4px 0 0;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.7);
+  white-space: pre-wrap;
+}
+
+.gamora-failure-toggle {
+  display: block;
+  margin-bottom: $spacing-sm;
+}
+
+.gamora-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm 0;
+
+  span {
+    font-size: 0.875rem;
+    color: #424242;
+    width: 100%;
+  }
+}
+
+.gamora-simulator-error {
+  margin: 0;
+  padding: $spacing-sm $spacing-md;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: $radius-md;
+  font-size: 0.875rem;
+}
+
 .filters-sidebar {
   display: none;
   flex-shrink: 0;

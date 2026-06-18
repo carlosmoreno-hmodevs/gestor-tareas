@@ -1,0 +1,44 @@
+<section class="gamora-workflow-panel" aria-label="Acciones del compromiso">
+  <h3 class="section-title">ACCIONES DISPONIBLES</h3>
+
+  <div class="gamora-status-row">
+    <span class="gamora-status-label">Estado actual</span>
+    <mat-chip class="gamora-status-chip">{{ statusLabel() }}</mat-chip>
+  </div>
+
+  <p class="gamora-summary">{{ guidance().summary }}</p>
+
+  @if (uploadHint()) {
+    <div class="gamora-action-hint" role="note">
+      <mat-icon>{{ uploadHint()!.icon }}</mat-icon>
+      <div>
+        <strong>{{ uploadHint()!.label }}</strong>
+        <p>{{ uploadHint()!.description }}</p>
+      </div>
+    </div>
+  }
+
+  @if (actions().length) {
+    <div class="gamora-actions">
+      @for (action of actions(); track action.key) {
+        <div class="gamora-action-block">
+          <button
+            mat-flat-button
+            [color]="action.color ?? undefined"
+            [class.mat-stroked-button]="!action.color"
+            type="button"
+            [disabled]="!isOnline() || busy()"
+            (click)="onAction(action)"
+          >
+            <mat-icon>{{ action.icon }}</mat-icon>
+            {{ action.label }}
+          </button>
+          <p class="gamora-action-desc">{{ action.description }}</p>
+        </div>
+      }
+    </div>
+  } @else if (evidencePolicy().readOnly) {
+    <p class="gamora-terminal">{{ guidance().summary }}</p>
+  }
+</section>
+

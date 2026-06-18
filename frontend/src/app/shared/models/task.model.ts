@@ -38,6 +38,10 @@ export interface TaskHistoryEntry {
     comment?: string;
     fromStatus?: TaskStatus;
     toStatus?: TaskStatus;
+    fromStatusLabel?: string;
+    toStatusLabel?: string;
+    /** Texto legible para timeline Gamora (prioridad en pipe) */
+    timelineText?: string;
     newDueDate?: Date;
     fileName?: string;
     fileNames?: string[];
@@ -62,6 +66,7 @@ export interface TaskAttachment {
   uploadedAt: Date;
   uploadedBy?: string;
   uploadedById?: string;
+  url?: string;
 }
 
 export interface Task {

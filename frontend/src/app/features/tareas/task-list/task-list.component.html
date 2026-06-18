@@ -182,6 +182,116 @@
       </div>
     }
 
+    @if (taskService.gamoraApiActive()) {
+      <section class="gamora-simulator-panel" aria-label="Simulador WhatsApp Gamora">
+        <div class="gamora-simulator-header">
+          <mat-icon>chat</mat-icon>
+          <div>
+            <h3>Simulador Gamora</h3>
+            <p>
+              Envía una instrucción como Luisito (texto o audio simulado). Gamora propondrá el compromiso y pedirá confirmación antes de crearlo.
+            </p>
+          </div>
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="gamoraSimulatorBusy()"
+            (click)="refreshGamoraBoard()"
+          >
+            <mat-icon>refresh</mat-icon>
+            Recargar API
+          </button>
+        </div>
+
+        <mat-button-toggle-group
+          class="gamora-mode-toggle"
+          [value]="gamoraSimulatorMode()"
+          (change)="gamoraSimulatorMode.set($event.value)"
+          aria-label="Tipo de mensaje simulado"
+        >
+          <mat-button-toggle value="text">Texto</mat-button-toggle>
+          <mat-button-toggle value="audio">Audio simulado</mat-button-toggle>
+        </mat-button-toggle-group>
+
+        @if (gamoraChatMessages().length) {
+          <div class="gamora-chat-thread" aria-live="polite">
+            @for (msg of gamoraChatMessages(); track $index) {
+              <div class="gamora-chat-bubble" [class.gamora-chat-bubble--user]="msg.role === 'user'" [class.gamora-chat-bubble--gamora]="msg.role === 'gamora'">
+                <span class="gamora-chat-label">{{ msg.role === 'user' ? 'Tú' : 'Gamora' }}</span>
+                @if (msg.kind === 'audio') {
+                  <p class="gamora-chat-audio-label">{{ msg.text }}</p>
+                  @if (msg.transcript) {
+                    <p class="gamora-chat-transcript">Transcripción: “{{ msg.transcript }}”</p>
+                  }
+                } @else {
+                  <p>{{ msg.text }}</p>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        @if (gamoraAwaitingConfirmation()) {
+          <div class="gamora-confirm-actions">
+            <span>Confirma o cancela la propuesta:</span>
+            <button mat-flat-button color="primary" type="button" [disabled]="gamoraSimulatorBusy()" (click)="sendGamoraQuickConfirm('sí')">
+              Sí, confirmar
+            </button>
+            <button mat-stroked-button type="button" [disabled]="gamoraSimulatorBusy()" (click)="sendGamoraQuickConfirm('no')">
+              No, cancelar
+            </button>
+          </div>
+        }
+
+        @if (gamoraSimulatorMode() === 'text') {
+          <mat-form-field appearance="outline" class="gamora-simulator-field" subscriptSizing="dynamic">
+            <mat-label>Mensaje simulado</mat-label>
+            <textarea
+              matInput
+              rows="2"
+              [ngModel]="gamoraSimulatorText()"
+              (ngModelChange)="gamoraSimulatorText.set($event)"
+              (keydown.enter)="$event.preventDefault(); sendGamoraSimulatorMessage()"
+            ></textarea>
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" class="gamora-simulator-field" subscriptSizing="dynamic">
+            <mat-label>Transcripción simulada del audio</mat-label>
+            <textarea
+              matInput
+              rows="2"
+              [ngModel]="gamoraSimulatorTranscript()"
+              (ngModelChange)="gamoraSimulatorTranscript.set($event)"
+              (keydown.enter)="$event.preventDefault(); sendGamoraSimulatorMessage()"
+            ></textarea>
+          </mat-form-field>
+          <label class="gamora-failure-toggle">
+            <mat-checkbox
+              [ngModel]="gamoraSimulateTranscriptionFailure()"
+              (ngModelChange)="gamoraSimulateTranscriptionFailure.set($event)"
+            >
+              Simular fallo de transcripción
+            </mat-checkbox>
+          </label>
+        }
+        <div class="gamora-simulator-actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="!canSendGamoraSimulator()"
+            (click)="sendGamoraSimulatorMessage()"
+          >
+            <mat-icon>{{ gamoraSimulatorMode() === 'audio' ? 'mic' : 'send' }}</mat-icon>
+            {{ gamoraSimulatorMode() === 'audio' ? 'Enviar audio simulado' : 'Enviar al simulador' }}
+          </button>
+        </div>
+        @if (gamoraSimulatorError()) {
+          <p class="gamora-simulator-error" role="alert">{{ gamoraSimulatorError() }}</p>
+        }
+      </section>
+    }
+
     <div class="kpi-strip animate-stagger">
       <button type="button" class="kpi-card kpi-card-clickable kpi-pending" [class.active]="isStatusFilterActive('Pendiente')" (click)="applyStatusFilter('Pendiente')">
         <span class="kpi-value">{{ pendingCount() }}</span>

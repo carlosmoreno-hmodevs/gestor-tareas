@@ -10,6 +10,9 @@ import { TenantSettingsService } from './tenant-settings.service';
 import { OrgService } from './org.service';
 import { ProjectService } from './project.service';
 import { AdminService } from './admin.service';
+import { CommitmentApiService } from '../api/commitment-api.service';
+import { commitmentsToTasks, commitmentToTask } from '../api/commitment-task.mapper';
+import { isGamoraApiTenant } from '../config/gamora.config';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
@@ -21,7 +24,11 @@ export class TaskService {
   private readonly tenantSettings = inject(TenantSettingsService);
   private readonly orgService = inject(OrgService);
   private readonly adminService = inject(AdminService);
+  private readonly commitmentApi = inject(CommitmentApiService);
   private readonly injector = inject(Injector);
+
+  private readonly _gamoraApiActive = signal(false);
+  readonly gamoraApiActive = this._gamoraApiActive.asReadonly();
 
   private readonly _tasks = signal<Task[]>([]);
   private readonly _taskLinks = signal<TaskLink[]>([]);
@@ -33,8 +40,16 @@ export class TaskService {
       if (!tid) {
         this._tasks.set([]);
         this._taskLinks.set([]);
+        this._gamoraApiActive.set(false);
         return;
       }
+      if (isGamoraApiTenant(tid)) {
+        this._gamoraApiActive.set(true);
+        void this.loadGamoraCommitments(tid);
+        this._taskLinks.set([]);
+        return;
+      }
+      this._gamoraApiActive.set(false);
       const initialTasks = getInitialTasks(tid, mode);
       const cachedTasks = this.snapshot.loadTasks();
       const tasks = cachedTasks?.length ? cachedTasks.filter((t: Task) => t.tenantId === tid) : initialTasks;
@@ -47,7 +62,7 @@ export class TaskService {
 
     effect(() => {
       const tasks = this._tasks();
-      if (this.connectivity.isOnline()) {
+      if (this.connectivity.isOnline() && !this._gamoraApiActive()) {
         this.snapshot.saveTasks(tasks);
         this.connectivity.markSync();
       }
@@ -124,6 +139,89 @@ export class TaskService {
       return seen;
     };
     return reachable(toTaskId).has(fromTaskId);
+  }
+
+  /** Carga compromisos desde Gamora API (MySQL) y los expone como tareas en el tablero. */
+  async loadGamoraCommitments(tenantId: string): Promise<void> {
+    try {
+      const commitments = await this.commitmentApi.listCommitments(tenantId);
+      const current = this._tasks();
+      const merged = commitments.map((c) => {
+        const existing = current.find((t) => t.id === c.id);
+        const mapped = commitmentToTask(c, tenantId);
+        if (!existing) return mapped;
+
+        const hasRichDetail =
+          (existing.attachments?.length ?? 0) > 0 ||
+          (existing.history?.length ?? 0) > (mapped.history?.length ?? 0);
+
+        if (!hasRichDetail) return mapped;
+
+        return {
+          ...mapped,
+          attachments: existing.attachments,
+          attachmentsCount: existing.attachments?.length ?? mapped.attachmentsCount,
+          history:
+            existing.history.length >= mapped.history.length ? existing.history : mapped.history,
+        };
+      });
+      this._tasks.set(merged);
+    } catch (err) {
+      console.error('Error cargando compromisos Gamora API', err);
+      this._tasks.set([]);
+    }
+  }
+
+  async refreshFromGamoraApi(): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    if (tid && isGamoraApiTenant(tid)) {
+      await this.loadGamoraCommitments(tid);
+    }
+  }
+
+  async loadGamoraTaskDetail(taskId: string): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid || !isGamoraApiTenant(tid)) return;
+    try {
+      const [detail, evidence] = await Promise.all([
+        this.commitmentApi.getCommitment(tid, taskId),
+        this.commitmentApi.listEvidence(tid, taskId),
+      ]);
+      const mapped = commitmentToTask(detail, tid, evidence);
+      this._tasks.update((list) => {
+        const idx = list.findIndex((t) => t.id === taskId);
+        if (idx === -1) return [...list, mapped];
+        const next = [...list];
+        next[idx] = mapped;
+        return next;
+      });
+    } catch (err) {
+      console.error('Error cargando detalle compromiso', err);
+    }
+  }
+
+  async applyGamoraStatus(
+    taskId: string,
+    targetStatus: string,
+    options?: { actorContactId?: string; comment?: string }
+  ): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid || !isGamoraApiTenant(tid)) return;
+    await this.commitmentApi.patchCommitmentStatus(tid, taskId, {
+      status: targetStatus,
+      actor_contact_id: options?.actorContactId,
+      comment: options?.comment,
+    });
+    await this.loadGamoraTaskDetail(taskId);
+    await this.loadGamoraCommitments(tid);
+  }
+
+  async uploadGamoraEvidence(taskId: string, file: File, actorContactId?: string): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid || !isGamoraApiTenant(tid)) return;
+    await this.commitmentApi.uploadEvidence(tid, taskId, file, actorContactId);
+    await this.loadGamoraTaskDetail(taskId);
+    await this.loadGamoraCommitments(tid);
   }
 
   private appendHistoryEntry(task: Task, type: Task['history'][0]['type'], details: Task['history'][0]['details']): Task {

@@ -49,7 +49,13 @@ export class TaskTimelineComponent {
   commentText = '';
 
   getUserDisplayName(entry: TaskHistoryEntry): string {
-    return entry.userName ?? entry.userId ?? 'Usuario';
+    if (entry.userName?.trim()) return entry.userName.trim();
+    const uid = entry.userId ?? '';
+    if (uid === 'system' || uid === 'gamora') return 'Sistema';
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) {
+      return 'Usuario';
+    }
+    return uid || 'Usuario';
   }
 
   onSubmitComment(): void {

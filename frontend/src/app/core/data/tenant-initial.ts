@@ -1,7 +1,7 @@
 import type { Tenant, TenantUser } from '../../shared/models/tenant.model';
 
 export const INITIAL_TENANTS: Tenant[] = [
-  { id: 'tenant-1', name: 'Ferretería y Construcción Norte', slug: 'ferreteria-norte' },
+  { id: 'tenant-1', name: 'Ferretería Luisito', slug: 'ferreteria-luisito' },
   { id: 'tenant-2', name: 'Cadena Retail Sur', slug: 'cadena-retail-sur' }
 ];
 

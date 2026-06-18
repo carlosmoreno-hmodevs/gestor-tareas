@@ -28,13 +28,23 @@
         <div class="row g-3">
       <!-- Col 1: DETALLE (30-35%) -->
       <div class="col-12 col-lg-4">
-        <app-task-workflow-actions
-          [currentStatus]="effStatus"
-          [allowedTransitions]="allowedTransitions()"
-          [isOnline]="connectivity.isOnline()"
-          [task]="t"
-          (transitionClicked)="executeTransition($event)"
-        />
+        @if (isGamoraMode()) {
+          <app-gamora-operational-flow [commitmentStatus]="gamoraCommitmentStatus()" />
+          <app-gamora-commitment-actions
+            [commitmentStatus]="gamoraCommitmentStatus()"
+            [isOnline]="connectivity.isOnline()"
+            [busy]="gamoraBusy()"
+            (actionClicked)="onGamoraAction($event)"
+          />
+        } @else {
+          <app-task-workflow-actions
+            [currentStatus]="effStatus"
+            [allowedTransitions]="allowedTransitions()"
+            [isOnline]="connectivity.isOnline()"
+            [task]="t"
+            (transitionClicked)="executeTransition($event)"
+          />
+        }
         <app-task-detail-form
           [task]="t"
           [isOnline]="connectivity.isOnline()"
@@ -53,6 +63,10 @@
           [taskId]="t.id"
           [attachments]="taskAttachments()"
           [isOnline]="connectivity.isOnline()"
+          [uploadEnabled]="!isGamoraMode() || (gamoraEvidencePolicy()?.canUpload ?? true)"
+          [uploadBlockedMessage]="gamoraEvidencePolicy()?.blockedMessage ?? null"
+          [uploadHintMessage]="gamoraEvidencePolicy()?.hintMessage ?? null"
+          [readOnly]="isGamoraMode() && (gamoraEvidencePolicy()?.readOnly ?? false)"
           (filesSelected)="onFilesSelected($event)"
           (downloadRequested)="onDownloadRequested($event)"
           (removeRequested)="onRemoveRequested($event)"

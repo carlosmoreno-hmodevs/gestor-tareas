@@ -5,6 +5,9 @@ import type { TaskHistoryEntry } from '../models';
 export class TaskHistoryTextPipe implements PipeTransform {
   transform(entry: TaskHistoryEntry): string {
     const d = entry.details ?? {};
+    if (typeof d.timelineText === 'string' && d.timelineText.trim()) {
+      return d.timelineText;
+    }
     switch (entry.type) {
       case 'CREATED':
         return 'Tarea creada';

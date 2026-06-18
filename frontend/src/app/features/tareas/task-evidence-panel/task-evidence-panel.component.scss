@@ -103,3 +103,33 @@
   color: var(--color-text-secondary, #757575);
   margin: $spacing-sm 0;
 }
+
+.evidence-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  margin: 0 0 $spacing-md;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &--info {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+  }
+
+  &--blocked {
+    background: #fafafa;
+    color: #616161;
+    border: 1px solid #e0e0e0;
+  }
+}

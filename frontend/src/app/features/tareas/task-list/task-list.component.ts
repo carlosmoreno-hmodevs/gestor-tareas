@@ -11,9 +11,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatCardModule } from '@angular/material/card';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../../core/services/task.service';
+import { CommitmentApiService } from '../../../core/api/commitment-api.service';
 import { DataService } from '../../../core/services/data.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { TaskWorkflowService } from '../../../core/services/task-workflow.service';
@@ -46,6 +48,7 @@ import type { TaskStatus, Priority, Task } from '../../../shared/models';
     MatSelectModule,
     MatTableModule,
     MatButtonToggleModule,
+    MatCheckboxModule,
     MatCardModule,
     KanbanBoardComponent,
     EmptyStateComponent,
@@ -56,6 +59,7 @@ import type { TaskStatus, Priority, Task } from '../../../shared/models';
 })
 export class TaskListComponent implements OnInit, OnDestroy {
   readonly taskService = inject(TaskService);
+  private readonly commitmentApi = inject(CommitmentApiService);
   private readonly dataService = inject(DataService);
   private readonly projectService = inject(ProjectService);
   private readonly taskPageLayout = inject(TaskPageLayoutService);
@@ -73,6 +77,27 @@ export class TaskListComponent implements OnInit, OnDestroy {
   operationalFilterHint = signal('');
   /** Filtro por responsable (enlaces desde Asistente IA u otros deep links). */
   assigneeFilterId = signal<string | null>(null);
+
+  /** Simulador Gamora (Fase 1+) — solo tenant conectado a API */
+  readonly gamoraSimulatorMode = signal<'text' | 'audio'>('text');
+  readonly gamoraSimulatorText = signal(
+    'Dile a Panchito que mañana cuente los sacos de cemento de la sucursal Centro y mande foto.'
+  );
+  readonly gamoraSimulatorTranscript = signal(
+    'Dile a Panchito que mañana cuente los sacos de cemento de la sucursal Centro y mande foto.'
+  );
+  readonly gamoraSimulateTranscriptionFailure = signal(false);
+  readonly gamoraSimulatorBusy = signal(false);
+  readonly gamoraSimulatorError = signal<string | null>(null);
+  readonly gamoraAwaitingConfirmation = signal(false);
+  readonly gamoraChatMessages = signal<
+    Array<{
+      role: 'user' | 'gamora';
+      text: string;
+      kind?: 'text' | 'audio';
+      transcript?: string;
+    }>
+  >([]);
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -106,6 +131,94 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.taskPageLayout.setTasksFullBleed(false);
+  }
+
+  async refreshGamoraBoard(): Promise<void> {
+    this.gamoraSimulatorError.set(null);
+    await this.taskService.refreshFromGamoraApi();
+  }
+
+  async sendGamoraSimulatorMessage(textOverride?: string): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    const isConfirmReply = textOverride !== undefined;
+    const mode = isConfirmReply ? 'text' : this.gamoraSimulatorMode();
+    const text = (textOverride ?? this.gamoraSimulatorText()).trim();
+    const transcript = this.gamoraSimulatorTranscript().trim();
+    const simulateFailure = this.gamoraSimulateTranscriptionFailure();
+
+    if (!tid) return;
+    if (mode === 'text' && !text) return;
+    if (mode === 'audio' && !simulateFailure && !transcript) return;
+
+    this.gamoraSimulatorBusy.set(true);
+    this.gamoraSimulatorError.set(null);
+
+    if (mode === 'audio' && !isConfirmReply) {
+      this.gamoraChatMessages.update((msgs) => [
+        ...msgs,
+        {
+          role: 'user',
+          kind: 'audio',
+          transcript: simulateFailure ? undefined : transcript,
+          text: '🎤 Audio simulado',
+        },
+      ]);
+    } else {
+      this.gamoraChatMessages.update((msgs) => [...msgs, { role: 'user', kind: 'text', text }]);
+    }
+
+    try {
+      const externalId = `ui-${crypto.randomUUID()}`;
+      const res =
+        mode === 'audio' && !isConfirmReply
+          ? await this.commitmentApi.sendSimulatorInbound(tid, {
+              channel_contact_external_id: 'luisito-sim',
+              external_message_id: externalId,
+              message_type: 'audio',
+              simulated_transcript: transcript || undefined,
+              simulate_transcription_failure: simulateFailure,
+            })
+          : await this.commitmentApi.sendSimulatorInbound(tid, {
+              channel_contact_external_id: 'luisito-sim',
+              text_body: text,
+              external_message_id: externalId,
+              message_type: 'text',
+            });
+
+      this.gamoraChatMessages.update((msgs) => [...msgs, { role: 'gamora', text: res.reply }]);
+      this.gamoraAwaitingConfirmation.set(res.awaiting_confirmation);
+      if (!isConfirmReply) {
+        if (mode === 'text') {
+          this.gamoraSimulatorText.set('');
+        } else {
+          this.gamoraSimulatorTranscript.set('');
+          this.gamoraSimulateTranscriptionFailure.set(false);
+        }
+      }
+      if (res.commitment) {
+        await this.taskService.refreshFromGamoraApi();
+        this.gamoraAwaitingConfirmation.set(false);
+      }
+    } catch (err) {
+      console.error(err);
+      this.gamoraSimulatorError.set(
+        'No se pudo enviar al simulador. Verifica que MySQL y el backend estén en ejecución.'
+      );
+    } finally {
+      this.gamoraSimulatorBusy.set(false);
+    }
+  }
+
+  canSendGamoraSimulator(): boolean {
+    if (this.gamoraSimulatorBusy()) return false;
+    if (this.gamoraSimulatorMode() === 'audio') {
+      return this.gamoraSimulateTranscriptionFailure() || !!this.gamoraSimulatorTranscript().trim();
+    }
+    return !!this.gamoraSimulatorText().trim();
+  }
+
+  sendGamoraQuickConfirm(answer: 'sí' | 'no'): void {
+    void this.sendGamoraSimulatorMessage(answer);
   }
 
   /** Cambia vista y sincroniza query (?vista=tablero) para enlaces del menú. */

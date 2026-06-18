@@ -10,18 +10,24 @@ import type { TaskAttachment } from '../../../shared/models';
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, MatTooltipModule],
   templateUrl: './task-evidence-panel.component.html',
-  styleUrl: './task-evidence-panel.component.scss'
+  styleUrl: './task-evidence-panel.component.scss',
 })
 export class TaskEvidencePanelComponent {
   attachments = input<TaskAttachment[]>([]);
   isOnline = input(true);
   taskId = input.required<string>();
+  /** Gamora: permite subir archivos según estado del compromiso */
+  uploadEnabled = input(true);
+  uploadBlockedMessage = input<string | null>(null);
+  uploadHintMessage = input<string | null>(null);
+  readOnly = input(false);
 
   filesSelected = output<File[]>();
   downloadRequested = output<{ attachment: TaskAttachment }>();
   removeRequested = output<{ attachment: TaskAttachment }>();
 
   attachmentsList = computed(() => this.attachments() ?? []);
+  canInteractUpload = computed(() => this.isOnline() && this.uploadEnabled() && !this.readOnly());
 
   formatSize(bytes: number): string {
     if (bytes < 1024) return bytes + ' B';
@@ -39,6 +45,7 @@ export class TaskEvidencePanelComponent {
   }
 
   onFileInputChange(event: Event): void {
+    if (!this.canInteractUpload()) return;
     const input = event.target as HTMLInputElement;
     const files = input.files ? Array.from(input.files) : [];
     if (files.length) {
@@ -48,17 +55,17 @@ export class TaskEvidencePanelComponent {
   }
 
   onDropzoneClick(): void {
-    if (!this.isOnline()) return;
+    if (!this.canInteractUpload()) return;
     document.getElementById(`file-input-${this.taskId()}`)?.click();
   }
 
   onDragOver(event: DragEvent): void {
-    if (this.isOnline()) event.preventDefault();
+    if (this.canInteractUpload()) event.preventDefault();
   }
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
-    if (!this.isOnline()) return;
+    if (!this.canInteractUpload()) return;
     const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
     if (files.length) this.filesSelected.emit(files);
   }
@@ -68,6 +75,7 @@ export class TaskEvidencePanelComponent {
   }
 
   onRemove(att: TaskAttachment): void {
+    if (this.readOnly()) return;
     this.removeRequested.emit({ attachment: att });
   }
 }

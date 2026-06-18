@@ -1,32 +1,50 @@
 <section class="evidence-column">
   <h3 class="section-title">EVIDENCIA</h3>
 
-  <div
-    class="dropzone"
-    [class.disabled]="!isOnline()"
-    (click)="onDropzoneClick()"
-    (dragover)="onDragOver($event)"
-    (drop)="onDrop($event)"
-    [matTooltip]="!isOnline() ? 'Requires connection' : ''"
-  >
-    <input
-      [id]="'file-input-' + taskId()"
-      type="file"
-      multiple
-      class="file-input-hidden"
-      (change)="onFileInputChange($event)"
-    />
-    <mat-icon class="dropzone-icon">cloud_upload</mat-icon>
-    <p class="dropzone-text">Arrastra y suelta o haz clic para adjuntar</p>
-    <button
-      mat-stroked-button
-      type="button"
-      [disabled]="!isOnline()"
-      (click)="onDropzoneClick(); $event.stopPropagation()"
+  @if (uploadHintMessage() && canInteractUpload()) {
+    <p class="evidence-hint evidence-hint--info">
+      <mat-icon>info</mat-icon>
+      {{ uploadHintMessage() }}
+    </p>
+  }
+
+  @if (!uploadEnabled() && uploadBlockedMessage()) {
+    <p class="evidence-hint evidence-hint--blocked" role="status">
+      <mat-icon>lock</mat-icon>
+      {{ uploadBlockedMessage() }}
+    </p>
+  }
+
+  @if (canInteractUpload()) {
+    <div
+      class="dropzone"
+      (click)="onDropzoneClick()"
+      (dragover)="onDragOver($event)"
+      (drop)="onDrop($event)"
     >
-      Adjuntar archivos
-    </button>
-  </div>
+      <input
+        [id]="'file-input-' + taskId()"
+        type="file"
+        multiple
+        class="file-input-hidden"
+        (change)="onFileInputChange($event)"
+      />
+      <mat-icon class="dropzone-icon">cloud_upload</mat-icon>
+      <p class="dropzone-text">Arrastra y suelta o haz clic para adjuntar evidencia</p>
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="onDropzoneClick(); $event.stopPropagation()"
+      >
+        Adjuntar archivos
+      </button>
+    </div>
+  } @else if (!readOnly() && !isOnline()) {
+    <p class="evidence-hint evidence-hint--blocked">
+      <mat-icon>cloud_off</mat-icon>
+      Sin conexión. Conéctate para subir evidencia.
+    </p>
+  }
 
   <div class="evidence-list">
     @for (att of attachmentsList(); track att.id) {
@@ -49,18 +67,21 @@
           >
             <mat-icon>download</mat-icon>
           </button>
-          <button
-            mat-icon-button
-            matTooltip="Eliminar"
-            (click)="onRemove(att); $event.stopPropagation()"
-          >
-            <mat-icon>delete_outline</mat-icon>
-          </button>
+          @if (!readOnly()) {
+            <button
+              mat-icon-button
+              matTooltip="Eliminar"
+              [disabled]="true"
+              (click)="onRemove(att); $event.stopPropagation()"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          }
         </div>
       </div>
     }
     @if (attachmentsList().length === 0) {
-      <p class="no-files">Sin archivos adjuntos</p>
+      <p class="no-files">Sin archivos de evidencia todavía</p>
     }
   </div>
 </section>

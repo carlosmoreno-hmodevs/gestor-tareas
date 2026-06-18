@@ -1,0 +1,92 @@
+.gamora-workflow-panel {
+  background: var(--color-bg-card, #fff);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(25, 118, 210, 0.15);
+}
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #757575;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.75rem;
+}
+
+.gamora-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.gamora-status-label {
+  font-size: 0.875rem;
+  color: #616161;
+}
+
+.gamora-status-chip {
+  font-weight: 600;
+}
+
+.gamora-summary {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: #424242;
+}
+
+.gamora-action-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+
+  mat-icon {
+    color: #1565c0;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #424242;
+  }
+}
+
+.gamora-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gamora-action-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.gamora-action-desc {
+  margin: 0;
+  padding-left: 0.25rem;
+  font-size: 0.8125rem;
+  color: #616161;
+}
+
+.gamora-terminal {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #757575;
+}
+

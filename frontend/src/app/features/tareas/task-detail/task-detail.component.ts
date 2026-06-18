@@ -1,4 +1,4 @@
-import { Component, inject, input, computed } from '@angular/core';
+import { Component, inject, input, computed, OnInit, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,12 +12,19 @@ import { TaskWorkflowService } from '../../../core/services/task-workflow.servic
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { TransitionFeedbackService } from '../../../core/services/transition-feedback.service';
+import { GamoraCommitmentWorkflowService, type GamoraWorkflowAction } from '../../../core/services/gamora-commitment-workflow.service';
+import { mapGamoraApiError } from '../../../core/api/gamora-api-error.mapper';
+import { GAMORA_DEV_CONTACTS } from '../../../core/config/gamora.config';
+import { CommitmentApiService } from '../../../core/api/commitment-api.service';
+import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { TaskDetailHeaderComponent } from '../task-detail-header/task-detail-header.component';
 import { TaskDetailFormComponent } from '../task-detail-form/task-detail-form.component';
 import { TaskEvidencePanelComponent } from '../task-evidence-panel/task-evidence-panel.component';
 import { TaskTimelineComponent } from '../task-timeline/task-timeline.component';
 import { TaskWorkflowActionsComponent } from '../task-workflow-actions/task-workflow-actions.component';
+import { GamoraCommitmentActionsComponent } from '../gamora-commitment-actions/gamora-commitment-actions.component';
+import { GamoraOperationalFlowComponent } from '../gamora-operational-flow/gamora-operational-flow.component';
 import { TaskRelationsPanelComponent } from '../task-relations-panel/task-relations-panel.component';
 import { TaskChecklistSectionComponent } from '../task-checklist-section/task-checklist-section.component';
 import { RejectDialogComponent } from '../reject-dialog/reject-dialog.component';
@@ -41,12 +48,14 @@ import type { Transition } from '../../../core/services/task-workflow.service';
     TaskDetailFormComponent,
     TaskEvidencePanelComponent,
     TaskTimelineComponent,
-    TaskWorkflowActionsComponent
+    TaskWorkflowActionsComponent,
+    GamoraCommitmentActionsComponent,
+    GamoraOperationalFlowComponent
   ],
   templateUrl: './task-detail.component.html',
   styleUrl: './task-detail.component.scss'
 })
-export class TaskDetailComponent {
+export class TaskDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly taskService = inject(TaskService);
   private readonly dataService = inject(DataService);
@@ -56,12 +65,33 @@ export class TaskDetailComponent {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly transitionFeedback = inject(TransitionFeedbackService);
+  private readonly gamoraWorkflow = inject(GamoraCommitmentWorkflowService);
+  private readonly commitmentApi = inject(CommitmentApiService);
+  private readonly tenantContext = inject(TenantContextService);
+
+  readonly gamoraBusy = signal(false);
 
   taskId = input.required<string>({ alias: 'id' });
   /** Usa la lista filtrada por org para que al cambiar de organización la tarea desaparezca si está fuera de scope */
   task = computed(() =>
     this.taskService.tasks().find((t) => t.id === this.taskId())
   );
+
+  constructor() {
+    effect(() => {
+      const id = this.taskId();
+      if (id && this.taskService.gamoraApiActive()) {
+        void this.taskService.loadGamoraTaskDetail(id);
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    const id = this.taskId();
+    if (id && this.taskService.gamoraApiActive()) {
+      void this.taskService.loadGamoraTaskDetail(id);
+    }
+  }
 
   assigneePosition = computed(() => {
     const t = this.task();
@@ -86,6 +116,97 @@ export class TaskDetailComponent {
     return t?.attachments ?? [];
   });
 
+  gamoraCommitmentStatus = computed(() => this.task()?.observations ?? 'assigned');
+
+  isGamoraMode = computed(() => this.taskService.gamoraApiActive());
+
+  gamoraEvidencePolicy = computed(() => {
+    if (!this.isGamoraMode()) return null;
+    return this.gamoraWorkflow.getEvidenceUploadPolicy(this.gamoraCommitmentStatus());
+  });
+
+  onFilesSelected(files: File[]): void {
+    const t = this.task();
+    if (!t || !files.length) return;
+
+    if (this.isGamoraMode()) {
+      const policy = this.gamoraEvidencePolicy();
+      if (policy && !policy.canUpload) {
+        this.snackBar.open(
+          policy.blockedMessage ?? 'No puedes subir evidencia en este momento.',
+          'Cerrar',
+          { duration: 4000 }
+        );
+        return;
+      }
+      void this.uploadGamoraEvidenceFiles(t.id, files);
+      return;
+    }
+
+    const meta = files.map((f) => ({ name: f.name, size: f.size, type: f.type }));
+    this.taskService.addAttachmentMetadata(t.id, meta);
+    this.snackBar.open(
+      `Archivo(s) adjuntado(s): ${files.length}`,
+      'Cerrar',
+      { duration: 2000 }
+    );
+  }
+
+  private async uploadGamoraEvidenceFiles(taskId: string, files: File[]): Promise<void> {
+    const policy = this.gamoraEvidencePolicy();
+    if (policy && !policy.canUpload) {
+      this.snackBar.open(
+        policy.blockedMessage ?? 'No puedes subir evidencia en este momento.',
+        'Cerrar',
+        { duration: 4000 }
+      );
+      return;
+    }
+
+    this.gamoraBusy.set(true);
+    try {
+      for (const file of files) {
+        await this.taskService.uploadGamoraEvidence(taskId, file, GAMORA_DEV_CONTACTS.panchito);
+      }
+      this.snackBar.open(`Evidencia subida (${files.length} archivo(s))`, 'Cerrar', { duration: 2500 });
+    } catch (e) {
+      this.snackBar.open(mapGamoraApiError(e, 'upload_evidence'), 'Cerrar', { duration: 4500 });
+    } finally {
+      this.gamoraBusy.set(false);
+    }
+  }
+
+  onDownloadRequested(event: { attachment: { id: string; name: string; url?: string; type?: string } }): void {
+    if (this.isGamoraMode()) {
+      void this.downloadGamoraEvidence(event.attachment);
+      return;
+    }
+    this.snackBar.open(`Descarga simulada: ${event.attachment.name}`, 'Cerrar', {
+      duration: 2000
+    });
+  }
+
+  private async downloadGamoraEvidence(att: { id: string; name: string; type?: string }): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    const taskId = this.taskId();
+    if (!tid || !taskId) return;
+    try {
+      const blob = await this.commitmentApi.downloadEvidenceBlob(tid, taskId, att.id);
+      const url = URL.createObjectURL(blob);
+      if (att.type?.startsWith('image/')) {
+        window.open(url, '_blank', 'noopener');
+      } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = att.name;
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      this.snackBar.open('No se pudo descargar la evidencia', 'Cerrar', { duration: 3000 });
+    }
+  }
+
   onSaveChanges(updates: Partial<Task>): void {
     const t = this.task();
     if (!t) return;
@@ -97,29 +218,84 @@ export class TaskDetailComponent {
     this.snackBar.open('Cambios descartados', 'Cerrar', { duration: 1500 });
   }
 
-  onFilesSelected(files: File[]): void {
-    const t = this.task();
-    if (!t || !files.length) return;
-    const meta = files.map((f) => ({ name: f.name, size: f.size, type: f.type }));
-    this.taskService.addAttachmentMetadata(t.id, meta);
-    this.snackBar.open(
-      `Archivo(s) adjuntado(s): ${files.length}`,
-      'Cerrar',
-      { duration: 2000 }
-    );
-  }
-
-  onDownloadRequested(_event: { attachment: { name: string } }): void {
-    this.snackBar.open(`Descarga simulada: ${_event.attachment.name}`, 'Cerrar', {
-      duration: 2000
-    });
-  }
-
   onRemoveRequested(event: { attachment: { id: string } }): void {
     const t = this.task();
     if (!t) return;
+    if (this.isGamoraMode()) {
+      this.snackBar.open('Eliminar evidencia no disponible en esta fase', 'Cerrar', { duration: 2000 });
+      return;
+    }
     this.taskService.removeAttachment(t.id, event.attachment.id);
     this.snackBar.open('Archivo eliminado', 'Cerrar', { duration: 2000 });
+  }
+
+  onGamoraAction(action: GamoraWorkflowAction): void {
+    const t = this.task();
+    if (!t || !this.connectivity.isOnline()) return;
+
+    const status = this.gamoraCommitmentStatus();
+    if (!this.gamoraWorkflow.canTransition(status, action.targetStatus)) {
+      this.snackBar.open(
+        'Esta acción no está disponible para el estado actual de la tarea.',
+        'Cerrar',
+        { duration: 4000 }
+      );
+      return;
+    }
+
+    const actor = this.resolveGamoraActor(action.targetStatus);
+
+    if (action.requiresComment) {
+      const ref = this.dialog.open(RejectDialogComponent, {
+        data: {
+          taskTitle: t.title,
+          dialogTitle: action.label,
+          label: 'Comentario (opcional)',
+          confirmLabel: action.label,
+          optionalComment: true,
+        },
+        width: '90vw',
+        maxWidth: '440px',
+      });
+      ref.afterClosed().subscribe((result) => {
+        if (result === null) return;
+        void this.runGamoraTransition(t.id, action.targetStatus, actor, result?.comment);
+      });
+      return;
+    }
+
+    void this.runGamoraTransition(t.id, action.targetStatus, actor);
+  }
+
+  private resolveGamoraActor(targetStatus: string): string {
+    if (['accepted', 'corrected'].includes(targetStatus)) {
+      return GAMORA_DEV_CONTACTS.panchito;
+    }
+    return GAMORA_DEV_CONTACTS.luisito;
+  }
+
+  private async runGamoraTransition(
+    taskId: string,
+    targetStatus: string,
+    actorContactId: string,
+    comment?: string
+  ): Promise<void> {
+    this.gamoraBusy.set(true);
+    try {
+      await this.taskService.applyGamoraStatus(taskId, targetStatus, {
+        actorContactId,
+        comment: comment?.trim() || undefined,
+      });
+      this.snackBar.open(
+        `Estado: ${this.gamoraWorkflow.getStatusLabel(targetStatus)}`,
+        'Cerrar',
+        { duration: 2500 }
+      );
+    } catch (e: unknown) {
+      this.snackBar.open(mapGamoraApiError(e, 'status_transition'), 'Cerrar', { duration: 4500 });
+    } finally {
+      this.gamoraBusy.set(false);
+    }
   }
 
   onCommentSubmitted(text: string): void {
