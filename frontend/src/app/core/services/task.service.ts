@@ -11,6 +11,7 @@ import { OrgService } from './org.service';
 import { ProjectService } from './project.service';
 import { AdminService } from './admin.service';
 import { CommitmentApiService } from '../api/commitment-api.service';
+import type { CommitmentListParams, CommitmentSummaryDto } from '../../shared/models/commitment.model';
 import { commitmentsToTasks, commitmentToTask } from '../api/commitment-task.mapper';
 import { isGamoraApiTenant } from '../config/gamora.config';
 
@@ -30,6 +31,18 @@ export class TaskService {
   private readonly _gamoraApiActive = signal(false);
   readonly gamoraApiActive = this._gamoraApiActive.asReadonly();
 
+  private readonly _gamoraLoading = signal(false);
+  readonly gamoraLoading = this._gamoraLoading.asReadonly();
+
+  private readonly _gamoraError = signal<string | null>(null);
+  readonly gamoraError = this._gamoraError.asReadonly();
+
+  private readonly _gamoraListMeta = signal({ total: 0, page: 1, pageSize: 0 });
+  readonly gamoraListMeta = this._gamoraListMeta.asReadonly();
+
+  private readonly _gamoraSummary = signal<CommitmentSummaryDto | null>(null);
+  readonly gamoraSummary = this._gamoraSummary.asReadonly();
+
   private readonly _tasks = signal<Task[]>([]);
   private readonly _taskLinks = signal<TaskLink[]>([]);
 
@@ -46,6 +59,7 @@ export class TaskService {
       if (isGamoraApiTenant(tid)) {
         this._gamoraApiActive.set(true);
         void this.loadGamoraCommitments(tid);
+        void this.loadGamoraSummary(tid);
         this._taskLinks.set([]);
         return;
       }
@@ -142,9 +156,17 @@ export class TaskService {
   }
 
   /** Carga compromisos desde Gamora API (MySQL) y los expone como tareas en el tablero. */
-  async loadGamoraCommitments(tenantId: string): Promise<void> {
+  async loadGamoraCommitments(tenantId: string, params?: CommitmentListParams): Promise<void> {
+    this._gamoraLoading.set(true);
+    this._gamoraError.set(null);
     try {
-      const commitments = await this.commitmentApi.listCommitments(tenantId);
+      const page = await this.commitmentApi.listCommitmentsPage(tenantId, params);
+      const commitments = page.items;
+      this._gamoraListMeta.set({
+        total: page.total,
+        page: page.page,
+        pageSize: page.pageSize,
+      });
       const current = this._tasks();
       const merged = commitments.map((c) => {
         const existing = current.find((t) => t.id === c.id);
@@ -168,14 +190,31 @@ export class TaskService {
       this._tasks.set(merged);
     } catch (err) {
       console.error('Error cargando compromisos Gamora API', err);
+      this._gamoraError.set('No pudimos cargar los compromisos.');
       this._tasks.set([]);
+      this._gamoraListMeta.set({ total: 0, page: 1, pageSize: 0 });
+    } finally {
+      this._gamoraLoading.set(false);
     }
   }
 
-  async refreshFromGamoraApi(): Promise<void> {
+  async loadGamoraSummary(tenantId: string): Promise<void> {
+    try {
+      const summary = await this.commitmentApi.getSummary(tenantId);
+      this._gamoraSummary.set(summary);
+    } catch (err) {
+      console.error('Error cargando resumen Gamora', err);
+      this._gamoraSummary.set(null);
+    }
+  }
+
+  async refreshFromGamoraApi(params?: CommitmentListParams): Promise<void> {
     const tid = this.tenantContext.currentTenantId();
     if (tid && isGamoraApiTenant(tid)) {
-      await this.loadGamoraCommitments(tid);
+      await Promise.all([
+        this.loadGamoraCommitments(tid, params),
+        this.loadGamoraSummary(tid),
+      ]);
     }
   }
 

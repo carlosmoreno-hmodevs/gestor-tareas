@@ -13,8 +13,10 @@ import { CurrentUserService } from '../../../core/services/current-user.service'
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { TransitionFeedbackService } from '../../../core/services/transition-feedback.service';
 import { GamoraCommitmentWorkflowService, type GamoraWorkflowAction } from '../../../core/services/gamora-commitment-workflow.service';
+import { NotificationsRefreshService } from '../../../core/services/notifications-refresh.service';
 import { mapGamoraApiError } from '../../../core/api/gamora-api-error.mapper';
-import { GAMORA_DEV_CONTACTS } from '../../../core/config/gamora.config';
+import { PermissionService } from '../../../core/auth/permission.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { CommitmentApiService } from '../../../core/api/commitment-api.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -66,8 +68,11 @@ export class TaskDetailComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly transitionFeedback = inject(TransitionFeedbackService);
   private readonly gamoraWorkflow = inject(GamoraCommitmentWorkflowService);
+  private readonly permissions = inject(PermissionService);
+  private readonly auth = inject(AuthService);
   private readonly commitmentApi = inject(CommitmentApiService);
   private readonly tenantContext = inject(TenantContextService);
+  private readonly notificationsRefresh = inject(NotificationsRefreshService);
 
   readonly gamoraBusy = signal(false);
 
@@ -118,11 +123,18 @@ export class TaskDetailComponent implements OnInit {
 
   gamoraCommitmentStatus = computed(() => this.task()?.observations ?? 'assigned');
 
+  gamoraAssigneeContactId = computed(() => this.task()?.assigneeId || null);
+
   isGamoraMode = computed(() => this.taskService.gamoraApiActive());
 
   gamoraEvidencePolicy = computed(() => {
     if (!this.isGamoraMode()) return null;
-    return this.gamoraWorkflow.getEvidenceUploadPolicy(this.gamoraCommitmentStatus());
+    const base = this.gamoraWorkflow.getEvidenceUploadPolicy(this.gamoraCommitmentStatus());
+    return this.permissions.getEvidenceUploadPolicy(
+      base,
+      this.gamoraCommitmentStatus(),
+      this.gamoraAssigneeContactId()
+    );
   });
 
   onFilesSelected(files: File[]): void {
@@ -166,9 +178,14 @@ export class TaskDetailComponent implements OnInit {
     this.gamoraBusy.set(true);
     try {
       for (const file of files) {
-        await this.taskService.uploadGamoraEvidence(taskId, file, GAMORA_DEV_CONTACTS.panchito);
+        await this.taskService.uploadGamoraEvidence(
+          taskId,
+          file,
+          this.auth.contactId() ?? undefined
+        );
       }
       this.snackBar.open(`Evidencia subida (${files.length} archivo(s))`, 'Cerrar', { duration: 2500 });
+      this.notificationsRefresh.bump();
     } catch (e) {
       this.snackBar.open(mapGamoraApiError(e, 'upload_evidence'), 'Cerrar', { duration: 4500 });
     } finally {
@@ -233,6 +250,12 @@ export class TaskDetailComponent implements OnInit {
     const t = this.task();
     if (!t || !this.connectivity.isOnline()) return;
 
+    if (!this.permissions.canPerformAction(action, this.gamoraAssigneeContactId())) {
+      const reason = this.permissions.actionDisabledReason(action, this.gamoraAssigneeContactId());
+      this.snackBar.open(reason ?? 'No tienes permiso para realizar esta acción.', 'Cerrar', { duration: 4500 });
+      return;
+    }
+
     const status = this.gamoraCommitmentStatus();
     if (!this.gamoraWorkflow.canTransition(status, action.targetStatus)) {
       this.snackBar.open(
@@ -267,11 +290,8 @@ export class TaskDetailComponent implements OnInit {
     void this.runGamoraTransition(t.id, action.targetStatus, actor);
   }
 
-  private resolveGamoraActor(targetStatus: string): string {
-    if (['accepted', 'corrected'].includes(targetStatus)) {
-      return GAMORA_DEV_CONTACTS.panchito;
-    }
-    return GAMORA_DEV_CONTACTS.luisito;
+  private resolveGamoraActor(_targetStatus: string): string {
+    return this.auth.contactId() ?? '';
   }
 
   private async runGamoraTransition(
@@ -291,6 +311,7 @@ export class TaskDetailComponent implements OnInit {
         'Cerrar',
         { duration: 2500 }
       );
+      this.notificationsRefresh.bump();
     } catch (e: unknown) {
       this.snackBar.open(mapGamoraApiError(e, 'status_transition'), 'Cerrar', { duration: 4500 });
     } finally {

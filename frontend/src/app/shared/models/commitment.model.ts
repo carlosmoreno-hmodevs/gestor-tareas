@@ -54,3 +54,49 @@ export interface EvidenceFileDto {
   storageProvider: string;
   createdAt: string;
 }
+
+export interface CommitmentSummaryDto {
+  total: number;
+  active: number;
+  byStatus: {
+    assigned: number;
+    accepted: number;
+    evidence_submitted: number;
+    in_review: number;
+    correction_requested: number;
+    corrected: number;
+    closed: number;
+    cancelled: number;
+    other: number;
+  };
+  overdue: number;
+  dueWithin48h: number;
+  unassigned: number;
+  byPriority: Record<string, number>;
+  byAssignee: Array<{
+    contactId: string;
+    displayName: string;
+    count: number;
+  }>;
+}
+
+export interface CommitmentListParams {
+  status?: string;
+  assigneeContactId?: string;
+  priority?: string;
+  dueFrom?: string;
+  dueTo?: string;
+  overdue?: boolean;
+  dueWithin48h?: boolean;
+  unassigned?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CommitmentListPageDto {
+  items: CommitmentDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

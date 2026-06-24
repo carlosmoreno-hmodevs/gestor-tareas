@@ -16,11 +16,14 @@ import { MatCardModule } from '@angular/material/card';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../../core/services/task.service';
 import { CommitmentApiService } from '../../../core/api/commitment-api.service';
+import { ContactsApiService } from '../../../core/api/contacts-api.service';
+import { PermissionService } from '../../../core/auth/permission.service';
 import { DataService } from '../../../core/services/data.service';
 import { ConnectivityService } from '../../../core/services/connectivity.service';
 import { TaskWorkflowService } from '../../../core/services/task-workflow.service';
 import { AutomationService } from '../../../core/services/automation.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
+import { mapGamoraApiError } from '../../../core/api/gamora-api-error.mapper';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { ProjectService } from '../../../core/services/project.service';
 import { TaskPageLayoutService } from '../../../core/services/task-page-layout.service';
@@ -31,6 +34,10 @@ import { StatusChipComponent } from '../../../shared/components/status-chip/stat
 import { PriorityPillComponent } from '../../../shared/components/priority-pill/priority-pill.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
+import { GamoraKanbanBoardComponent } from '../../../shared/components/gamora-kanban-board/gamora-kanban-board.component';
+import { NotificationsRefreshService } from '../../../core/services/notifications-refresh.service';
+import type { CommitmentListParams } from '../../../shared/models/commitment.model';
+import { gamoraStatusesForUiFilter, gamoraStatusLabel } from '../../../core/api/gamora-status-filters';
 import type { TaskStatus, Priority, Task } from '../../../shared/models';
 
 @Component({
@@ -51,8 +58,9 @@ import type { TaskStatus, Priority, Task } from '../../../shared/models';
     MatCheckboxModule,
     MatCardModule,
     KanbanBoardComponent,
+    GamoraKanbanBoardComponent,
     EmptyStateComponent,
-    AvatarComponent
+    AvatarComponent,
   ],
   templateUrl: './task-list.component.html',
   styleUrl: './task-list.component.scss'
@@ -60,6 +68,8 @@ import type { TaskStatus, Priority, Task } from '../../../shared/models';
 export class TaskListComponent implements OnInit, OnDestroy {
   readonly taskService = inject(TaskService);
   private readonly commitmentApi = inject(CommitmentApiService);
+  private readonly contactsApi = inject(ContactsApiService);
+  readonly permissions = inject(PermissionService);
   private readonly dataService = inject(DataService);
   private readonly projectService = inject(ProjectService);
   private readonly taskPageLayout = inject(TaskPageLayoutService);
@@ -70,7 +80,10 @@ export class TaskListComponent implements OnInit, OnDestroy {
   private readonly automationService = inject(AutomationService);
   private readonly tenantContext = inject(TenantContextService);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly notificationsRefresh = inject(NotificationsRefreshService);
   readonly currentUser = this.currentUserService.currentUser;
+
+  readonly gamoraSimulatorOpen = signal(false);
 
   searchText = signal('');
   selectedProjectId = signal('all');
@@ -98,6 +111,13 @@ export class TaskListComponent implements OnInit, OnDestroy {
       transcript?: string;
     }>
   >([]);
+  readonly gamoraSimulatorChannelId = signal<string | null>(null);
+  readonly gamoraManualTitle = signal('');
+  readonly gamoraManualAssigneeId = signal('');
+  readonly gamoraAssigneeOptions = signal<Array<{ id: string; displayName: string }>>([]);
+  readonly gamoraManualBusy = signal(false);
+  readonly gamoraPage = signal(1);
+  readonly gamoraPageSize = 20;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -108,9 +128,14 @@ export class TaskListComponent implements OnInit, OnDestroy {
       { allowSignalWrites: true }
     );
     this.route.queryParamMap.pipe(takeUntilDestroyed(destroyRef)).subscribe((params) => {
+      const search = params.get('search');
+      if (search) this.searchText.set(search);
       const from = params.get('from');
       if (from === 'operativo' || from === 'ia') {
         this.applyOperationalFiltersFromQuery(params);
+        if (this.taskService.gamoraApiActive()) {
+          void this.reloadGamoraList();
+        }
       } else {
         this.operationalFilterHint.set('');
         this.assigneeFilterId.set(null);
@@ -122,11 +147,48 @@ export class TaskListComponent implements OnInit, OnDestroy {
         this.viewMode.set('list');
       }
     });
+
+    effect(() => {
+      if (!this.taskService.gamoraApiActive()) return;
+      this.searchText();
+      this.quickFilter();
+      this.statusFilter();
+      this.priorityFilter();
+      this.assigneeFilterId();
+      this.selectedProjectId();
+      this.gamoraPage();
+      this.viewMode();
+      void this.reloadGamoraList();
+    });
   }
 
   ngOnInit(): void {
     const tid = this.tenantContext.currentTenantId();
     if (tid) this.automationService.runEngine(tid);
+    if (this.taskService.gamoraApiActive()) {
+      void this.loadGamoraSimulatorContext();
+    }
+  }
+
+  private async loadGamoraSimulatorContext(): Promise<void> {
+    try {
+      const me = await this.contactsApi.getMe();
+      if (me.simulatorExternalId) {
+        this.gamoraSimulatorChannelId.set(me.simulatorExternalId);
+      }
+    } catch {
+      this.gamoraSimulatorChannelId.set('luisito-sim');
+    }
+    if (this.permissions.canCreateCommitment()) {
+      try {
+        const contacts = await this.contactsApi.list({ activeOnly: true });
+        this.gamoraAssigneeOptions.set(
+          contacts.map((c) => ({ id: c.id, displayName: c.displayName }))
+        );
+      } catch {
+        this.gamoraAssigneeOptions.set([]);
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -135,7 +197,62 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   async refreshGamoraBoard(): Promise<void> {
     this.gamoraSimulatorError.set(null);
-    await this.taskService.refreshFromGamoraApi();
+    await this.reloadGamoraList();
+    await this.taskService.loadGamoraSummary(this.tenantContext.currentTenantId()!);
+  }
+
+  private buildGamoraListParams(): CommitmentListParams {
+    const params: CommitmentListParams = {};
+    const search = this.searchText().trim();
+    const qf = this.quickFilter();
+    const sfList = this.statusFilter();
+    const assigneeOnly = this.assigneeFilterId();
+
+    if (search) params.search = search;
+    if (assigneeOnly) params.assigneeContactId = assigneeOnly;
+
+    if (qf === 'vencidas') params.overdue = true;
+    else if (qf === 'por-vencer') params.dueWithin48h = true;
+    else if (qf === 'sin-asignar') params.unassigned = true;
+
+    if (sfList.length) {
+      const statuses: string[] = [];
+      for (const sf of sfList) {
+        const mapped = gamoraStatusesForUiFilter(sf);
+        if (mapped === 'overdue') params.overdue = true;
+        else if (mapped?.length) statuses.push(...mapped);
+      }
+      if (statuses.length) params.status = [...new Set(statuses)].join(',');
+    }
+
+    if (this.viewMode() === 'list') {
+      params.page = this.gamoraPage();
+      params.pageSize = this.gamoraPageSize;
+    }
+
+    return params;
+  }
+
+  async reloadGamoraList(): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    if (!tid || !this.taskService.gamoraApiActive()) return;
+    const params = this.buildGamoraListParams();
+    const hasFilters = Object.keys(params).length > 0;
+    await this.taskService.loadGamoraCommitments(tid, hasFilters ? params : undefined);
+  }
+
+  gamoraListPageCount = computed(() => {
+    const meta = this.taskService.gamoraListMeta();
+    if (!meta.pageSize) return 1;
+    return Math.max(1, Math.ceil(meta.total / meta.pageSize));
+  });
+
+  goGamoraPrevPage(): void {
+    if (this.gamoraPage() > 1) this.gamoraPage.update((p) => p - 1);
+  }
+
+  goGamoraNextPage(): void {
+    if (this.gamoraPage() < this.gamoraListPageCount()) this.gamoraPage.update((p) => p + 1);
   }
 
   async sendGamoraSimulatorMessage(textOverride?: string): Promise<void> {
@@ -169,17 +286,18 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
     try {
       const externalId = `ui-${crypto.randomUUID()}`;
+      const channelId = this.gamoraSimulatorChannelId() ?? 'luisito-sim';
       const res =
         mode === 'audio' && !isConfirmReply
           ? await this.commitmentApi.sendSimulatorInbound(tid, {
-              channel_contact_external_id: 'luisito-sim',
+              channel_contact_external_id: channelId,
               external_message_id: externalId,
               message_type: 'audio',
               simulated_transcript: transcript || undefined,
               simulate_transcription_failure: simulateFailure,
             })
           : await this.commitmentApi.sendSimulatorInbound(tid, {
-              channel_contact_external_id: 'luisito-sim',
+              channel_contact_external_id: channelId,
               text_body: text,
               external_message_id: externalId,
               message_type: 'text',
@@ -197,6 +315,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       }
       if (res.commitment) {
         await this.taskService.refreshFromGamoraApi();
+        this.notificationsRefresh.bump();
         this.gamoraAwaitingConfirmation.set(false);
       }
     } catch (err) {
@@ -211,10 +330,36 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   canSendGamoraSimulator(): boolean {
     if (this.gamoraSimulatorBusy()) return false;
+    if (!this.gamoraSimulatorChannelId() && !this.taskService.gamoraApiActive()) return false;
     if (this.gamoraSimulatorMode() === 'audio') {
       return this.gamoraSimulateTranscriptionFailure() || !!this.gamoraSimulatorTranscript().trim();
     }
     return !!this.gamoraSimulatorText().trim();
+  }
+
+  async createGamoraManualCommitment(): Promise<void> {
+    const tid = this.tenantContext.currentTenantId();
+    const title = this.gamoraManualTitle().trim();
+    const assigneeId = this.gamoraManualAssigneeId();
+    if (!tid || !title || !assigneeId) return;
+
+    this.gamoraManualBusy.set(true);
+    this.gamoraSimulatorError.set(null);
+    try {
+      await this.commitmentApi.createCommitment({
+        title,
+        assignee_contact_id: assigneeId,
+      });
+      this.gamoraManualTitle.set('');
+      this.gamoraManualAssigneeId.set('');
+      await this.taskService.refreshFromGamoraApi();
+      this.notificationsRefresh.bump();
+      this.gamoraSimulatorError.set(null);
+    } catch (err) {
+      this.gamoraSimulatorError.set(mapGamoraApiError(err));
+    } finally {
+      this.gamoraManualBusy.set(false);
+    }
   }
 
   sendGamoraQuickConfirm(answer: 'sí' | 'no'): void {
@@ -517,32 +662,68 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return this.workflow.getEffectiveStatus(task);
   }
 
-  activeCount = computed(() =>
-    this.taskService.tasks().filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length
-  );
-  dueSoonCount = computed(() =>
-    this.taskService.tasks().filter(
+  getDisplayStatus(task: import('../../../shared/models').Task): string {
+    if (this.taskService.gamoraApiActive()) {
+      return gamoraStatusLabel(task.gamoraStatus ?? task.observations ?? '');
+    }
+    return String(this.getEffectiveStatus(task));
+  }
+
+  onSearchChange(value: string): void {
+    this.searchText.set(value);
+    if (this.taskService.gamoraApiActive()) {
+      this.gamoraPage.set(1);
+    }
+  }
+
+  activeCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.active ?? 0;
+    }
+    return this.taskService.tasks().filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length;
+  });
+  dueSoonCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.dueWithin48h ?? 0;
+    }
+    return this.taskService.tasks().filter(
       (t) =>
         t.riskIndicator === 'por-vencer' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
-    ).length
-  );
-  /** Solo tareas con estado efectivo Vencida (pendientes y pasadas de fecha). No incluye Completada/Liberada. */
-  overdueCount = computed(() =>
-    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length
-  );
+    ).length;
+  });
+  overdueCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.overdue ?? 0;
+    }
+    return this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length;
+  });
 
-  pendingCount = computed(() =>
-    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Pendiente').length
-  );
-  inProgressCount = computed(() =>
-    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'En Progreso').length
-  );
-  enEsperaCount = computed(() =>
-    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'En Espera').length
-  );
-  completedCount = computed(() =>
-    this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Completada').length
-  );
+  pendingCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.byStatus.assigned ?? 0;
+    }
+    return this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Pendiente').length;
+  });
+  inProgressCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      const s = this.taskService.gamoraSummary()?.byStatus;
+      if (!s) return 0;
+      return s.accepted + s.evidence_submitted + s.in_review + s.corrected;
+    }
+    return this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'En Progreso').length;
+  });
+  enEsperaCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.byStatus.correction_requested ?? 0;
+    }
+    return this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'En Espera').length;
+  });
+  completedCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.byStatus.closed ?? 0;
+    }
+    return this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Completada').length;
+  });
   liberadasCount = computed(() =>
     this.taskService.tasks().filter((t) => this.workflow.getEffectiveStatus(t) === 'Liberada').length
   );
@@ -582,19 +763,23 @@ export class TaskListComponent implements OnInit, OnDestroy {
       (t) => t.priority === 'Alta' && !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
     ).length
   );
-  sinAsignarCount = computed(() =>
-    this.taskService.tasks().filter(
+  sinAsignarCount = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.gamoraSummary()?.unassigned ?? 0;
+    }
+    return this.taskService.tasks().filter(
       (t) =>
         (!t.assignee || t.assignee === 'Sin asignar') &&
         !['Completada', 'Liberada', 'Cancelada'].includes(t.status)
-    ).length
-  );
+    ).length;
+  });
 
   allFilter = (): void => {
     this.quickFilter.set('all');
     this.statusFilter.set([]);
     this.priorityFilter.set([]);
     this.selectedProjectId.set('all');
+    this.gamoraPage.set(1);
   };
 
   tasksByStatus = computed(() => {
@@ -613,6 +798,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
   });
 
   filteredTasks = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.tasks();
+    }
     let list = this.taskService.tasks();
     const search = this.searchText().toLowerCase();
     const qf = this.quickFilter();
@@ -750,6 +938,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
   /** Tareas que ve el calendario (lista ya filtrada + ámbito personal como en /tablero). */
   tasksForCalendar = computed(() => {
     const list = this.displayedTasks();
+    if (this.taskService.gamoraApiActive()) {
+      return list.filter((t) => t.hasDueDate);
+    }
     const uid = this.currentUser().id;
     const scope = this.calendarTaskScope();
     if (scope === 'assigned') {

@@ -6,8 +6,13 @@ import { commitmentsRouter, errorHandler } from './modules/commitments/commitmen
 import { conversationsRouter } from './modules/conversations/conversations.controller';
 import { messagesRouter } from './modules/messages/messages.controller';
 import { workspacesRouter } from './modules/workspaces/workspaces.controller';
+import { usersRouter } from './modules/users/users.controller';
 import { whatsappWebhookRouter } from './modules/channels/whatsapp/whatsapp.webhook.controller';
+import { authRouter } from './modules/auth/auth.controller';
+import { requireAuth, requireWorkspace } from './modules/auth/auth.middleware';
+import { contactsRouter } from './modules/contacts/contacts.controller';
 import { healthRouter } from './modules/health/health.controller';
+import { notificationsRouter } from './modules/notifications/notifications.controller';
 
 dotenv.config();
 
@@ -34,11 +39,17 @@ export function createApp() {
 
   app.use('/api/health', healthRouter);
 
-  app.use('/api/workspaces', workspacesRouter);
-  app.use('/api/commitments', commitmentsRouter);
-  app.use('/api/conversations', conversationsRouter);
-  app.use('/api/messages', messagesRouter);
+  app.use('/api/auth', authRouter);
   app.use('/api/webhooks', whatsappWebhookRouter);
+
+  const protectedMiddleware = [requireAuth, requireWorkspace] as const;
+  app.use('/api/workspaces', ...protectedMiddleware, workspacesRouter);
+  app.use('/api/users', ...protectedMiddleware, usersRouter);
+  app.use('/api/contacts', ...protectedMiddleware, contactsRouter);
+  app.use('/api/commitments', ...protectedMiddleware, commitmentsRouter);
+  app.use('/api/conversations', ...protectedMiddleware, conversationsRouter);
+  app.use('/api/messages', ...protectedMiddleware, messagesRouter);
+  app.use('/api/notifications', ...protectedMiddleware, notificationsRouter);
 
   app.use(errorHandler);
 

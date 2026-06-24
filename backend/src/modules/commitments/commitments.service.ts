@@ -2,6 +2,27 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../shared/database/prisma';
 import { assertTransition } from './commitment-state.machine';
 import { enrichCommitmentEvents, mapEventForApi } from './commitment-event.presenter';
+import { contactsService } from '../contacts/contacts.service';
+import {
+  buildCommitmentListWhere,
+  emptySummary,
+  includeByAssigneeBreakdown,
+  mapStatusCounts,
+  type CommitmentListFilters,
+  type CommitmentListResult,
+  type CommitmentSummary,
+} from './commitments-list.query';
+import type { AuthActor } from '../auth/commitment.permissions';
+import { notificationsService } from '../notifications/notifications.service';
+
+const LIST_INCLUDE = {
+  assignees: { include: { contact: true } },
+  requester: true,
+  originMessage: true,
+  conversationThread: true,
+} as const;
+
+const TERMINAL = ['closed', 'cancelled'];
 
 export interface CreateCommitmentInput {
   workspaceId: string;
@@ -21,17 +42,131 @@ export interface CreateCommitmentInput {
 }
 
 export class CommitmentsService {
-  async list(workspaceId: string) {
+  async list(workspaceId: string, scopeWhere?: Record<string, unknown>) {
     return prisma.commitment.findMany({
-      where: { workspaceId },
-      include: {
-        assignees: { include: { contact: true } },
-        requester: true,
-        originMessage: true,
-        conversationThread: true,
-      },
+      where: { workspaceId, ...(scopeWhere ?? {}) },
+      include: LIST_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async listFiltered(
+    workspaceId: string,
+    scopeWhere: Record<string, unknown>,
+    filters: CommitmentListFilters,
+    actor: AuthActor
+  ): Promise<CommitmentListResult<Awaited<ReturnType<CommitmentsService['list']>>[number]>> {
+    const where = buildCommitmentListWhere(workspaceId, scopeWhere, filters, actor);
+    const page = filters.page ?? 1;
+    const pageSize = filters.pageSize ?? 20;
+    const usePagination = filters.page !== undefined || filters.pageSize !== undefined;
+
+    if (!usePagination) {
+      const items = await prisma.commitment.findMany({
+        where,
+        include: LIST_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+      });
+      return { items, total: items.length, page: 1, pageSize: items.length };
+    }
+
+    const skip = (page - 1) * pageSize;
+    const [items, total] = await Promise.all([
+      prisma.commitment.findMany({
+        where,
+        include: LIST_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.commitment.count({ where }),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
+  async getSummary(
+    workspaceId: string,
+    scopeWhere: Record<string, unknown>,
+    actor: AuthActor
+  ): Promise<CommitmentSummary> {
+    const baseWhere = buildCommitmentListWhere(workspaceId, scopeWhere, {}, actor);
+    const now = new Date();
+    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+    const [total, statusGroups, overdue, dueWithin48h, unassigned] = await Promise.all([
+      prisma.commitment.count({ where: baseWhere }),
+      prisma.commitment.groupBy({
+        by: ['status'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+      prisma.commitment.count({
+        where: {
+          AND: [
+            baseWhere,
+            { dueAt: { lt: now } },
+            { status: { notIn: TERMINAL } },
+          ],
+        },
+      }),
+      prisma.commitment.count({
+        where: {
+          AND: [
+            baseWhere,
+            { dueAt: { gte: now, lte: in48h } },
+            { status: { notIn: TERMINAL } },
+          ],
+        },
+      }),
+      prisma.commitment.count({
+        where: {
+          AND: [baseWhere, { assignees: { none: {} } }],
+        },
+      }),
+    ]);
+
+    const byStatus = mapStatusCounts(
+      statusGroups.map((g) => ({ status: g.status, _count: g._count._all }))
+    );
+    const active = total - byStatus.closed - byStatus.cancelled;
+
+    let byAssignee: CommitmentSummary['byAssignee'] = [];
+    if (includeByAssigneeBreakdown(actor.role)) {
+      const rows = await prisma.commitmentAssignee.groupBy({
+        by: ['contactId'],
+        where: {
+          role: 'primary',
+          commitment: baseWhere,
+        },
+        _count: { _all: true },
+      });
+      const contactIds = rows.map((r) => r.contactId);
+      const contacts = contactIds.length
+        ? await prisma.contact.findMany({
+            where: { id: { in: contactIds } },
+            select: { id: true, displayName: true },
+          })
+        : [];
+      const nameById = new Map(contacts.map((c) => [c.id, c.displayName]));
+      byAssignee = rows
+        .map((r) => ({
+          contactId: r.contactId,
+          displayName: nameById.get(r.contactId) ?? 'Sin nombre',
+          count: r._count._all,
+        }))
+        .sort((a, b) => b.count - a.count);
+    }
+
+    return {
+      total,
+      active,
+      byStatus,
+      overdue,
+      dueWithin48h,
+      unassigned,
+      byPriority: {},
+      byAssignee,
+    };
   }
 
   async getById(workspaceId: string, id: string) {
@@ -94,6 +229,10 @@ export class CommitmentsService {
     const folio = await this.nextFolio(input.workspaceId);
     const status = input.status ?? 'assigned';
 
+    if (input.assigneeContactIds?.length) {
+      await contactsService.assertActiveAssignees(input.workspaceId, input.assigneeContactIds);
+    }
+
     return prisma.$transaction(async (tx) => {
       const commitment = await tx.commitment.create({
         data: {
@@ -141,6 +280,20 @@ export class CommitmentsService {
           originMessage: true,
         },
       });
+    }).then(async (created) => {
+      if (input.assigneeContactIds?.length) {
+        void notificationsService.notifyContactLinkedUsers(
+          input.workspaceId,
+          input.assigneeContactIds,
+          {
+            type: 'commitment_assigned',
+            title: 'Nuevo compromiso asignado',
+            message: `Se te asignó: ${created.title}`,
+            relatedCommitmentId: created.id,
+          }
+        );
+      }
+      return created;
     });
   }
 
@@ -240,7 +393,56 @@ export class CommitmentsService {
     };
 
     if (existingTx) return run(existingTx);
-    return prisma.$transaction(run);
+    return prisma.$transaction(run).then(async (updated) => {
+      if (!updated) return updated;
+      await this.dispatchStatusNotifications(workspaceId, updated, toStatus, actor?.userId);
+      return updated;
+    });
+  }
+
+  private async dispatchStatusNotifications(
+    workspaceId: string,
+    commitment: {
+      id: string;
+      title: string;
+      assignees: Array<{ contactId: string }>;
+    },
+    toStatus: string,
+    actorUserId?: string
+  ) {
+    const assigneeContactIds = commitment.assignees.map((a) => a.contactId);
+
+    if (toStatus === 'correction_requested') {
+      void notificationsService.notifyContactLinkedUsers(workspaceId, assigneeContactIds, {
+        type: 'correction_requested',
+        title: 'Corrección solicitada',
+        message: `Se solicitó corrección en: ${commitment.title}`,
+        relatedCommitmentId: commitment.id,
+      });
+      return;
+    }
+
+    if (toStatus === 'closed') {
+      void notificationsService.notifyContactLinkedUsers(workspaceId, assigneeContactIds, {
+        type: 'commitment_closed',
+        title: 'Compromiso cerrado',
+        message: `Se cerró el compromiso: ${commitment.title}`,
+        relatedCommitmentId: commitment.id,
+      });
+    }
+
+    if (toStatus === 'evidence_submitted') {
+      void notificationsService.notifyCoordinators(
+        workspaceId,
+        {
+          type: 'evidence_uploaded',
+          title: 'Evidencia enviada',
+          message: `Nueva evidencia en: ${commitment.title}`,
+          relatedCommitmentId: commitment.id,
+        },
+        actorUserId
+      );
+    }
   }
 
   private async nextFolio(workspaceId: string): Promise<string> {

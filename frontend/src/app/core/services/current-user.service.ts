@@ -1,69 +1,66 @@
-import { Injectable, inject, computed, signal, effect } from '@angular/core';
+import { Injectable, inject, computed } from '@angular/core';
 import type { User } from '../../shared/models';
 import { AdminService } from './admin.service';
-import { TenantContextService } from './tenant-context.service';
+import { AuthService } from '../auth/auth.service';
 
-/** Usuario actual seleccionable por tenant. */
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrador',
+  coordinator: 'Coordinador',
+  assignee: 'Operador',
+  viewer: 'Solo lectura',
+};
+
+/** Usuario actual — sesión JWT real o fallback admin mock (legacy). */
 @Injectable({ providedIn: 'root' })
 export class CurrentUserService {
   private readonly adminService = inject(AdminService);
-  private readonly tenantContext = inject(TenantContextService);
-  private readonly _selectedUserId = signal<string | null>(null);
+  private readonly authService = inject(AuthService);
 
-  private storageKey(): string {
-    const tid = this.tenantContext.currentTenantId() ?? 'default';
-    return `ctx.currentUserId.${tid}`;
-  }
-
-  private readStoredUserId(): string | null {
-    try {
-      return localStorage.getItem(this.storageKey());
-    } catch {
-      return null;
-    }
-  }
-
-  private writeStoredUserId(userId: string): void {
-    try {
-      localStorage.setItem(this.storageKey(), userId);
-    } catch {
-      /* ignore */
-    }
-  }
+  readonly useRealAuth = computed(() => this.authService.isAuthenticated());
 
   readonly availableUsers = computed(() => this.adminService.getUsers());
 
-  constructor() {
-    effect(
-      () => {
-        this.tenantContext.currentTenantId();
-        const users = this.availableUsers();
-        const stored = this.readStoredUserId();
-        const valid = stored && users.some((u) => u.id === stored) ? stored : users[0]?.id ?? null;
-        this._selectedUserId.set(valid);
-        if (valid) this.writeStoredUserId(valid);
-      },
-      { allowSignalWrites: true }
-    );
-  }
-
   readonly currentUser = computed<User>(() => {
+    const sessionUser = this.authService.user();
+    if (sessionUser) {
+      return {
+        id: sessionUser.id,
+        name: sessionUser.displayName,
+        email: sessionUser.email,
+        role: ROLE_LABELS[sessionUser.role] ?? sessionUser.role,
+        team: 'Operaciones',
+        avatarUrl: null,
+      };
+    }
+
     const users = this.availableUsers();
-    const selectedId = this._selectedUserId();
-    const selected = selectedId ? users.find((u) => u.id === selectedId) : undefined;
-    const fallback = users[0] ?? { id: 'user-1', name: 'Usuario Demo', email: 'demo@empresa.com', role: 'Admin', team: 'Operaciones' };
-    return selected ?? fallback;
+    const fallback = users[0];
+    if (!fallback) {
+      return {
+        id: 'user-1',
+        name: 'Usuario Demo',
+        email: 'demo@empresa.com',
+        role: 'Admin',
+        team: 'Operaciones',
+        avatarUrl: null,
+      };
+    }
+    return {
+      id: fallback.id,
+      name: fallback.name,
+      email: fallback.email,
+      role: typeof fallback.role === 'string' ? fallback.role : 'Member',
+      team: 'team' in fallback && typeof fallback.team === 'string' ? fallback.team : 'Operaciones',
+      avatarUrl: null,
+    };
   });
 
   getCurrentUser(): User {
     return this.currentUser();
   }
 
-  setCurrentUser(userId: string): void {
-    const exists = this.availableUsers().some((u) => u.id === userId);
-    if (!exists) return;
-    this._selectedUserId.set(userId);
-    this.writeStoredUserId(userId);
+  setCurrentUser(_userId: string): void {
+    /* Deshabilitado con auth real — el usuario viene de la sesión JWT */
   }
 
   get role(): string {
@@ -80,5 +77,10 @@ export class CurrentUserService {
 
   get name(): string {
     return this.getCurrentUser().name;
+  }
+
+  /** Contacto operativo Gamora vinculado al usuario autenticado. */
+  get gamoraContactId(): string | null {
+    return this.authService.contactId();
   }
 }

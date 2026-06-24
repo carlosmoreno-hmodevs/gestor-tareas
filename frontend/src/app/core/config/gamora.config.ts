@@ -5,6 +5,15 @@ export const GAMORA_WORKSPACE_BY_TENANT: Record<string, string> = {
   'tenant-1': 'ferreteria-luisito',
 };
 
+/** Mapeo inverso workspace slug → tenant frontend */
+export const GAMORA_TENANT_BY_WORKSPACE: Record<string, string> = Object.fromEntries(
+  Object.entries(GAMORA_WORKSPACE_BY_TENANT).map(([tenantId, slug]) => [slug, tenantId])
+);
+
+export function tenantForWorkspaceSlug(slug: string): string | null {
+  return GAMORA_TENANT_BY_WORKSPACE[slug] ?? null;
+}
+
 export function isGamoraApiTenant(tenantId: string | null): boolean {
   return (
     environment.gamoraApiEnabled &&
@@ -16,10 +25,3 @@ export function isGamoraApiTenant(tenantId: string | null): boolean {
 export function workspaceSlugForTenant(tenantId: string): string {
   return GAMORA_WORKSPACE_BY_TENANT[tenantId] ?? 'ferreteria-luisito';
 }
-
-/** Contactos demo seed (Ferretería Luisito) para actor en transiciones dev */
-export const GAMORA_DEV_CONTACTS = {
-  luisito: '00000000-0000-4000-8000-000000000001',
-  panchito: '00000000-0000-4000-8000-000000000002',
-  marco: '00000000-0000-4000-8000-000000000003',
-} as const;

@@ -1,0 +1,86 @@
+<button
+  mat-icon-button
+  type="button"
+  aria-label="Notificaciones"
+  class="header-action notif-trigger"
+  [matMenuTriggerFor]="notifMenu"
+  (menuOpened)="onMenuOpen()"
+>
+  <mat-icon
+    [matBadge]="unreadCount() > 0 ? unreadCount() : null"
+    matBadgeColor="warn"
+    matBadgeSize="small"
+    [matBadgeHidden]="unreadCount() === 0"
+  >
+    notifications
+  </mat-icon>
+</button>
+
+<mat-menu #notifMenu="matMenu" class="notif-panel" xPosition="before">
+  <div class="notif-panel-inner" (click)="$event.stopPropagation()">
+    <header class="notif-menu-header">
+      <span class="notif-menu-title">Notificaciones</span>
+      @if (unreadCount() > 0) {
+        <button type="button" class="notif-mark-all" (click)="markAllRead()">Marcar todas</button>
+      }
+    </header>
+
+    <div class="notif-list">
+      @if (loadError()) {
+        <div class="notif-empty notif-error">
+          <mat-icon>error_outline</mat-icon>
+          <p>{{ loadError() }}</p>
+        </div>
+      } @else if (loading()) {
+        <div class="notif-empty">
+          <p>Cargando…</p>
+        </div>
+      } @else if (!items().length) {
+        <div class="notif-empty">
+          <mat-icon>notifications_none</mat-icon>
+          <p>Sin notificaciones</p>
+          <span class="notif-empty-hint">Aparecen al asignarte compromisos o recibir evidencia.</span>
+        </div>
+      } @else {
+        @for (n of items(); track n.id) {
+          <button
+            type="button"
+            class="notif-row"
+            [class.notif-row--unread]="!n.readAt"
+            (click)="openNotification(n)"
+          >
+            @if (!n.readAt) {
+              <span class="notif-unread-dot" aria-hidden="true"></span>
+            }
+            <span class="notif-row-content">
+              <span class="notif-title">{{ n.title }}</span>
+              <span class="notif-message">{{ n.message }}</span>
+              <span class="notif-time">{{ n.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </span>
+          </button>
+        }
+      }
+    </div>
+
+    @if (desktopSupported()) {
+      <footer class="notif-footer">
+        @if (desktopPermission() === 'default') {
+          <button type="button" class="notif-enable-desktop" (click)="enableDesktopNotifications()">
+            <mat-icon>desktop_windows</mat-icon>
+            Activar notificaciones de escritorio
+          </button>
+        } @else if (desktopPermission() === 'granted') {
+          <span class="notif-desktop-status notif-desktop-status--on">
+            <mat-icon>check_circle</mat-icon>
+            Notificaciones de escritorio activas
+          </span>
+        } @else if (desktopPermission() === 'denied') {
+          <span class="notif-desktop-status notif-desktop-status--blocked">
+            <mat-icon>block</mat-icon>
+            Permiso bloqueado en el navegador
+          </span>
+        }
+      </footer>
+    }
+  </div>
+</mat-menu>

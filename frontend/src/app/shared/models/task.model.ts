@@ -80,6 +80,10 @@ export interface Task {
   status: TaskStatus;
   priority: Priority;
   dueDate: Date;
+  /** true cuando dueAt viene del backend (calendario) */
+  hasDueDate?: boolean;
+  /** Estado Gamora crudo (assigned, accepted, …) */
+  gamoraStatus?: string;
   riskIndicator: 'ok' | 'por-vencer' | 'vencida';
   tags: string[];
   attachmentsCount: number;

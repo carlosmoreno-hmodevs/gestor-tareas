@@ -1,5 +1,13 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import fs from 'fs/promises';
+import { prisma } from '../../shared/database/prisma';
+import {
+  assertCanView,
+  assertCanUploadEvidence,
+  handleAuthorizationError,
+  type AuthActor,
+  NOT_FOUND_MESSAGE,
+} from '../auth/commitment.permissions';
 import { evidenceService } from './evidence.service';
 import { evidenceUploadMiddleware } from './evidence.upload';
 
@@ -36,19 +44,33 @@ function mapEvidence(e: {
   };
 }
 
+async function loadCommitmentForEvidence(workspaceId: string, commitmentId: string) {
+  return prisma.commitment.findFirst({
+    where: { id: commitmentId, workspaceId },
+    include: { assignees: true },
+  });
+}
+
+function getActor(res: Response): AuthActor {
+  return res.locals.authActor as AuthActor;
+}
+
 evidenceRouter.get('/', async (req, res, next) => {
   try {
     const workspaceId = res.locals.workspaceId as string;
     const params = req.params as { id: string };
     const commitmentId = params.id;
-    const items = await evidenceService.list(workspaceId, commitmentId);
-    if (!items) {
-      res.status(404).json({ error: 'Compromiso no encontrado' });
+    const actor = getActor(res);
+    const commitment = await loadCommitmentForEvidence(workspaceId, commitmentId);
+    if (!commitment) {
+      res.status(404).json({ error: NOT_FOUND_MESSAGE });
       return;
     }
-    res.json({ data: items.map(mapEvidence) });
+    assertCanView(actor, commitment);
+    const items = await evidenceService.list(workspaceId, commitmentId);
+    res.json({ data: (items ?? []).map(mapEvidence) });
   } catch (err) {
-    next(err);
+    handleAuthorizationError(err, res, next);
   }
 });
 
@@ -65,14 +87,24 @@ evidenceRouter.post('/', (req, res, next) => {
     const workspaceId = res.locals.workspaceId as string;
     const params = req.params as { id: string };
     const commitmentId = params.id;
+    const actor = getActor(res);
+    const commitment = await loadCommitmentForEvidence(workspaceId, commitmentId);
+    if (!commitment) {
+      res.status(404).json({ error: NOT_FOUND_MESSAGE });
+      return;
+    }
+    assertCanUploadEvidence(actor, commitment);
+
     const file = req.file;
     if (!file) {
       res.status(400).json({ error: 'Archivo requerido (campo "file")' });
       return;
     }
 
-    const actorContactId = typeof req.body.actor_contact_id === 'string' ? req.body.actor_contact_id : undefined;
-    const actorUserId = typeof req.body.actor_user_id === 'string' ? req.body.actor_user_id : undefined;
+    const actorContactId =
+      typeof req.body.actor_contact_id === 'string'
+        ? req.body.actor_contact_id
+        : actor.contactId ?? undefined;
 
     try {
       const evidence = await evidenceService.upload({
@@ -82,10 +114,10 @@ evidenceRouter.post('/', (req, res, next) => {
         originalFilename: file.originalname,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        actor: { contactId: actorContactId, userId: actorUserId },
+        actor: { contactId: actorContactId, userId: actor.userId },
       });
       if (!evidence) {
-        res.status(404).json({ error: 'Compromiso no encontrado' });
+        res.status(404).json({ error: NOT_FOUND_MESSAGE });
         return;
       }
       res.status(201).json({ data: mapEvidence(evidence) });
@@ -93,7 +125,7 @@ evidenceRouter.post('/', (req, res, next) => {
       res.status(422).json({ error: (e as Error).message });
     }
   } catch (err) {
-    next(err);
+    handleAuthorizationError(err, res, next);
   }
 });
 
@@ -103,6 +135,14 @@ evidenceRouter.get('/:evidenceId/file', async (req, res, next) => {
     const params = req.params as { id: string; evidenceId: string };
     const commitmentId = params.id;
     const evidenceId = params.evidenceId;
+    const actor = getActor(res);
+    const commitment = await loadCommitmentForEvidence(workspaceId, commitmentId);
+    if (!commitment) {
+      res.status(404).json({ error: NOT_FOUND_MESSAGE });
+      return;
+    }
+    assertCanView(actor, commitment);
+
     const evidence = await evidenceService.getById(workspaceId, commitmentId, evidenceId);
     if (!evidence) {
       res.status(404).json({ error: 'Evidencia no encontrada' });
@@ -121,6 +161,6 @@ evidenceRouter.get('/:evidenceId/file', async (req, res, next) => {
     const data = await fs.readFile(filePath);
     res.send(data);
   } catch (err) {
-    next(err);
+    handleAuthorizationError(err, res, next);
   }
 });

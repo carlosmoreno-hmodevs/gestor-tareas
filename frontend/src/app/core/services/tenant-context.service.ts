@@ -30,10 +30,9 @@ export class TenantContextService {
         const id = raw.trim();
         if (INITIAL_TENANTS.some((t) => t.id === id)) return id;
       }
-      // Fallback: primer tenant cuando no hay nada guardado (primera visita, storage restringido en móvil, etc.)
-      return INITIAL_TENANTS[0]?.id ?? null;
+      return null;
     } catch {
-      return INITIAL_TENANTS[0]?.id ?? null;
+      return null;
     }
   }
 

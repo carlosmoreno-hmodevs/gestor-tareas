@@ -18,6 +18,8 @@ import { OrgService } from '../../core/services/org.service';
 import { ProjectService } from '../../core/services/project.service';
 import { FerreteroKpiService } from '../../core/services/ferretero-kpi.service';
 import { AutomationService } from '../../core/services/automation.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { GAMORA_STATUS_LABELS } from '../../core/api/gamora-status-filters';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { FERRETERO_CATEGORIES } from '../../core/data/ferretero-initial';
 import { Chart } from 'chart.js';
@@ -83,6 +85,7 @@ export class TableroComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   readonly ferreteroKpiService = inject(FerreteroKpiService);
   private readonly automationService = inject(AutomationService);
+  private readonly authService = inject(AuthService);
 
   /** Estado de KPIs ferretero (solo tiene datos cuando isFerretero). */
   ferreteroKpi = this.ferreteroKpiService.kpiState;
@@ -135,6 +138,9 @@ export class TableroComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const tid = this.tenantContext.currentTenantId();
     if (tid) this.automationService.runEngine(tid);
+    if (this.taskService.gamoraApiActive()) {
+      void this.taskService.loadGamoraSummary(tid!);
+    }
     this.refreshGreeting();
     this.greetingClockTimer = setInterval(() => this.refreshGreeting(), 60_000);
   }
@@ -366,6 +372,9 @@ export class TableroComponent implements OnInit, OnDestroy {
   /** Tablero operativo con alcance según rol/jerarquía. */
   operationalTasks = computed(() => {
     if (!this.isOperationalRoute()) return [] as Task[];
+    if (this.taskService.gamoraApiActive()) {
+      return this.taskService.tasks();
+    }
     const base = this.taskService.tasks();
     const uid = this.currentUser().id;
     if (!uid) return base;
@@ -387,12 +396,44 @@ export class TableroComponent implements OnInit, OnDestroy {
   });
 
   operationalScopeHint = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      const role = this.authService.user()?.role;
+      if (role === 'assignee') return 'Vista de tus compromisos asignados (datos desde API).';
+      if (role === 'viewer') return 'Vista de solo lectura del workspace (datos desde API).';
+      return 'Vista del workspace con KPIs desde API (filtrados por tu rol).';
+    }
     if (this.isTenantAdmin()) return 'Vista global del scope organizacional seleccionado.';
     if (this.isSupervisorProfile()) return 'Vista operativa de tu rama (unidad y descendencia).';
     return 'Vista operativa personal: tareas asignadas o creadas por ti.';
   });
 
   operationalKpiCards = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      const s = this.taskService.gamoraSummary();
+      if (!s) {
+        return [
+          { id: 'active', value: 0, label: 'Operativas activas', sublabel: 'Cargando…', variant: 'default' as const },
+          { id: 'overdue', value: 0, label: 'Fuera de plazo', sublabel: 'Cargando…', variant: 'danger' as const },
+          { id: 'dueSoon', value: 0, label: 'Próximas 48h', sublabel: 'Cargando…', variant: 'warning' as const },
+          { id: 'blocked', value: 0, label: 'En espera', sublabel: 'Cargando…', variant: 'warning' as const },
+          { id: 'inProgress', value: 0, label: 'En progreso', sublabel: 'Cargando…', variant: 'default' as const },
+          { id: 'done', value: 0, label: 'Cerradas', sublabel: 'Cargando…', variant: 'default' as const },
+        ];
+      }
+      const inProgress =
+        s.byStatus.accepted +
+        s.byStatus.evidence_submitted +
+        s.byStatus.in_review +
+        s.byStatus.corrected;
+      return [
+        { id: 'active', value: s.active, label: 'Operativas activas', sublabel: 'Abiertas en el workspace', variant: 'default' as const },
+        { id: 'overdue', value: s.overdue, label: 'Fuera de plazo', sublabel: 'Vencidas y abiertas', variant: 'danger' as const },
+        { id: 'dueSoon', value: s.dueWithin48h, label: 'Próximas 48h', sublabel: 'Vencen pronto', variant: 'warning' as const },
+        { id: 'blocked', value: s.byStatus.correction_requested, label: 'Corrección pendiente', sublabel: 'Estado correction_requested', variant: 'warning' as const },
+        { id: 'inProgress', value: inProgress, label: 'En ejecución', sublabel: 'Aceptadas / evidencia / revisión', variant: 'default' as const },
+        { id: 'done', value: s.byStatus.closed, label: 'Cerradas', sublabel: 'Ciclo completado', variant: 'default' as const },
+      ];
+    }
     const tasks = this.operationalTasks();
     const active = tasks.filter((t) => !['Completada', 'Liberada', 'Cancelada'].includes(t.status)).length;
     const overdue = tasks.filter((t) => this.workflow.getEffectiveStatus(t) === 'Vencida').length;
@@ -411,6 +452,17 @@ export class TableroComponent implements OnInit, OnDestroy {
   });
 
   operationalStatusBreakdown = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      const s = this.taskService.gamoraSummary();
+      if (!s) return [];
+      return Object.entries(s.byStatus)
+        .filter(([key, count]) => key !== 'other' && count > 0)
+        .map(([key, count]) => ({
+          status: (GAMORA_STATUS_LABELS[key] ?? key) as TaskStatus,
+          count,
+          gamoraKey: key,
+        }));
+    }
     const tasks = this.operationalTasks();
     const statuses: TaskStatus[] = ['Pendiente', 'En Progreso', 'En Espera', 'Vencida', 'Completada', 'Liberada', 'Rechazada', 'Cancelada'];
     return statuses
@@ -442,6 +494,15 @@ export class TableroComponent implements OnInit, OnDestroy {
   ];
 
   operationalAssigneeLoad = computed(() => {
+    if (this.taskService.gamoraApiActive()) {
+      const s = this.taskService.gamoraSummary();
+      if (!s?.byAssignee.length) return [];
+      return s.byAssignee.slice(0, 8).map((a) => ({
+        name: a.displayName,
+        total: a.count,
+        segments: [{ status: 'Pendiente' as TaskStatus, count: a.count }],
+      }));
+    }
     const byAssignee = new Map<string, Task[]>();
     for (const t of this.operationalTasks()) {
       const key = t.assignee || 'Sin asignar';

@@ -207,7 +207,8 @@ export function commitmentToTask(
 
   const status = mapCommitmentStatus(c.status);
 
-  const dueDate = c.dueAt ? new Date(c.dueAt) : new Date();
+  const hasDueDate = Boolean(c.dueAt);
+  const dueDate = c.dueAt ? new Date(c.dueAt) : new Date(c.createdAt);
 
   const events = 'events' in c && c.events ? c.events : [];
 
@@ -286,6 +287,8 @@ export function commitmentToTask(
     priority: 'Media',
 
     dueDate,
+    hasDueDate,
+    gamoraStatus: c.status,
 
     riskIndicator: riskFromDue(c.dueAt, status),
 

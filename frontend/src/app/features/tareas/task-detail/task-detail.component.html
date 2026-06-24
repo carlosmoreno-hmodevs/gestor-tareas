@@ -32,6 +32,7 @@
           <app-gamora-operational-flow [commitmentStatus]="gamoraCommitmentStatus()" />
           <app-gamora-commitment-actions
             [commitmentStatus]="gamoraCommitmentStatus()"
+            [assigneeContactId]="gamoraAssigneeContactId()"
             [isOnline]="connectivity.isOnline()"
             [busy]="gamoraBusy()"
             (actionClicked)="onGamoraAction($event)"

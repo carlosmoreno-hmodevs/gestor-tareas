@@ -14,7 +14,7 @@
         class="admin-sidenav"
       >
         <mat-nav-list>
-          @for (item of navItems; track item.path) {
+          @for (item of navItems(); track item.path) {
             <a
               mat-list-item
               [routerLink]="item.path"
@@ -33,7 +33,7 @@
     </mat-sidenav-container>
   } @else {
     <nav class="admin-nav-chips" aria-label="Opciones de administración">
-      @for (item of navItems; track item.path) {
+      @for (item of navItems(); track item.path) {
         <a
           [routerLink]="item.path"
           routerLinkActive="admin-chip-active"

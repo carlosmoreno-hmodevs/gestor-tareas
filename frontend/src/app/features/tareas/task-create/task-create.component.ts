@@ -18,6 +18,9 @@ import { DataService } from '../../../core/services/data.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TaskService } from '../../../core/services/task.service';
+import { ContactsApiService } from '../../../core/api/contacts-api.service';
+import { NotificationsRefreshService } from '../../../core/services/notifications-refresh.service';
+import { mapGamoraApiError } from '../../../core/api/gamora-api-error.mapper';
 import { ProjectService } from '../../../core/services/project.service';
 import { OrgService } from '../../../core/services/org.service';
 import { TenantContextService } from '../../../core/services/tenant-context.service';
@@ -29,6 +32,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { FERRETERO_TASK_TEMPLATES } from '../../../core/data/ferretero-initial';
 import type { TaskTemplate } from '../../../shared/models/task-template.model';
 import { normalizeDateToNoonLocal, minDueDateValidator } from '../../../shared/utils/date.utils';
+import { CommitmentApiService } from '../../../core/api/commitment-api.service';
 
 @Component({
   selector: 'app-task-create',
@@ -68,6 +72,18 @@ export class TaskCreateComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   readonly uiCopy = inject(UiCopyService);
   private readonly tenantSettings = inject(TenantSettingsService);
+  private readonly contactsApi = inject(ContactsApiService);
+  private readonly commitmentApi = inject(CommitmentApiService);
+  private readonly notificationsRefresh = inject(NotificationsRefreshService);
+
+  isGamoraMode = computed(() => this.taskService.gamoraApiActive());
+  gamoraContacts = signal<Array<{ id: string; displayName: string }>>([]);
+  pageTitle = computed(() => (this.isGamoraMode() ? 'Nuevo compromiso' : 'Nueva tarea'));
+  pageSubtitle = computed(() =>
+    this.isGamoraMode()
+      ? 'Define el compromiso operativo y asigna un responsable del workspace'
+      : 'Completa el formulario para crear una nueva tarea'
+  );
 
   /** Si se viene desde un proyecto, el ID está fijado y no se puede cambiar */
   fixedProjectId: string | null = null;
@@ -102,6 +118,7 @@ export class TaskCreateComponent implements OnInit {
     assigneeId: ['', Validators.required],
     subAssigneeIds: [[]] as [string[]],
     dueDate: [new Date(), minDueDateValidator()],
+    expectedEvidence: [''],
     projectId: [''],
     orgUnitId: [''],
     tags: ['']
@@ -161,6 +178,9 @@ export class TaskCreateComponent implements OnInit {
       this.fixedProjectName = proj?.name ?? projectId;
       this.form.patchValue({ projectId });
       this.form.get('projectId')?.disable();
+    }
+    if (this.isGamoraMode()) {
+      void this.loadGamoraContacts();
     }
     this.form.get('assigneeId')?.valueChanges.subscribe((assigneeId) => {
       const subCtrl = this.form.get('subAssigneeIds');
@@ -239,6 +259,21 @@ export class TaskCreateComponent implements OnInit {
     });
   }
 
+  private async loadGamoraContacts(): Promise<void> {
+    try {
+      const contacts = await this.contactsApi.list({ activeOnly: true });
+      this.gamoraContacts.set(contacts.map((c) => ({ id: c.id, displayName: c.displayName })));
+    } catch {
+      this.gamoraContacts.set([]);
+    }
+  }
+
+  gamoraAssigneeLabel(): string {
+    const id = this.form.get('assigneeId')?.value as string | undefined;
+    if (!id) return 'Seleccionar responsable';
+    return this.gamoraContacts().find((c) => c.id === id)?.displayName ?? 'Responsable';
+  }
+
   cancel(): void {
     this.router.navigate(['/tareas']);
   }
@@ -249,6 +284,11 @@ export class TaskCreateComponent implements OnInit {
       return;
     }
     if (!this.connectivity.isOnline()) return;
+
+    if (this.isGamoraMode()) {
+      void this.saveGamoraCommitment();
+      return;
+    }
 
     this.saving = true;
     const v = this.form.getRawValue();
@@ -313,6 +353,29 @@ export class TaskCreateComponent implements OnInit {
       this.router.navigate(['/proyectos', this.fixedProjectId]);
     } else {
       this.router.navigate(['/tareas']);
+    }
+  }
+
+  private async saveGamoraCommitment(): Promise<void> {
+    this.saving = true;
+    const v = this.form.getRawValue();
+    const due = normalizeDateToNoonLocal(v.dueDate);
+    try {
+      await this.commitmentApi.createCommitment({
+        title: v.title!.trim(),
+        description: v.description?.trim() || undefined,
+        assignee_contact_id: v.assigneeId || undefined,
+        expected_evidence: v.expectedEvidence?.trim() || undefined,
+        due_at: due?.toISOString(),
+      });
+      await this.taskService.refreshFromGamoraApi();
+      this.notificationsRefresh.bump();
+      this.snackBar.open('Compromiso creado correctamente', 'Cerrar', { duration: 3500 });
+      void this.router.navigate(['/tareas']);
+    } catch (err) {
+      this.snackBar.open(mapGamoraApiError(err), 'Cerrar', { duration: 5000 });
+    } finally {
+      this.saving = false;
     }
   }
 }

@@ -1,18 +1,13 @@
 import { Router } from 'express';
 import { prisma } from '../../shared/database/prisma';
-import { resolveWorkspaceSlug } from '../channels/simulator/simulator.adapter';
+import { getWorkspace } from '../auth/auth.middleware';
 import { transcriptionService } from '../transcription/transcription.service';
 
 export const messagesRouter = Router();
 
 messagesRouter.get('/:id', async (req, res, next) => {
   try {
-    const slug = resolveWorkspaceSlug(req);
-    const workspace = await prisma.workspace.findUnique({ where: { slug } });
-    if (!workspace) {
-      res.status(404).json({ error: 'Workspace no encontrado' });
-      return;
-    }
+    const workspace = getWorkspace(req);
 
     const message = await prisma.message.findFirst({
       where: { id: req.params.id, workspaceId: workspace.id },
@@ -35,12 +30,7 @@ messagesRouter.get('/:id', async (req, res, next) => {
 
 messagesRouter.get('/:id/transcription', async (req, res, next) => {
   try {
-    const slug = resolveWorkspaceSlug(req);
-    const workspace = await prisma.workspace.findUnique({ where: { slug } });
-    if (!workspace) {
-      res.status(404).json({ error: 'Workspace no encontrado' });
-      return;
-    }
+    const workspace = getWorkspace(req);
 
     const message = await prisma.message.findFirst({
       where: { id: req.params.id, workspaceId: workspace.id },

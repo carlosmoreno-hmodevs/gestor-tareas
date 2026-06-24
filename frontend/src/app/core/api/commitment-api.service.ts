@@ -1,9 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { workspaceSlugForTenant } from '../config/gamora.config';
-import type { CommitmentDetailDto, CommitmentDto, CommitmentEventDto, EvidenceFileDto } from '../../shared/models/commitment.model';
+import type {
+  CommitmentDetailDto,
+  CommitmentDto,
+  CommitmentEventDto,
+  CommitmentListPageDto,
+  CommitmentListParams,
+  CommitmentSummaryDto,
+  EvidenceFileDto,
+} from '../../shared/models/commitment.model';
 
 interface ApiListResponse<T> {
   data: T;
@@ -47,42 +54,72 @@ export class CommitmentApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.gamoraApiUrl;
 
-  private headers(tenantId: string): HttpHeaders {
-    return new HttpHeaders({
-      'X-Workspace-Slug': workspaceSlugForTenant(tenantId),
-    });
+  private buildListParams(params?: CommitmentListParams): HttpParams {
+    let httpParams = new HttpParams();
+    if (!params) return httpParams;
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.assigneeContactId) httpParams = httpParams.set('assigneeContactId', params.assigneeContactId);
+    if (params.priority) httpParams = httpParams.set('priority', params.priority);
+    if (params.dueFrom) httpParams = httpParams.set('dueFrom', params.dueFrom);
+    if (params.dueTo) httpParams = httpParams.set('dueTo', params.dueTo);
+    if (params.overdue) httpParams = httpParams.set('overdue', 'true');
+    if (params.dueWithin48h) httpParams = httpParams.set('dueWithin48h', 'true');
+    if (params.unassigned) httpParams = httpParams.set('unassigned', 'true');
+    if (params.search) httpParams = httpParams.set('search', params.search);
+    if (params.page !== undefined) httpParams = httpParams.set('page', String(params.page));
+    if (params.pageSize !== undefined) httpParams = httpParams.set('pageSize', String(params.pageSize));
+    return httpParams;
   }
 
-  async listCommitments(tenantId: string): Promise<CommitmentDto[]> {
+  async getSummary(_tenantId: string): Promise<CommitmentSummaryDto> {
     const res = await firstValueFrom(
-      this.http.get<ApiListResponse<CommitmentDto[]>>(`${this.baseUrl}/api/commitments`, {
-        headers: this.headers(tenantId),
-      })
+      this.http.get<ApiListResponse<CommitmentSummaryDto>>(`${this.baseUrl}/api/commitments/summary`)
     );
     return res.data;
   }
 
-  async getCommitment(tenantId: string, id: string): Promise<CommitmentDetailDto> {
-    const res = await firstValueFrom(
-      this.http.get<ApiListResponse<CommitmentDetailDto>>(`${this.baseUrl}/api/commitments/${id}`, {
-        headers: this.headers(tenantId),
-      })
-    );
-    return res.data;
+  async listCommitments(
+    _tenantId: string,
+    params?: CommitmentListParams
+  ): Promise<CommitmentDto[]> {
+    const result = await this.listCommitmentsPage(_tenantId, params);
+    return result.items;
   }
 
-  async getCommitmentEvents(tenantId: string, id: string): Promise<CommitmentEventDto[]> {
+  async listCommitmentsPage(
+    _tenantId: string,
+    params?: CommitmentListParams
+  ): Promise<CommitmentListPageDto> {
+    const httpParams = this.buildListParams(params);
     const res = await firstValueFrom(
-      this.http.get<ApiListResponse<CommitmentEventDto[]>>(
-        `${this.baseUrl}/api/commitments/${id}/events`,
-        { headers: this.headers(tenantId) }
+      this.http.get<ApiListResponse<CommitmentDto[] | CommitmentListPageDto>>(
+        `${this.baseUrl}/api/commitments`,
+        { params: httpParams }
       )
+    );
+    const data = res.data;
+    if (Array.isArray(data)) {
+      return { items: data, total: data.length, page: 1, pageSize: data.length };
+    }
+    return data;
+  }
+
+  async getCommitment(_tenantId: string, id: string): Promise<CommitmentDetailDto> {
+    const res = await firstValueFrom(
+      this.http.get<ApiListResponse<CommitmentDetailDto>>(`${this.baseUrl}/api/commitments/${id}`)
+    );
+    return res.data;
+  }
+
+  async getCommitmentEvents(_tenantId: string, id: string): Promise<CommitmentEventDto[]> {
+    const res = await firstValueFrom(
+      this.http.get<ApiListResponse<CommitmentEventDto[]>>(`${this.baseUrl}/api/commitments/${id}/events`)
     );
     return res.data;
   }
 
   async patchCommitmentStatus(
-    tenantId: string,
+    _tenantId: string,
     commitmentId: string,
     body: {
       status: string;
@@ -93,25 +130,23 @@ export class CommitmentApiService {
     const res = await firstValueFrom(
       this.http.patch<ApiListResponse<CommitmentDto>>(
         `${this.baseUrl}/api/commitments/${commitmentId}/status`,
-        body,
-        { headers: this.headers(tenantId) }
+        body
       )
     );
     return res.data;
   }
 
-  async listEvidence(tenantId: string, commitmentId: string): Promise<EvidenceFileDto[]> {
+  async listEvidence(_tenantId: string, commitmentId: string): Promise<EvidenceFileDto[]> {
     const res = await firstValueFrom(
       this.http.get<ApiListResponse<EvidenceFileDto[]>>(
-        `${this.baseUrl}/api/commitments/${commitmentId}/evidence`,
-        { headers: this.headers(tenantId) }
+        `${this.baseUrl}/api/commitments/${commitmentId}/evidence`
       )
     );
     return res.data;
   }
 
   async uploadEvidence(
-    tenantId: string,
+    _tenantId: string,
     commitmentId: string,
     file: File,
     actorContactId?: string
@@ -122,38 +157,48 @@ export class CommitmentApiService {
     const res = await firstValueFrom(
       this.http.post<ApiListResponse<EvidenceFileDto>>(
         `${this.baseUrl}/api/commitments/${commitmentId}/evidence`,
-        form,
-        { headers: this.headers(tenantId) }
+        form
       )
     );
     return res.data;
   }
 
-  evidenceFileUrl(tenantId: string, commitmentId: string, evidenceId: string): string {
+  evidenceFileUrl(_tenantId: string, commitmentId: string, evidenceId: string): string {
     return `${this.baseUrl}/api/commitments/${commitmentId}/evidence/${evidenceId}/file`;
   }
 
   async downloadEvidenceBlob(
-    tenantId: string,
+    _tenantId: string,
     commitmentId: string,
     evidenceId: string
   ): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(
-        `${this.baseUrl}/api/commitments/${commitmentId}/evidence/${evidenceId}/file`,
-        { headers: this.headers(tenantId), responseType: 'blob' }
-      )
+      this.http.get(`${this.baseUrl}/api/commitments/${commitmentId}/evidence/${evidenceId}/file`, {
+        responseType: 'blob',
+      })
     );
   }
 
   async sendSimulatorInbound(
-    tenantId: string,
+    _tenantId: string,
     payload: SimulatorInboundPayload
   ): Promise<SimulatorInboundResponse> {
     return firstValueFrom(
-      this.http.post<SimulatorInboundResponse>(`${this.baseUrl}/api/conversations/inbound`, payload, {
-        headers: this.headers(tenantId),
-      })
+      this.http.post<SimulatorInboundResponse>(`${this.baseUrl}/api/conversations/inbound`, payload)
     );
+  }
+
+  async createCommitment(body: {
+    title: string;
+    description?: string;
+    location?: string;
+    assignee_contact_id?: string;
+    expected_evidence?: string;
+    due_at?: string;
+  }): Promise<CommitmentDto> {
+    const res = await firstValueFrom(
+      this.http.post<ApiListResponse<CommitmentDto>>(`${this.baseUrl}/api/commitments`, body)
+    );
+    return res.data;
   }
 }

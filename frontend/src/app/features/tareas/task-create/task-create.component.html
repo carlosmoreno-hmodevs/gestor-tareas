@@ -8,7 +8,7 @@
   } @else {
     <a routerLink="/tareas">Tareas</a>
     <mat-icon>chevron_right</mat-icon>
-    <span>Nueva tarea</span>
+    <span>{{ isGamoraMode() ? 'Nuevo compromiso' : 'Nueva tarea' }}</span>
   }
 </nav>
 
@@ -23,8 +23,8 @@
 }
 
 <app-page-header
-  title="Nueva tarea"
-  subtitle="Completa el formulario para crear una nueva tarea"
+  [title]="pageTitle()"
+  [subtitle]="pageSubtitle()"
   icon="add_task"
 />
 
@@ -32,7 +32,7 @@
   <div class="form-layout">
     <!-- Columna principal -->
     <div class="form-main">
-      @if (isFerretero()) {
+      @if (isFerretero() && !isGamoraMode()) {
         <mat-card class="form-section">
           <mat-card-header>
             <mat-card-title>Plantilla (opcional)</mat-card-title>
@@ -86,6 +86,15 @@
             </mat-form-field>
           </div>
 
+          @if (isGamoraMode()) {
+            <div class="field-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Evidencia esperada / instrucciones</mat-label>
+                <textarea matInput formControlName="expectedEvidence" rows="3" placeholder="Ej: Foto del conteo y nota del almacén"></textarea>
+              </mat-form-field>
+            </div>
+          }
+
           @if (isFerretero() && includeChecklist() && checklistItems().length) {
             <div class="field-group checklist-group">
               <label class="section-label">Checklist ({{ checklistItems().length }} items)</label>
@@ -101,6 +110,7 @@
           }
 
           <div class="field-row">
+            @if (!isGamoraMode()) {
             <div class="field-group">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Categoría</mat-label>
@@ -112,6 +122,7 @@
                 </mat-select>
               </mat-form-field>
             </div>
+            }
             <div class="field-group">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>{{ uiCopy.label('priority') }}</mat-label>
@@ -157,6 +168,20 @@
         </mat-card-header>
         <mat-card-content>
           <div class="field-group">
+            @if (isGamoraMode()) {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Responsable operativo</mat-label>
+              <mat-select formControlName="assigneeId">
+                <mat-select-trigger>{{ gamoraAssigneeLabel() }}</mat-select-trigger>
+                @for (c of gamoraContacts(); track c.id) {
+                  <mat-option [value]="c.id">{{ c.displayName }}</mat-option>
+                }
+              </mat-select>
+              @if (form.get('assigneeId')?.hasError('required') && form.get('assigneeId')?.touched) {
+                <mat-error>Selecciona un responsable</mat-error>
+              }
+            </mat-form-field>
+            } @else {
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Responsable principal</mat-label>
               <mat-select formControlName="assigneeId">
@@ -191,8 +216,10 @@
                 <mat-error>{{ uiCopy.label('assigneeRequired') }}</mat-error>
               }
             </mat-form-field>
+            }
           </div>
 
+          @if (!isGamoraMode()) {
           <div class="field-group">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Subresponsables</mat-label>
@@ -216,6 +243,7 @@
               </mat-select>
             </mat-form-field>
           </div>
+          }
 
           <div class="field-group">
             <mat-form-field appearance="outline" class="full-width">

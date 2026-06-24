@@ -1,0 +1,30 @@
+<div class="gamora-kanban" role="region" aria-label="Tablero de compromisos">
+  <div class="gamora-kanban-scroll">
+    @for (col of columns; track col.status) {
+      <section class="gamora-kanban-col" [attr.data-status]="col.status">
+        <header class="gamora-kanban-col-header">
+          <span class="gamora-kanban-col-title">{{ col.label }}</span>
+          <span class="gamora-kanban-col-count">{{ (tasksByColumn().get(col.status) ?? []).length }}</span>
+        </header>
+        <div class="gamora-kanban-col-body">
+          @for (task of tasksByColumn().get(col.status) ?? []; track task.id) {
+            <a class="gamora-kanban-card" [routerLink]="['/tareas', task.id]">
+              <span class="gamora-kanban-card-title">{{ task.title }}</span>
+              <span class="gamora-kanban-card-meta">
+                <mat-icon class="meta-icon">person</mat-icon>
+                {{ task.assignee || 'Sin asignar' }}
+              </span>
+              <span class="gamora-kanban-card-meta">
+                <mat-icon class="meta-icon">event</mat-icon>
+                {{ dueLabel(task) }}
+              </span>
+              <span class="gamora-kanban-card-status">{{ statusLabel(task.gamoraStatus ?? task.observations ?? '') }}</span>
+            </a>
+          } @empty {
+            <p class="gamora-kanban-empty">Sin tareas</p>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</div>

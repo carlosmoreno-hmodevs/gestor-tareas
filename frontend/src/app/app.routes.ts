@@ -1,17 +1,25 @@
 import { Routes } from '@angular/router';
 import { ShellComponent } from './core/layout/shell/shell.component';
 import { adminGuard } from './core/guards/admin.guard';
+import { contactsManageGuard } from './core/guards/contacts-manage.guard';
+import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { tenantGuard } from './core/guards/tenant.guard';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+  },
+  {
     path: 'select-tenant',
-    loadComponent: () => import('./features/tenant-select/tenant-select.component').then((m) => m.TenantSelectComponent)
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/tenant-select/tenant-select.component').then((m) => m.TenantSelectComponent),
   },
   {
     path: '',
     component: ShellComponent,
-    canActivate: [tenantGuard],
+    canActivate: [authGuard, tenantGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'tablero-operativo' },
       {
@@ -24,6 +32,7 @@ export const routes: Routes = [
       { path: 'tareas/:id', loadComponent: () => import('./features/tareas/task-detail/task-detail.component').then((m) => m.TaskDetailComponent) },
       { path: 'alertas', redirectTo: 'admin/reglas', pathMatch: 'full' },
       { path: 'documentos', loadComponent: () => import('./features/documentos/documentos.component').then((m) => m.DocumentosComponent) },
+      { path: 'perfil', loadComponent: () => import('./features/profile/profile.component').then((m) => m.ProfileComponent) },
       {
         path: 'admin',
         children: [
@@ -31,28 +40,31 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () => import('./features/admin/admin-layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
-            canActivate: [adminGuard],
             children: [
+              { path: 'responsables', canActivate: [contactsManageGuard], loadComponent: () => import('./features/admin/admin-responsables/admin-responsables.component').then((m) => m.AdminResponsablesComponent) },
+              { path: 'responsables/nueva', canActivate: [contactsManageGuard], loadComponent: () => import('./features/admin/admin-responsables/admin-contact-form.component').then((m) => m.AdminContactFormComponent) },
+              { path: 'responsables/:id/editar', canActivate: [contactsManageGuard], loadComponent: () => import('./features/admin/admin-responsables/admin-contact-form.component').then((m) => m.AdminContactFormComponent) },
               { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
-              { path: 'usuarios', loadComponent: () => import('./features/admin/admin-users/admin-users.component').then((m) => m.AdminUsersComponent) },
-              { path: 'usuarios/nueva', loadComponent: () => import('./features/admin/admin-users/admin-user-form/admin-user-form.component').then((m) => m.AdminUserFormComponent) },
-              { path: 'usuarios/:id/editar', loadComponent: () => import('./features/admin/admin-users/admin-user-form/admin-user-form.component').then((m) => m.AdminUserFormComponent) },
-              { path: 'roles', loadComponent: () => import('./features/admin/admin-roles/admin-roles.component').then((m) => m.AdminRolesComponent) },
-              { path: 'catalogos/categorias/nueva', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'categorias' } },
-              { path: 'catalogos/categorias/:id/editar', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'categorias' } },
-              { path: 'catalogos/prioridades/nueva', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'prioridades' } },
-              { path: 'catalogos/prioridades/:id/editar', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'prioridades' } },
-              { path: 'catalogos/equipos/nueva', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'equipos' } },
-              { path: 'catalogos/equipos/:id/editar', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'equipos' } },
-              { path: 'catalogos', loadComponent: () => import('./features/admin/admin-catalogos/admin-catalogos.component').then((m) => m.AdminCatalogosComponent) },
-              { path: 'organization', loadComponent: () => import('./features/admin/admin-organization/admin-organization.component').then((m) => m.AdminOrganizationComponent) },
-              { path: 'reglas', loadComponent: () => import('./features/admin/admin-reglas/admin-reglas.component').then((m) => m.AdminReglasComponent) },
-              { path: 'flujos', loadComponent: () => import('./features/admin/admin-flujos/admin-flujos.component').then((m) => m.AdminFlujosComponent) },
-              { path: 'campos', loadComponent: () => import('./features/admin/admin-campos/admin-campos.component').then((m) => m.AdminCamposComponent) },
-              { path: 'automatizaciones', loadComponent: () => import('./features/admin/admin-automatizaciones/admin-automatizaciones.component').then((m) => m.AdminAutomatizacionesComponent) },
-              { path: 'automatizaciones/nueva', loadComponent: () => import('./features/admin/admin-automatizacion-form/admin-automatizacion-form.component').then((m) => m.AdminAutomatizacionFormComponent) },
-              { path: 'automatizaciones/:id/editar', loadComponent: () => import('./features/admin/admin-automatizacion-form/admin-automatizacion-form.component').then((m) => m.AdminAutomatizacionFormComponent) },
-              { path: 'sistema', loadComponent: () => import('./features/admin/admin-sistema/admin-sistema.component').then((m) => m.AdminSistemaComponent) }
+              { path: 'empresa', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-empresa/admin-empresa.component').then((m) => m.AdminEmpresaComponent) },
+              { path: 'usuarios', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-users/admin-users.component').then((m) => m.AdminUsersComponent) },
+              { path: 'usuarios/nueva', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-users/admin-user-form/admin-user-form.component').then((m) => m.AdminUserFormComponent) },
+              { path: 'usuarios/:id/editar', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-users/admin-user-form/admin-user-form.component').then((m) => m.AdminUserFormComponent) },
+              { path: 'roles', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-roles/admin-roles.component').then((m) => m.AdminRolesComponent) },
+              { path: 'catalogos/categorias/nueva', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'categorias' } },
+              { path: 'catalogos/categorias/:id/editar', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'categorias' } },
+              { path: 'catalogos/prioridades/nueva', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'prioridades' } },
+              { path: 'catalogos/prioridades/:id/editar', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'prioridades' } },
+              { path: 'catalogos/equipos/nueva', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'equipos' } },
+              { path: 'catalogos/equipos/:id/editar', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalog-item-form/admin-catalog-item-form.component').then((m) => m.AdminCatalogItemFormComponent), data: { catalogType: 'equipos' } },
+              { path: 'catalogos', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-catalogos/admin-catalogos.component').then((m) => m.AdminCatalogosComponent) },
+              { path: 'organization', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-organization/admin-organization.component').then((m) => m.AdminOrganizationComponent) },
+              { path: 'reglas', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-reglas/admin-reglas.component').then((m) => m.AdminReglasComponent) },
+              { path: 'flujos', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-flujos/admin-flujos.component').then((m) => m.AdminFlujosComponent) },
+              { path: 'campos', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-campos/admin-campos.component').then((m) => m.AdminCamposComponent) },
+              { path: 'automatizaciones', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-automatizaciones/admin-automatizaciones.component').then((m) => m.AdminAutomatizacionesComponent) },
+              { path: 'automatizaciones/nueva', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-automatizacion-form/admin-automatizacion-form.component').then((m) => m.AdminAutomatizacionFormComponent) },
+              { path: 'automatizaciones/:id/editar', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-automatizacion-form/admin-automatizacion-form.component').then((m) => m.AdminAutomatizacionFormComponent) },
+              { path: 'sistema', canActivate: [adminGuard], loadComponent: () => import('./features/admin/admin-sistema/admin-sistema.component').then((m) => m.AdminSistemaComponent) }
             ]
           }
         ]

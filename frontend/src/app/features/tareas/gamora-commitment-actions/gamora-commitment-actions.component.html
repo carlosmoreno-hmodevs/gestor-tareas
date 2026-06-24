@@ -37,8 +37,23 @@
         </div>
       }
     </div>
-  } @else if (evidencePolicy().readOnly) {
+  } @else if (evidencePolicy().readOnly || permissions.isReadOnly()) {
     <p class="gamora-terminal">{{ guidance().summary }}</p>
+  } @else if (blockedActions().length) {
+    <p class="gamora-terminal role-hint">
+      No hay acciones disponibles para tu rol en este compromiso.
+    </p>
+  }
+
+  @if (blockedActions().length && actions().length) {
+    <div class="gamora-blocked-actions" role="note">
+      @for (item of blockedActions(); track item.action.key) {
+        <p class="gamora-blocked-hint">
+          <mat-icon>lock</mat-icon>
+          <span><strong>{{ item.action.label }}:</strong> {{ item.reason }}</span>
+        </p>
+      }
+    </div>
   }
 </section>
 

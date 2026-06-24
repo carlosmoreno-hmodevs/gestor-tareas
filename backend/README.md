@@ -24,13 +24,96 @@ npm run dev
 API: `http://localhost:3000`  
 Health: `GET /health` o `GET /api/health`
 
+## Iniciar sesión (Fase 6)
+
+**Credenciales demo** (tras `npm run db:seed`):
+
+| Correo | Contraseña | Rol |
+|--------|------------|-----|
+| `admin@luisito.test` | `GamoraDemo123!` | admin |
+| `coordinator@luisito.test` | `GamoraDemo123!` | coordinator |
+| `panchito@luisito.test` | `GamoraDemo123!` | assignee |
+| `viewer@luisito.test` | `GamoraDemo123!` | viewer |
+
+**Frontend:** `http://localhost:4200/login`
+
+**API:**
+```bash
+curl -s -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"admin@luisito.test\",\"password\":\"GamoraDemo123!\"}"
+```
+
+Usar el `token` en `Authorization: Bearer ...` para todas las rutas `/api/*` excepto login, health y webhooks.
+
+Guía completa: [`Gamora_Bot/12_DevOps_y_Ambientes/fase_6_fundacion_identidad.md`](../Gamora_Bot/12_DevOps_y_Ambientes/fase_6_fundacion_identidad.md)
+
+## Empresa y usuarios (Fase 6.3–6.4)
+
+**Workspace:** `GET/PATCH /api/workspaces/current` (PATCH solo admin)
+
+**Usuarios:** `GET/POST/PATCH /api/users`, `PATCH /api/users/:id/status`, `GET/PATCH /api/users/me`, `POST /api/users/me/password`
+
+Nuevo usuario: contraseña temporal por defecto `GamoraTemp123!` + `Contact` operativo automático.
+
+## Roles y permisos (Fase 6.5–6.6)
+
+Módulo: `src/modules/auth/commitment.permissions.ts`
+
+| Rol | Ver compromisos | Crear | Operar | Revisar/cerrar | Admin |
+|-----|-----------------|-------|--------|----------------|-------|
+| admin | Todo workspace | Sí | Sí | Sí | Sí |
+| coordinator | Todo workspace | Sí | No | Sí | No |
+| assignee | Solo asignados | No | Sí (propios) | No | No |
+| viewer | Todo (lectura) | No | No | No | No |
+
+- `GET /api/commitments` filtra por rol (`assignee` solo ve compromisos de su `contactId`)
+- Transiciones y evidencias validadas antes de ejecutar
+- **403** `No tienes permiso para realizar esta acción.` · **404** si el compromiso no es visible
+
+Frontend: `PermissionService` refleja la misma matriz (backend = fuente de verdad).
+
+## Contactos / responsables (Fase 6.8)
+
+`GET/POST/PATCH /api/contacts`, `PATCH /api/contacts/:id/status`, `GET /api/contacts/me`
+
+- Admin y coordinador administran responsables
+- Contactos activos para nuevas asignaciones; inactivos no asignables
+- Marco (seed) es contacto externo sin usuario — patrón para responsables sin login
+
+## Configuración operativa (Fase 6.7)
+
+En `settingsJson` vía `PATCH /api/workspaces/current`: `timezone`, `evidenceRequiredDefault`, `defaultDueDays`, `allowAssigneeEvidenceAfterReview`.
+
+## Dashboard y filtros (Fase 6.10)
+
+- `GET /api/commitments/summary` — KPIs scoped por rol
+- `GET /api/commitments?status=&assigneeContactId=&overdue=&search=&page=&pageSize=` — filtros server-side
+- Sin query params: respuesta legacy `{ data: [...] }`
+- Con filtros/paginación: `{ data: { items, total, page, pageSize } }`
+
+## Notificaciones internas (Fase 6.11)
+
+- `GET /api/notifications` — últimas del usuario autenticado
+- `GET /api/notifications/unread-count`
+- `PATCH /api/notifications/:id/read`
+- `PATCH /api/notifications/read-all`
+
+Generadas al asignar compromiso, subir evidencia, solicitar corrección o cerrar. Sin push/email/WhatsApp.
+
+**Prueba rápida:** tras `npm run db:seed`, login como `admin@luisito.test` o `panchito@luisito.test` — campanita muestra mensaje demo. Crear compromiso asignado a contacto con `userId` (ej. Panchito) genera notificación para ese usuario, no para admin.
+
+**Frontend adicional:** dropdown pulido en `header-notifications`; notificaciones de escritorio vía `BrowserNotificationService` (permiso manual, cursor por usuario en `localStorage`).
+
 ## Probar simulador (Fase 1 + confirmación humana)
+
+> **Fase 6:** requiere token JWT. Obtén uno con `/api/auth/login` y usa `Authorization: Bearer`.
 
 **Paso A — enviar instrucción:**
 ```bash
 curl -X POST http://localhost:3000/api/conversations/inbound \
   -H "Content-Type: application/json" \
-  -H "X-Workspace-Slug: ferreteria-luisito" \
+  -H "Authorization: Bearer TU_TOKEN" \
   -d "{\"channel_contact_external_id\":\"luisito-sim\",\"message_type\":\"text\",\"text_body\":\"Dile a Panchito que mañana cuente los sacos de cemento de la sucursal Centro y mande foto.\",\"external_message_id\":\"sim-demo-001\"}"
 ```
 Respuesta: `awaiting_confirmation: true` y `reply` pidiendo confirmación. **No** se crea compromiso aún.
@@ -179,7 +262,7 @@ curl -X PATCH http://localhost:3000/api/commitments/{id}/status \
 - **ORM:** Prisma + MySQL 8
 - **Framework:** Express (ligero para MVP)
 - **Parser texto:** determinístico (`text-intent.parser.ts`), sin LLM
-- **Auth:** header `X-Workspace-Slug` en dev; JWT en fase posterior
+- **Auth:** JWT + login (`POST /api/auth/login`); header `X-Workspace-Slug` ya no autoriza solo (Fase 6)
 
 ## Decisión técnica Fase 2 — Ciclo operativo
 
@@ -228,3 +311,19 @@ curl -X PATCH http://localhost:3000/api/commitments/{id}/status \
 - Errores HTTP 500: mensaje genérico en staging/prod; detalle solo en logs
 - `.env.staging` no se commitea; plantilla en `.env.staging.example`
 - Frontend: `npm run build:staging` con `gamoraApiUrl` HTTPS del API staging
+
+## Decisión técnica Fase 6.0–6.2 — Autenticación JWT
+
+- ADR D-023: `Workspace` = empresa; un usuario = un workspace (MVP)
+- `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`
+- Middleware `requireAuth` + `requireWorkspace` en rutas protegidas
+- Frontend: `/login`, `AuthService`, interceptor Bearer, `authGuard`
+- Seed demo: `admin@luisito.test`, `coordinator@luisito.test`, `panchito@luisito.test`, `viewer@luisito.test` — `GamoraDemo123!`
+
+## Decisión técnica Fase 6.3–6.4 — Empresa y usuarios API
+
+- `Workspace.status`: `active` | `inactive` — bloquea login y API si inactive
+- `PATCH /api/workspaces/current` solo admin; `settingsJson.timezone`
+- CRUD usuarios scoped por `workspaceId` del JWT; `requireAdmin` en rutas admin
+- `User` + `Contact` vinculados al crear usuarios operativos
+- Frontend: `/admin/empresa`, `/admin/usuarios`, `/perfil` sin localStorage

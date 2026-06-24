@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../shared/database/prisma';
 import { commitmentsService } from '../commitments/commitments.service';
+import { notificationsService } from '../notifications/notifications.service';
 import { statusesAllowingEvidenceUpload } from '../commitments/commitment-state.machine';
 import {
   inferMediaType,
@@ -104,6 +105,18 @@ export class EvidenceService {
         );
       }
 
+      return evidence;
+    }).then((evidence) => {
+      void notificationsService.notifyCoordinators(
+        input.workspaceId,
+        {
+          type: 'evidence_uploaded',
+          title: 'Evidencia enviada',
+          message: `Nueva evidencia: ${input.originalFilename}`,
+          relatedCommitmentId: input.commitmentId,
+        },
+        input.actor?.userId
+      );
       return evidence;
     });
   }

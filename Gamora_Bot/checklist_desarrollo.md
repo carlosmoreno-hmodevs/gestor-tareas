@@ -11,7 +11,7 @@ Guía permanente de ejecución. Marcar `[x]` al completar cada ítem.
 **Decisiones técnicas Fase 1:**
 - Monorepo `frontend/` + `backend/` en el mismo repo
 - Backend: **Express** + TypeScript + **Prisma** + MySQL 8
-- Auth dev: header `X-Workspace-Slug` (sin JWT aún)
+- Auth: JWT + login (Fase 6); ver `fase_6_fundacion_identidad.md`
 - Parser de texto **determinístico** (`text-intent.parser.ts`), sin LLM
 - Idempotencia: `UNIQUE (channel, provider, external_message_id)` en `messages`
 - Stubs vacíos: `media/`, `channels/whatsapp/` (parcial)
@@ -151,6 +151,120 @@ Guía permanente de ejecución. Marcar `[x]` al completar cada ítem.
 - [ ] Ejecutar despliegue real en host staging
 - [ ] Completar checklist de validación en ambiente público
 
+## Fase 6.0–6.2 — Fundación de identidad (JWT) (2026-06)
+
+**Estado:** implementado.
+
+**Objetivo:** login real, sesión JWT, rutas protegidas. Sin WhatsApp/IA/producción.
+
+**6.0 Decisión de modelo:**
+- [x] ADR [`d_023_workspace_como_empresa_y_auth_jwt.md`](11_Decisiones/d_023_workspace_como_empresa_y_auth_jwt.md)
+
+**6.1 Auth backend:**
+- [x] `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- [x] bcrypt + JWT (`JWT_SECRET`, `JWT_EXPIRES_IN`)
+- [x] `requireAuth` + `requireWorkspace`
+- [x] Rutas `/api/*` protegidas (excepto login, health, webhooks)
+- [x] Seed: `admin@luisito.test`, `panchito@luisito.test` / `GamoraDemo123!`
+
+**6.2 Auth frontend:**
+- [x] `/login`, `AuthService`, `authInterceptor`, `authGuard`
+- [x] Logout + menú sin selector mock de usuario
+- [x] API compromisos con Bearer token
+- [x] `adminGuard` usa rol backend `admin`
+
+## Fase 6.3–6.4 — Empresa y usuarios reales (2026-06)
+
+**Estado:** implementado.
+
+### 6.3 Empresa / Workspace
+- [x] `GET/PATCH /api/workspaces/current` — JWT, slug solo lectura
+- [x] `status` active/inactive en `Workspace`; login bloqueado si inactive
+- [x] `settings.timezone` en `settingsJson`
+- [x] Solo `admin` puede `PATCH`
+- [x] UI `/admin/empresa` conectada a API
+
+### 6.4 Usuarios reales
+- [x] CRUD API: `GET/POST/PATCH /api/users`, `PATCH /api/users/:id/status`
+- [x] `GET/PATCH /api/users/me`, `POST /api/users/me/password`
+- [x] Admin UI `/admin/usuarios` → MySQL (sin localStorage)
+- [x] Crear usuario → `Contact` operativo vinculado
+- [x] Contraseña temporal por defecto: `GamoraTemp123!`
+- [x] `/perfil` — editar `displayName` y cambiar contraseña
+- [x] `adminGuard` + `requireAdmin` en backend
+
+**Relación User ↔ Contact:** cada usuario operativo (`admin`, `coordinator`, `assignee`) obtiene un `Contact` con el mismo `displayName`, usado como responsable en compromisos Gamora.
+
+**Pendiente Fase 6:** recuperación de contraseña por email, permisos granulares editables.
+
+## Fase 6.5–6.6 — RBAC operativo (2026-06)
+
+**Estado:** implementado.
+
+### 6.5 Backend
+- [x] `commitment.permissions.ts` — `requireRole`, `canViewCommitment`, `canCreateCommitment`, `canTransitionCommitment`, `canUploadEvidence`, `listScopeWhere`
+- [x] Permisos en endpoints de compromisos, transiciones y evidencias
+- [x] Scope: admin/coordinator/viewer ven todo; assignee solo asignados
+- [x] 401/403/404 con mensajes amigables
+- [x] Seed: `coordinator@luisito.test`, `viewer@luisito.test`
+
+### 6.6 Frontend
+- [x] `PermissionService` basado en `AuthService` / `/api/auth/me`
+- [x] Menú admin oculto si rol ≠ admin
+- [x] Acciones Gamora filtradas por rol en detalle de tarea
+- [x] Evidencia bloqueada por rol con mensaje claro
+- [x] Sin dependencia de mock localStorage para permisos
+
+**Matriz:** ver `fase_6_fundacion_identidad.md` § 6.5–6.6.
+
+## Fase 6.7–6.8 — Configuración operativa y responsables (2026-06)
+
+**Estado:** implementado.
+
+### 6.7 Configuración operativa (mínima)
+- [x] `settingsJson`: `evidenceRequiredDefault`, `defaultDueDays`, `allowAssigneeEvidenceAfterReview`
+- [x] UI en `/admin/empresa` junto con timezone
+- [x] `PATCH /api/workspaces/current` persiste y mergea settings
+
+### 6.8 Responsables / contactos
+- [x] Modelo `Contact` ampliado (teléfono, email, puesto, equipo, status)
+- [x] API `GET/POST/PATCH /api/contacts`, `PATCH /api/contacts/:id/status`, `GET /me`
+- [x] Scope por rol; admin/coordinator administran
+- [x] UI `/admin/responsables` + formulario alta/edición
+- [x] Asignación compromisos: solo contactos activos; validación en backend
+- [x] Selector responsables activos en creación manual (Tareas / Gamora)
+- [x] Simulador usa canal del contacto del usuario (`/api/contacts/me`)
+- [x] Eliminado `GAMORA_DEV_CONTACTS` del frontend
+
+**Regla User↔Contact:** sincronización de `displayName` bidireccional cuando hay vínculo; ver `fase_6_fundacion_identidad.md` § 6.8.
+
+**Build:** `angular.json` budget `initial` error subido a 1.3 MB (bundle ~1.20 MB).
+
+## Fase 6.10 — Dashboard operativo y filtros API (2026-06)
+
+**Estado:** implementado.
+
+- [x] `GET /api/commitments/summary` — KPIs por rol/workspace
+- [x] Filtros server-side en `GET /api/commitments` (status, assignee, fechas, overdue, search, paginación)
+- [x] Respuesta paginada `{ items, total, page, pageSize }` con compatibilidad sin filtros
+- [x] Tablero operativo consume summary API (modo Gamora)
+- [x] Lista de tareas: filtros → query params backend; paginación en vista lista
+- [x] KPIs franja superior desde API en modo Gamora
+- [x] Assignee no puede ver datos globales vía filtros manipulados
+
+## Fase 6.11 — UI operativa + notificaciones MVP (2026-06)
+
+**Estado:** implementado (corregido: layout original restaurado).
+
+- [x] Layout Tareas original conservado (sidebar, KPI cards, tarjetas, calendario, tablero)
+- [x] Simulador colapsable; sin formulario mínimo de creación en panel
+- [x] Nuevo compromiso → `/tareas/nueva` con formulario Gamora (título, descripción, responsable contacto, vencimiento, evidencia esperada)
+- [x] Calendario/Tablero conectados a API real
+- [x] Notificaciones backend OK; frontend con refresh reactivo y seed demo
+- [x] Header: buscador + campanita funcional
+- [x] Dropdown notificaciones pulido (360px, título/mensaje/fecha separados, badge numérico)
+- [x] Notificaciones de escritorio (Web Notifications API, activación manual, sin spam al login)
+
 ---
 
 ## Preparación del proyecto
@@ -284,10 +398,12 @@ Guía permanente de ejecución. Marcar `[x]` al completar cada ítem.
 - [x] **Módulo workspaces** — contexto multi-tenant  
   **Resultado:** middleware resuelve workspace en requests  
   **Dependencia:** migraciones base  
-  **Notas:** `resolveWorkspaceSlug` + header `X-Workspace-Slug`
+  **Notas:** Fase 6 — `requireAuth` + workspace desde JWT; slug header solo validación opcional
 
-- [ ] **Módulo auth** — login JWT, guard de rutas  
-  **Resultado:** endpoints login/me operativos  
+- [x] **Módulo auth** — login JWT, guard de rutas  
+  **Resultado:** endpoints login/me/logout operativos  
+  **Dependencia:** backend base  
+  **Notas:** Fase 6.1–6.2; `requireAuth` en rutas API
   **Dependencia:** users
 
 - [x] **CommitmentsService — crear**  

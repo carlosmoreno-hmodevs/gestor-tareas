@@ -21,18 +21,18 @@
           </nav>
         </div>
         <div class="header-right">
-          <div class="org-selectors org-selectors-desktop">
-            <app-org-context-bar />
-          </div>
-          <span class="mode-badge" aria-label="Modo: Normal">
-            Modo: Normal
-          </span>
-          <button mat-icon-button aria-label="Buscar" class="header-action">
-            <mat-icon>search</mat-icon>
-          </button>
-          <button mat-icon-button aria-label="Notificaciones" class="header-action">
-            <mat-icon>notifications</mat-icon>
-          </button>
+          @if (showLegacyOrgBar()) {
+            <div class="org-selectors org-selectors-desktop">
+              <app-org-context-bar />
+            </div>
+            <span class="mode-badge" aria-label="Modo: Normal">
+              Modo: Normal
+            </span>
+          }
+          @if (taskService.gamoraApiActive()) {
+            <app-global-search />
+            <app-header-notifications />
+          }
           <button
             mat-icon-button
             (click)="themeService.toggle()"
@@ -45,25 +45,42 @@
             <app-avatar [name]="currentUser().name" [avatarUrl]="currentUser().avatarUrl" [size]="36" />
           </div>
           <mat-menu #userMenu="matMenu" class="user-switch-menu">
-            <div class="user-menu-header">
-              <span class="user-menu-title">Cambiar usuario</span>
-              <span class="user-menu-subtitle">Vista según permisos del usuario</span>
-            </div>
-            @for (u of availableUsers(); track u.id) {
-              <button mat-menu-item (click)="switchUser(u.id)" [class.selected]="u.id === currentUser().id">
-                <app-avatar [name]="u.name" [size]="32" />
-                <span class="user-menu-info">
-                  <span class="user-menu-name">{{ u.name }}</span>
-                  <span class="user-menu-role">{{ formatUserRole(u.role) }}</span>
-                </span>
+            @if (useRealAuth()) {
+              <div class="user-menu-header">
+                <span class="user-menu-title">{{ currentUser().name }}</span>
+                <span class="user-menu-subtitle">{{ currentUser().email }}</span>
+              </div>
+              <button mat-menu-item routerLink="/perfil">
+                <mat-icon>person</mat-icon>
+                <span>Mi perfil</span>
               </button>
+              <button mat-menu-item (click)="logout()">
+                <mat-icon>logout</mat-icon>
+                <span>Cerrar sesión</span>
+              </button>
+            } @else {
+              <div class="user-menu-header">
+                <span class="user-menu-title">Cambiar usuario</span>
+                <span class="user-menu-subtitle">Vista según permisos del usuario</span>
+              </div>
+              @for (u of availableUsers(); track u.id) {
+                <button mat-menu-item (click)="switchUser(u.id)" [class.selected]="u.id === currentUser().id">
+                  <app-avatar [name]="u.name" [size]="32" />
+                  <span class="user-menu-info">
+                    <span class="user-menu-name">{{ u.name }}</span>
+                    <span class="user-menu-role">{{ formatUserRole(u.role) }}</span>
+                  </span>
+                </button>
+              }
             }
           </mat-menu>
         </div>
       </header>
-      <div class="org-selectors org-selectors-mobile">
-        <app-org-context-bar />
-      </div>
+      @if (showLegacyOrgBar()) {
+        <div class="org-selectors org-selectors-mobile">
+          <app-org-context-bar />
+        </div>
+      }
     </div>
     <app-offline-banner />
     <main class="app-content" [class.has-bottom-nav]="!isDesktop()" [class.full-bleed-board]="fullBleedTasks()">

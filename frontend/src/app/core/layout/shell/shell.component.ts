@@ -7,6 +7,8 @@ import { MatMenuModule } from '@angular/material/menu';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ThemeService } from '../../services/theme.service';
 import { CurrentUserService } from '../../services/current-user.service';
+import { AuthService } from '../../auth/auth.service';
+import { PermissionService } from '../../auth/permission.service';
 import { TenantSettingsService } from '../../services/tenant-settings.service';
 import { TenantContextService } from '../../services/tenant-context.service';
 import { AutomationService } from '../../services/automation.service';
@@ -15,6 +17,9 @@ import { OrgContextBarComponent } from '../../../shared/components/org-context-b
 import { OfflineBannerComponent } from '../../../shared/components/offline-banner/offline-banner.component';
 import { CommonModule } from '@angular/common';
 import { TaskPageLayoutService } from '../../services/task-page-layout.service';
+import { GlobalSearchComponent } from './global-search.component';
+import { HeaderNotificationsComponent } from './header-notifications.component';
+import { TaskService } from '../../services/task.service';
 
 interface NavItem {
   path: string;
@@ -36,7 +41,9 @@ interface NavItem {
     MatMenuModule,
     AvatarComponent,
     OrgContextBarComponent,
-    OfflineBannerComponent
+    OfflineBannerComponent,
+    GlobalSearchComponent,
+    HeaderNotificationsComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss'
@@ -45,11 +52,14 @@ export class ShellComponent implements OnInit {
   private readonly breakpoint = inject(BreakpointObserver);
   private readonly router = inject(Router);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly authService = inject(AuthService);
+  private readonly permissions = inject(PermissionService);
   readonly themeService = inject(ThemeService);
   readonly tenantSettings = inject(TenantSettingsService);
   private readonly tenantContext = inject(TenantContextService);
   private readonly automationService = inject(AutomationService);
   private readonly taskPageLayout = inject(TaskPageLayoutService);
+  readonly taskService = inject(TaskService);
 
   isMobile = signal(true);
   private readonly currentPath = signal('');
@@ -62,16 +72,35 @@ export class ShellComponent implements OnInit {
   }
 
   currentUser = this.currentUserService.currentUser;
+  useRealAuth = this.currentUserService.useRealAuth;
   availableUsers = this.currentUserService.availableUsers;
 
-  navItems = computed<NavItem[]>(() => [
-    { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Inicio', icon: 'dashboard' },
-    { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
-    { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
-    { path: '/documentos', label: 'Documentos', shortLabel: 'Docs', icon: 'folder' },
-    { path: '/admin', label: 'Administración', shortLabel: 'Admin', icon: 'settings' },
-    { path: '/ia', label: 'Asistente IA', shortLabel: 'IA', icon: 'auto_awesome' }
-  ]);
+  navItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+      { path: '/tablero-operativo', label: 'Tablero operativo', shortLabel: 'Inicio', icon: 'dashboard' },
+      { path: '/tareas', label: 'Tareas', shortLabel: 'Tareas', icon: 'task_alt' },
+      { path: '/proyectos', label: 'Proyectos (Iniciativas)', shortLabel: 'Proyectos', icon: 'work' },
+      { path: '/documentos', label: 'Documentos', shortLabel: 'Docs', icon: 'folder' },
+      { path: '/ia', label: 'Asistente IA', shortLabel: 'IA', icon: 'auto_awesome' },
+    ];
+    if (this.permissions.canManageContacts() && !this.permissions.canAccessAdmin()) {
+      items.splice(4, 0, {
+        path: '/admin/responsables',
+        label: 'Responsables',
+        shortLabel: 'Responsables',
+        icon: 'badge',
+      });
+    }
+    if (this.permissions.canAccessAdmin()) {
+      items.splice(4, 0, {
+        path: '/admin',
+        label: 'Administración',
+        shortLabel: 'Admin',
+        icon: 'settings',
+      });
+    }
+    return items;
+  });
 
   isDesktop = computed(() => !this.isMobile());
 
@@ -81,6 +110,9 @@ export class ShellComponent implements OnInit {
     if (path !== '/tareas') return false;
     return this.taskPageLayout.tasksFullBleed();
   });
+
+  /** Ocultar selectores legacy cuando la API Gamora está activa */
+  showLegacyOrgBar = computed(() => !this.taskService.gamoraApiActive());
 
   ngOnInit(): void {
     const url = this.router.url;
@@ -100,6 +132,11 @@ export class ShellComponent implements OnInit {
     this.currentUserService.setCurrentUser(userId);
   }
 
+  async logout(): Promise<void> {
+    await this.authService.logout();
+    await this.router.navigate(['/login']);
+  }
+
   isNavActive(item: NavItem): boolean {
     return this.currentPath() === item.path;
   }
@@ -110,6 +147,8 @@ export class ShellComponent implements OnInit {
       .normalize('NFD')
       .replace(/\p{M}/gu, '');
     // "superadmin" contiene "admin": comprobar antes
+    if (normalized.includes('coordinator') || normalized.includes('coordinador')) return 'Coordinador';
+    if (normalized.includes('assignee') || normalized.includes('responsable')) return 'Responsable';
     if (normalized.includes('owner') || normalized.includes('superadmin')) return 'Propietario';
     if (normalized.includes('admin')) return 'Admin';
     if (normalized.includes('supervisor')) return 'Supervisor';

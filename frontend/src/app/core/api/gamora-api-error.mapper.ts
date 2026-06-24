@@ -46,6 +46,14 @@ export function mapGamoraApiError(error: unknown, context: GamoraApiErrorContext
       return bodyMsg;
     }
 
+    if (error.status === 401) {
+      return 'Debes iniciar sesión.';
+    }
+
+    if (error.status === 403) {
+      return 'No tienes permiso para realizar esta acción.';
+    }
+
     if (error.status === 422) {
       return 'Esta acción no está disponible para el estado actual de la tarea.';
     }

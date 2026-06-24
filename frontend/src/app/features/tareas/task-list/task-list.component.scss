@@ -1450,3 +1450,14 @@
   font-size: $font-size-sm;
   color: var(--color-text-secondary, #757575);
 }
+
+.task-list-layout--gamora {
+  .toolbar-actions button.active {
+    border-color: var(--color-primary, #2563eb);
+    background: rgba(37, 99, 235, 0.08);
+  }
+
+  .gamora-board-section {
+    margin-top: $spacing-sm;
+  }
+}

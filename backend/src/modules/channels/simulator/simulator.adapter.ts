@@ -53,6 +53,10 @@ export class SimulatorAdapter {
 
 export const simulatorAdapter = new SimulatorAdapter();
 
+/**
+ * @deprecated Solo para webhooks públicos sin JWT (WhatsApp mock).
+ * Rutas protegidas deben usar workspace del token vía requireWorkspace.
+ */
 export function resolveWorkspaceSlug(req: Request): string {
   const header = req.header('x-workspace-slug');
   if (header) return header;

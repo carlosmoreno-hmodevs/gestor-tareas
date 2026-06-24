@@ -1,4 +1,4 @@
-<div class="task-list-layout" [class.task-list-layout--board]="viewMode() === 'board'">
+<div class="task-list-layout" [class.task-list-layout--board]="viewMode() === 'board'" [class.task-list-layout--gamora]="taskService.gamoraApiActive()">
   <!-- Sidebar filtros -->
   @if (viewMode() !== 'board') {
   <aside class="filters-sidebar">
@@ -48,6 +48,7 @@
         <span class="filter-text">Esta semana</span>
         <span class="filter-badge">{{ estaSemanaCount() }}</span>
       </button>
+      @if (!taskService.gamoraApiActive()) {
       <button
         class="filter-item"
         [class.active]="quickFilter() === 'alta'"
@@ -57,6 +58,7 @@
         <span class="filter-text">Alta prioridad</span>
         <span class="filter-badge">{{ altaCount() }}</span>
       </button>
+      }
       <button
         class="filter-item"
         [class.active]="quickFilter() === 'sin-asignar'"
@@ -86,6 +88,7 @@
         }
       </div>
     </div>
+    @if (!taskService.gamoraApiActive()) {
     <div class="filters-section">
       <h3>Prioridad</h3>
       <p class="filters-hint">Selecciona varias para combinar (OR).</p>
@@ -105,6 +108,7 @@
         }
       </div>
     </div>
+    }
   </aside>
   }
 
@@ -118,11 +122,12 @@
           matInput
           type="search"
           [ngModel]="searchText()"
-          (ngModelChange)="searchText.set($event)"
+          (ngModelChange)="onSearchChange($event)"
           placeholder="Buscar por texto, ID o responsable..."
         />
         <mat-icon matPrefix>search</mat-icon>
       </mat-form-field>
+      @if (!taskService.gamoraApiActive()) {
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="project-field">
         <mat-label>Proyecto</mat-label>
         <mat-select [value]="selectedProjectId()" (valueChange)="selectedProjectId.set($event)">
@@ -132,6 +137,7 @@
           }
         </mat-select>
       </mat-form-field>
+      }
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="quick-field">
         <mat-label>Filtro rápido</mat-label>
         <mat-select [value]="quickFilter()" (valueChange)="setQuickFilter($event)">
@@ -160,14 +166,27 @@
         </mat-button-toggle>
       </mat-button-toggle-group>
       <div class="toolbar-actions">
+        @if (taskService.gamoraApiActive()) {
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="gamoraSimulatorOpen.set(!gamoraSimulatorOpen())"
+            [class.active]="gamoraSimulatorOpen()"
+          >
+            <mat-icon>chat</mat-icon>
+            Simulador
+          </button>
+        }
         @if (viewMode() !== 'board') {
+        @if (!taskService.gamoraApiActive()) {
         <button mat-stroked-button [disabled]="!connectivity.isOnline()" [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión' : ''">
           <mat-icon>upload</mat-icon>
           Exportar
         </button>
+        }
         <button mat-flat-button color="primary" [disabled]="!connectivity.isOnline()" [matTooltip]="!connectivity.isOnline() ? 'Requiere conexión para crear tareas' : ''" (click)="openNewTask()">
           <mat-icon>add</mat-icon>
-          Nueva tarea
+          {{ taskService.gamoraApiActive() ? 'Nuevo compromiso' : 'Nueva tarea' }}
         </button>
         }
       </div>
@@ -182,7 +201,7 @@
       </div>
     }
 
-    @if (taskService.gamoraApiActive()) {
+    @if (taskService.gamoraApiActive() && gamoraSimulatorOpen()) {
       <section class="gamora-simulator-panel" aria-label="Simulador WhatsApp Gamora">
         <div class="gamora-simulator-header">
           <mat-icon>chat</mat-icon>
@@ -311,12 +330,14 @@
       </button>
       <button type="button" class="kpi-card kpi-card-clickable kpi-success" [class.active]="isStatusFilterActive('Completada')" (click)="applyStatusFilter('Completada')">
         <span class="kpi-value">{{ completedCount() }}</span>
-        <span class="kpi-label">Completadas</span>
+        <span class="kpi-label">{{ taskService.gamoraApiActive() ? 'Cerradas' : 'Completadas' }}</span>
       </button>
+      @if (!taskService.gamoraApiActive()) {
       <button type="button" class="kpi-card kpi-card-clickable kpi-liberadas" [class.active]="isStatusFilterActive('Liberada')" (click)="applyStatusFilter('Liberada')">
         <span class="kpi-value">{{ liberadasCount() }}</span>
         <span class="kpi-label">Liberadas</span>
       </button>
+      }
     </div>
 
     @if (viewMode() === 'list') {
@@ -337,6 +358,11 @@
     }
 
     @if (viewMode() === 'board') {
+      @if (taskService.gamoraApiActive()) {
+        <section class="gamora-board-section animate-stagger" aria-label="Tablero de compromisos">
+          <app-gamora-kanban-board [tasks]="displayedTasks()" />
+        </section>
+      } @else {
       <section class="personal-board-section task-personal-board animate-stagger" aria-label="Tablero personal">
         <div class="board-scope-toolbar">
           <mat-button-toggle-group
@@ -394,6 +420,7 @@
           </mat-card-content>
         </mat-card>
       </section>
+      }
     } @else if (viewMode() === 'calendar') {
       <section class="task-calendar animate-stagger" aria-label="Vista calendario de tareas">
         <header class="calendar-toolbar">
@@ -421,6 +448,7 @@
         </header>
 
         <div class="calendar-scope-row">
+          @if (!taskService.gamoraApiActive()) {
           <span class="calendar-scope-label">Ámbito</span>
           <mat-button-toggle-group
             class="calendar-owner-scope-toggle"
@@ -439,9 +467,10 @@
             </mat-button-toggle>
           </mat-button-toggle-group>
           <span class="calendar-scope-hint">{{ calendarTaskScopeLabel() }}</span>
+          }
         </div>
 
-        @if (displayedTasks().length > 0 && tasksForCalendar().length === 0) {
+        @if (!taskService.gamoraApiActive() && displayedTasks().length > 0 && tasksForCalendar().length === 0) {
           <p class="calendar-scope-empty-hint" role="status">
             No hay tareas en el calendario con este ámbito. Hay {{ displayedTasks().length }} en la lista con los filtros actuales.
           </p>
@@ -482,7 +511,7 @@
                     <span class="calendar-task-dot" [attr.data-prio]="task.priority"></span>
                     <span class="calendar-task-text">{{ task.title }}</span>
                     @if (calendarGranularity() !== 'month') {
-                      <span class="calendar-task-meta">{{ task.dueDate | date: 'dd MMM' }} · {{ getEffectiveStatus(task) }}</span>
+                      <span class="calendar-task-meta">{{ task.dueDate | date: 'dd MMM' }} · {{ getDisplayStatus(task) }}</span>
                     }
                   </a>
                 }
@@ -508,7 +537,7 @@
                       <span class="calendar-day-detail-title-text">{{ task.title }}</span>
                     </div>
                     <span class="calendar-day-detail-meta">
-                      {{ task.folio }} · {{ task.assignee || 'Sin asignar' }} · {{ getEffectiveStatus(task) }}
+                      {{ task.folio }} · {{ task.assignee || 'Sin asignar' }} · {{ getDisplayStatus(task) }}
                     </span>
                   </a>
                 }
@@ -570,7 +599,7 @@
                     [class.liberada]="getEffectiveStatus(task) === 'Liberada'"
                     [class.cancelada]="getEffectiveStatus(task) === 'Cancelada'"
                   >
-                    {{ getEffectiveStatus(task) | uppercase }}
+                    {{ getDisplayStatus(task) | uppercase }}
                   </span>
                   <div class="task-card-right">
                     <span class="task-due-label">
@@ -596,12 +625,28 @@
       </div>
 
       <div class="pagination">
-        <span class="pagination-info">1-{{ displayedTasks().length }} de {{ displayedTasks().length }}</span>
-        <div class="pagination-controls">
-          <button mat-icon-button disabled><mat-icon>chevron_left</mat-icon></button>
-          <span class="page-num">1</span>
-          <button mat-icon-button disabled><mat-icon>chevron_right</mat-icon></button>
-        </div>
+        @if (taskService.gamoraApiActive()) {
+          <span class="pagination-info">
+            Página {{ taskService.gamoraListMeta().page }} —
+            {{ displayedTasks().length }} de {{ taskService.gamoraListMeta().total }}
+          </span>
+          <div class="pagination-controls">
+            <button mat-icon-button [disabled]="gamoraPage() <= 1" (click)="goGamoraPrevPage()">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <span class="page-num">{{ gamoraPage() }}</span>
+            <button mat-icon-button [disabled]="gamoraPage() >= gamoraListPageCount()" (click)="goGamoraNextPage()">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <span class="pagination-info">1-{{ displayedTasks().length }} de {{ displayedTasks().length }}</span>
+          <div class="pagination-controls">
+            <button mat-icon-button disabled><mat-icon>chevron_left</mat-icon></button>
+            <span class="page-num">1</span>
+            <button mat-icon-button disabled><mat-icon>chevron_right</mat-icon></button>
+          </div>
+        }
       </div>
     }
   </main>

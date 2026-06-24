@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { simulatorAdapter, resolveWorkspaceSlug } from '../channels/simulator/simulator.adapter';
+import { simulatorAdapter } from '../channels/simulator/simulator.adapter';
+import { getWorkspace } from '../auth/auth.middleware';
 import { conversationEngineService } from './conversation-engine.service';
 import { prisma } from '../../shared/database/prisma';
 
@@ -41,8 +42,8 @@ const inboundBodySchema = z
 conversationsRouter.post('/inbound', async (req, res, next) => {
   try {
     inboundBodySchema.parse(req.body);
-    const workspaceSlug = resolveWorkspaceSlug(req);
-    const dto = simulatorAdapter.normalize(req.body, workspaceSlug);
+    const workspace = getWorkspace(req);
+    const dto = simulatorAdapter.normalize(req.body, workspace.slug);
     const result = await conversationEngineService.processInbound(dto);
 
     res.status(result.duplicate ? 200 : 201).json({
@@ -71,12 +72,7 @@ conversationsRouter.post('/inbound', async (req, res, next) => {
 
 conversationsRouter.get('/', async (req, res, next) => {
   try {
-    const slug = resolveWorkspaceSlug(req);
-    const workspace = await prisma.workspace.findUnique({ where: { slug } });
-    if (!workspace) {
-      res.status(404).json({ error: 'Workspace no encontrado' });
-      return;
-    }
+    const workspace = getWorkspace(req);
     const threads = await prisma.conversationThread.findMany({
       where: { workspaceId: workspace.id },
       include: {
@@ -93,12 +89,7 @@ conversationsRouter.get('/', async (req, res, next) => {
 
 conversationsRouter.get('/:id', async (req, res, next) => {
   try {
-    const slug = resolveWorkspaceSlug(req);
-    const workspace = await prisma.workspace.findUnique({ where: { slug } });
-    if (!workspace) {
-      res.status(404).json({ error: 'Workspace no encontrado' });
-      return;
-    }
+    const workspace = getWorkspace(req);
     const thread = await prisma.conversationThread.findFirst({
       where: { id: req.params.id, workspaceId: workspace.id },
       include: {
